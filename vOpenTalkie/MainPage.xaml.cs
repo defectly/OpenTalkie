@@ -1,5 +1,4 @@
-﻿#if ANDROID
-using Android.Content;
+﻿using Android.Content;
 using Android.Media;
 using Android.Net.Rtp;
 using NAudio.Wave;
@@ -18,6 +17,8 @@ public partial class MainPage : ContentPage
     bool isStreaming = false;
 
     CancellationTokenSource cancelTokenSource;
+
+    int packetCounter = 0;
 
     public MainPage()
     {
@@ -106,8 +107,6 @@ public partial class MainPage : ContentPage
 
         var udpClient = new UdpClient(AddressFamily.InterNetwork);
 
-        int counter = 0;
-
         byte[] packetHead;
 
         while ((length = await audioRecord.ReadAsync(buffer, 0, buffer.Length)) > 0)
@@ -115,21 +114,27 @@ public partial class MainPage : ContentPage
             if (token.IsCancellationRequested)
                 return;
 
-            packetHead = new VBANPacketHead<AudioFrame>(
-                protocol: 0,
-                sampleRateIndex: 3,
-                samples: 255,
-                channel: 1,
-                format: 1,
-                codec: VBAN.Codec.PCM,
-                streamName: "defectly",
-                frameCounter: counter++).Bytes;
+            var packet = CraftPacket(buffer, length);
 
-            var combinedPacket = packetHead.Concat(buffer).ToArray();
-            var combinedLength = length + packetHead.Length;
-
-            udpClient.Send(combinedPacket, combinedLength, new IPEndPoint(IPAddress.Parse(address.Text), int.Parse(port.Text)));
+            udpClient.Send(packet, packet.Length, new IPEndPoint(IPAddress.Parse(address.Text), int.Parse(port.Text)));
         }
+    }
+
+    private byte[] CraftPacket(byte[] buffer, int length)
+    {
+        var packetHead = new VBANPacketHead<AudioFrame>(
+                 protocol: 0,
+                 sampleRateIndex: 3,
+                 samples: 255,
+                 channel: 1,
+                 format: 1,
+                 codec: VBAN.Codec.PCM,
+                 streamName: "defectly",
+                 frameCounter: packetCounter++).Bytes;
+
+        var combinedPacket = packetHead.Concat(buffer).ToArray();
+
+        return combinedPacket;
     }
 
     //private VBANPacket<AudioFrame>.Factory<AudioFrame, AudioFrame> CreateFactory()
@@ -161,4 +166,3 @@ public partial class MainPage : ContentPage
     //    return factory;
     //}
 }
-#endif
