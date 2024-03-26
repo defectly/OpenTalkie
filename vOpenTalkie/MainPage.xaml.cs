@@ -86,11 +86,6 @@ public partial class MainPage : ContentPage
         var waveAudioRecord = new WaveAudioRecord(new WaveFormat(48000, 16,
         (channelType.SelectedItem.ToString() == "Mono" || channelType.SelectedItem.ToString() == "Default") ? 1 : 2), audioRecord);
 
-        //string mainDir = FileSystem.Current.AppDataDirectory;
-        //var musicSource = new WaveFileReader(Path.Combine(mainDir, "emoboy.wav"));
-
-        //var sampleProvider = musicSource.ToSampleProvider();
-
         using var vbanSender = new VBANSender(waveAudioRecord.ToSampleProvider(), address.Text, int.Parse(port.Text), "defectly");
         
         StreamMic(vbanSender, token);
@@ -111,14 +106,12 @@ public partial class MainPage : ContentPage
 
     private async Task<bool> CheckMicrophonePermission()
     {
-        var permissionStatus = await Permissions.CheckStatusAsync<Permissions.Microphone>();
 
-        if (permissionStatus == PermissionStatus.Granted)
-            return true;
-
-        if (Permissions.RequestAsync<Permissions.Microphone>().Result != PermissionStatus.Granted)
+        if (await Permissions.CheckStatusAsync<Permissions.Microphone>() != PermissionStatus.Granted)
         {
+            Permissions.RequestAsync<Permissions.Microphone>();
             DisplayAlert("Mic permission", "Please, give mic permission to let this app work", "Ok");
+
             return false;
         }
 
