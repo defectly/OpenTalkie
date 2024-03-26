@@ -18,11 +18,35 @@
                 Style="{StaticResource Headline}"
                 SemanticProperties.HeadingLevel="Level1" />
 
+            <FlexLayout JustifyContent="Center" Wrap="Wrap" Direction="Column" AlignItems="Stretch">
+                <Label HorizontalTextAlignment="Center"
+                    Text="Тип каналов"
+                />
+                <Picker
+                    x:Name="channelType"
+                    FlexLayout.Grow="1.0"
+                    HorizontalTextAlignment="Center"
+                />
+            </FlexLayout>
+
+            <FlexLayout JustifyContent="Center" Wrap="Wrap" Direction="Column" AlignItems="Stretch">
+                <Label HorizontalTextAlignment="Center"
+                    Text="Микрофон"
+                />
+                <Picker
+                    x:Name="microphone"
+                    FlexLayout.Grow="1.0"
+                    SelectedIndex="0"
+                    HorizontalTextAlignment="Center"
+                />
+            </FlexLayout>
+
             <FlexLayout JustifyContent="SpaceBetween" Wrap="Wrap" AlignItems="Stretch">
                 <Entry x:Name="address" 
                        Placeholder="IP Address" 
                        HorizontalTextAlignment="Center" 
-                       FlexLayout.Grow="1.0"/>
+                       FlexLayout.Grow="1.0"
+                />
 
                 <Entry x:Name="port" 
                        Placeholder="Port" 
@@ -30,7 +54,7 @@
                        FlexLayout.Grow="0.5"
                        Keyboard="Numeric"
                        MaxLength="5"
-                       />
+                />
             </FlexLayout>
 
 
