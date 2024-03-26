@@ -1,6 +1,9 @@
 ﻿#if ANDROID
 using Android.Media;
+using Microsoft.Maui.Controls.PlatformConfiguration;
 using NAudio.Wave;
+using Android.OS;
+using Android.Content;
 
 namespace vOpenTalkie;
 
@@ -20,6 +23,13 @@ public partial class MainPage : ContentPage
 
         address.Text = "192.168.0.62";
         port.Text = "6980";
+
+        Battery.BatteryOptimizationTurned += BatteryOptimizationTurned;
+    }
+
+    private void BatteryOptimizationTurned()
+    {
+        batteryOptimizationBtn.IsVisible = false;
     }
 
     private void CreateChannelTypeList()
@@ -87,7 +97,7 @@ public partial class MainPage : ContentPage
         (channelType.SelectedItem.ToString() == "Mono" || channelType.SelectedItem.ToString() == "Default") ? 1 : 2), audioRecord);
 
         using var vbanSender = new VBANSender(waveAudioRecord.ToSampleProvider(), address.Text, int.Parse(port.Text), "defectly");
-        
+
         StreamMic(vbanSender, token);
     }
 
@@ -137,6 +147,11 @@ public partial class MainPage : ContentPage
             return _audioRecord.Read(buffer, offset, count);
         }
 
+    }
+
+    private void batteryOptimizationBtn_Clicked(object sender, EventArgs e)
+    {
+        Battery.BatteryOptimizationDialog?.Invoke();
     }
 }
 #endif
