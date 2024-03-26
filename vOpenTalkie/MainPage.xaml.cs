@@ -12,8 +12,6 @@ public partial class MainPage : ContentPage
 
     CancellationTokenSource cancelTokenSource;
 
-    int packetCounter = 0;
-
     public MainPage()
     {
         InitializeComponent();
@@ -83,7 +81,7 @@ public partial class MainPage : ContentPage
         return true;
     }
 
-    private async Task Stream(CancellationToken token)
+    private void Stream(CancellationToken token)
     {
         var waveAudioRecord = new WaveAudioRecord(new WaveFormat(48000, 16,
         (channelType.SelectedItem.ToString() == "Mono" || channelType.SelectedItem.ToString() == "Default") ? 1 : 2), audioRecord);
@@ -98,7 +96,7 @@ public partial class MainPage : ContentPage
         StreamMic(vbanSender, token);
     }
 
-    private async Task StreamMic(VBANSender vbanSender, CancellationToken token)
+    private void StreamMic(VBANSender vbanSender, CancellationToken token)
     {
         float[] vbanBuffer = new float[1024];
 
