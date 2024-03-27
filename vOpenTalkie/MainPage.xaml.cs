@@ -18,6 +18,7 @@ public partial class MainPage : ContentPage
     public MainPage()
     {
         InitializeComponent();
+        CreateSampleRateList();
         CreateChannelTypeList();
         CreateMicInputsList();
 
@@ -25,6 +26,33 @@ public partial class MainPage : ContentPage
         port.Text = "6980";
 
         Battery.BatteryOptimizationTurned += BatteryOptimizationTurned;
+    }
+
+    private void CreateSampleRateList()
+    {
+        sampleRate.Items.Add("6000");
+        sampleRate.Items.Add("8000");
+        sampleRate.Items.Add("11025");
+        sampleRate.Items.Add("12000");
+        sampleRate.Items.Add("16000");
+        sampleRate.Items.Add("22050");
+        sampleRate.Items.Add("24000");
+        sampleRate.Items.Add("32000");
+        sampleRate.Items.Add("44100");
+        sampleRate.Items.Add("48000");
+        sampleRate.Items.Add("64000");
+        sampleRate.Items.Add("88200");
+        sampleRate.Items.Add("96000");
+        sampleRate.Items.Add("128000");
+        sampleRate.Items.Add("176400");
+        sampleRate.Items.Add("192000");
+        sampleRate.Items.Add("256000");
+        sampleRate.Items.Add("352800");
+        sampleRate.Items.Add("384000");
+        sampleRate.Items.Add("512000");
+        sampleRate.Items.Add("705600");
+
+        sampleRate.SelectedItem = sampleRate.Items.FirstOrDefault(item => item == "48000");
     }
 
     private void BatteryOptimizationTurned()
@@ -73,7 +101,8 @@ public partial class MainPage : ContentPage
 
         try
         {
-            audioRecord = new AudioRecord(Enum.Parse<AudioSource>(microphone.SelectedItem.ToString()), 48000,
+            audioRecord = new AudioRecord(Enum.Parse<AudioSource>(microphone.SelectedItem.ToString()),
+                int.Parse(sampleRate.SelectedItem.ToString()),
                 Enum.Parse<ChannelIn>(channelType.SelectedItem.ToString()), Android.Media.Encoding.Pcm16bit, 1024);
 
             audioRecord.StartRecording();
@@ -85,7 +114,7 @@ public partial class MainPage : ContentPage
             return false;
         }
 
-        Stream((cancelTokenSource = new CancellationTokenSource()).Token);
+        Task.Run(() => Stream((cancelTokenSource = new CancellationTokenSource()).Token));
 
         StartStreamBtn.Text = "Stop stream";
 
@@ -94,9 +123,9 @@ public partial class MainPage : ContentPage
 
     private void Stream(CancellationToken token)
     {
-        var waveAudioRecord = new WaveAudioRecord(new WaveFormat(48000, 16,
+        var waveAudioRecord = new WaveAudioRecord(new WaveFormat(int.Parse(sampleRate.SelectedItem.ToString()), 16,
         (channelType.SelectedItem.ToString() == "Mono" || channelType.SelectedItem.ToString() == "Default") ? 1 : 2), audioRecord);
-
+        
         using var vbanSender = new VBANSender(waveAudioRecord.ToSampleProvider(), address.Text, int.Parse(port.Text), "defectly");
 
         StreamMic(vbanSender, token);

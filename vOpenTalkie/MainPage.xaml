@@ -20,7 +20,18 @@
 
             <FlexLayout JustifyContent="Center" Wrap="Wrap" Direction="Column" AlignItems="Stretch">
                 <Label HorizontalTextAlignment="Center"
-                    Text="Тип каналов"
+                    Text="Sample rate"
+                />
+                <Picker
+                    x:Name="sampleRate"
+                    FlexLayout.Grow="1.0"
+                    HorizontalTextAlignment="Center"
+                />
+            </FlexLayout>
+
+            <FlexLayout JustifyContent="Center" Wrap="Wrap" Direction="Column" AlignItems="Stretch">
+                <Label HorizontalTextAlignment="Center"
+                    Text="Channel type"
                 />
                 <Picker
                     x:Name="channelType"
@@ -31,7 +42,7 @@
 
             <FlexLayout JustifyContent="Center" Wrap="Wrap" Direction="Column" AlignItems="Stretch">
                 <Label HorizontalTextAlignment="Center"
-                    Text="Микрофон"
+                    Text="Microphone type"
                 />
                 <Picker
                     x:Name="microphone"
