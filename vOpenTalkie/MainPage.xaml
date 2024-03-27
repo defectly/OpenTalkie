@@ -18,6 +18,16 @@
                 Style="{StaticResource Headline}"
                 SemanticProperties.HeadingLevel="Level1" />
 
+            <Entry
+                x:Name="streamName"
+                Text="Stream1"
+                MaxLength="16"
+                Placeholder="Stream name"
+                
+                FlexLayout.Grow="1.0"
+                HorizontalTextAlignment="Center"
+            />
+
             <FlexLayout JustifyContent="Center" Wrap="Wrap" Direction="Column" AlignItems="Stretch">
                 <Label HorizontalTextAlignment="Center"
                     Text="Sample rate"

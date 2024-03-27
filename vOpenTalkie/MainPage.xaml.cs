@@ -126,7 +126,7 @@ public partial class MainPage : ContentPage
         var waveAudioRecord = new WaveAudioRecord(new WaveFormat(int.Parse(sampleRate.SelectedItem.ToString()), 16,
         (channelType.SelectedItem.ToString() == "Mono" || channelType.SelectedItem.ToString() == "Default") ? 1 : 2), audioRecord);
         
-        using var vbanSender = new VBANSender(waveAudioRecord.ToSampleProvider(), address.Text, int.Parse(port.Text), "defectly");
+        using var vbanSender = new VBANSender(waveAudioRecord.ToSampleProvider(), address.Text, int.Parse(port.Text), streamName.Text);
 
         StreamMic(vbanSender, token);
     }
