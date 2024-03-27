@@ -51,7 +51,7 @@ public partial class MainPage : ContentPage
 
     private void OnCounterClicked(object sender, EventArgs e)
     {
-        isStreaming = isStreaming == true ? StopStream().Result : StartStream().Result;
+        isStreaming = isStreaming == true ? StopStream().Result : StartStream();
     }
 
     private async Task<bool> StopStream()
@@ -66,7 +66,7 @@ public partial class MainPage : ContentPage
         return false;
     }
 
-    private async Task<bool> StartStream()
+    private bool StartStream()
     {
         if (!CheckMicrophonePermission().Result)
             return false;
@@ -75,16 +75,17 @@ public partial class MainPage : ContentPage
         {
             audioRecord = new AudioRecord(Enum.Parse<AudioSource>(microphone.SelectedItem.ToString()), 48000,
                 Enum.Parse<ChannelIn>(channelType.SelectedItem.ToString()), Android.Media.Encoding.Pcm16bit, 1024);
+
+            audioRecord.StartRecording();
         }
-        catch (Java.Lang.IllegalArgumentException exception)
+        catch (Exception exception)
+        when (exception is Java.Lang.IllegalArgumentException || exception is Java.Lang.IllegalStateException)
         {
             DisplayAlert("Error", "May be this format is unsupported", "Ok");
             return false;
         }
 
-        audioRecord.StartRecording();
-
-        Task.Run(() => Stream((cancelTokenSource = new CancellationTokenSource()).Token));
+        Stream((cancelTokenSource = new CancellationTokenSource()).Token);
 
         StartStreamBtn.Text = "Stop stream";
 

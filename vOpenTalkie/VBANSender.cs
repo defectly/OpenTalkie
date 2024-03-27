@@ -99,7 +99,17 @@ public partial class MainPage
                     sendBytes.Add(b);
                 }
             }
-            _udpClient.Send(sendBytes.ToArray(), sendBytes.Count);
+
+            try
+            {
+                _udpClient.Send(sendBytes.ToArray(), sendBytes.Count);
+            }
+            catch(SocketException exception)
+            //when (exception.Message == "Connection refused")
+            {
+
+            }
+
             _framecount++;
         }
 
