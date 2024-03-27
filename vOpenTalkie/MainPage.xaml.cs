@@ -2,8 +2,8 @@
 using Android.Media;
 using Microsoft.Maui.Controls.PlatformConfiguration;
 using NAudio.Wave;
-using Android.OS;
-using Android.Content;
+using System.Net;
+using System.Net.Sockets;
 
 namespace vOpenTalkie;
 
@@ -15,17 +15,39 @@ public partial class MainPage : ContentPage
 
     CancellationTokenSource cancelTokenSource;
 
+    
+
     public MainPage()
     {
         InitializeComponent();
         CreateSampleRateList();
         CreateChannelTypeList();
         CreateMicInputsList();
-
+        GetAndroidIPAddress();
+        Connectivity.Current.ConnectivityChanged += GetAndroidIPAddress;
+        
         address.Text = "192.168.0.62";
         port.Text = "6980";
 
         Battery.BatteryOptimizationTurned += BatteryOptimizationTurned;
+    }
+
+    private void GetAndroidIPAddress()
+    {
+        try
+        {
+            using var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, 0);
+            socket.Connect("8.8.8.8", 65530);
+
+            IPEndPoint endPoint = socket.LocalEndPoint as IPEndPoint;
+            myIPAddress.Text = endPoint.Address.ToString();
+        }
+        catch { }
+    }
+
+    private async void GetAndroidIPAddress(object sender, ConnectivityChangedEventArgs e)
+    {
+        GetAndroidIPAddress();
     }
 
     private void CreateSampleRateList()
@@ -125,7 +147,7 @@ public partial class MainPage : ContentPage
     {
         var waveAudioRecord = new WaveAudioRecord(new WaveFormat(int.Parse(sampleRate.SelectedItem.ToString()), 16,
         (channelType.SelectedItem.ToString() == "Mono" || channelType.SelectedItem.ToString() == "Default") ? 1 : 2), audioRecord);
-        
+
         using var vbanSender = new VBANSender(waveAudioRecord.ToSampleProvider(), address.Text, int.Parse(port.Text), streamName.Text);
 
         StreamMic(vbanSender, token);

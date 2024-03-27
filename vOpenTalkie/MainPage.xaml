@@ -17,14 +17,23 @@
                 Text="vOpenTalkie"
                 Style="{StaticResource Headline}"
                 SemanticProperties.HeadingLevel="Level1" />
+            
+            <FlexLayout JustifyContent="Center" Wrap="Wrap" Direction="Column" AlignItems="Stretch">
+                <Label
+                    Text="Last parsed local ip is"
+                />
+                <Label
+                    x:Name="myIPAddress"
+                />
+            </FlexLayout>
 
             <Entry
                 x:Name="streamName"
                 Text="Stream1"
                 MaxLength="16"
                 Placeholder="Stream name"
-                
                 FlexLayout.Grow="1.0"
+                Keyboard="Chat"
                 HorizontalTextAlignment="Center"
             />
 
