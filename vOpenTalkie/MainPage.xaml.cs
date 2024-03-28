@@ -29,8 +29,6 @@ public partial class MainPage : ContentPage
 
         GetAndroidIPAddress();
         Connectivity.Current.ConnectivityChanged += GetAndroidIPAddress;
-
-        Battery.BatteryOptimizationTurned += BatteryOptimizationTurned;
     }
 
     private void RegisterUserInputEvents()
@@ -44,7 +42,7 @@ public partial class MainPage : ContentPage
         port.TextChanged += SaveData;
     }
 
-    private void SaveData()
+    private async Task SaveData()
     {
         Preferences.Set("StreamName", streamName.Text);
         Preferences.Set("BufferSize", bufferSize.Text);
@@ -118,11 +116,6 @@ public partial class MainPage : ContentPage
         sampleRate.Items.Add("705600");
 
         sampleRate.SelectedItem = sampleRate.Items.FirstOrDefault(item => item == "48000");
-    }
-
-    private void BatteryOptimizationTurned()
-    {
-        batteryOptimizationBtn.IsVisible = false;
     }
 
     private void CreateChannelTypeList()
@@ -247,11 +240,6 @@ public partial class MainPage : ContentPage
             return _audioRecord.Read(buffer, offset, count);
         }
 
-    }
-
-    private void batteryOptimizationBtn_Clicked(object sender, EventArgs e)
-    {
-        Battery.BatteryOptimizationDialog?.Invoke();
     }
 }
 #endif

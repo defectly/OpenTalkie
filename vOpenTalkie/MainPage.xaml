@@ -108,13 +108,6 @@
                 Clicked="OnCounterClicked"
                 HorizontalOptions="Fill"
             />
-
-            <Button LineBreakMode="CharacterWrap" BackgroundColor="DarkKhaki"
-                x:Name="batteryOptimizationBtn"
-                Text="For better app experience, please, disable battery optimization"
-                Clicked="batteryOptimizationBtn_Clicked"
-            />
-
         </VerticalStackLayout>
     </ScrollView>
 
