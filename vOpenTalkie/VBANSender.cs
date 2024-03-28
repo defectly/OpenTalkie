@@ -13,7 +13,7 @@ public partial class MainPage
         private readonly UdpClient _udpClient;
         private uint _framecount;
 
-        public WaveFormat WaveFormat => this._source.WaveFormat;
+        public WaveFormat WaveFormat => _source.WaveFormat;
 
         public VBANSender(ISampleProvider source, string destHost, int destPort, string streamName)
         {
@@ -50,15 +50,18 @@ public partial class MainPage
 
         private void SentUdp(IReadOnlyCollection<float> samples)
         {
-            IList<byte> sendBytes = new List<byte>();
-            sendBytes.Add((byte)'V');//F
-            sendBytes.Add((byte)'B');//O
-            sendBytes.Add((byte)'A');//U
-            sendBytes.Add((byte)'N');//R
-            sendBytes.Add((byte)((int)VBanProtocol.VBAN_PROTOCOL_AUDIO << 5 | Array.IndexOf(VBANConsts.VBAN_SRList, WaveFormat.SampleRate)));//SR+Protocol
-            sendBytes.Add((byte)(samples.Count / WaveFormat.Channels - 1));//Number of samples 
-            sendBytes.Add((byte)(WaveFormat.Channels - 1));//Number of channels
-            sendBytes.Add((int)VBanCodec.VBAN_CODEC_PCM << 5 | 0 << 4 | (byte)VBanBitResolution.VBAN_BITFMT_16_INT);//DataFormat+1bit pad+CODEC
+            IList<byte> sendBytes =
+            [
+                (byte)'V',//F
+                (byte)'B',//O
+                (byte)'A',//U
+                (byte)'N',//R
+                (byte)((int)VBanProtocol.VBAN_PROTOCOL_AUDIO << 5 | Array.IndexOf(VBANConsts.VBAN_SRList, WaveFormat.SampleRate)),//SR+Protocol
+                (byte)(samples.Count / WaveFormat.Channels - 1),//Number of samples 
+                (byte)(WaveFormat.Channels - 1),//Number of channels
+                (int)VBanCodec.VBAN_CODEC_PCM << 5 | 0 << 4 | (byte)VBanBitResolution.VBAN_BITFMT_16_INT,//DataFormat+1bit pad+CODEC
+            ];
+
             for (var i = 0; i < 16; i++)//StreamName char x 16
             {
                 if (_streamName.ToCharArray().Length > i)

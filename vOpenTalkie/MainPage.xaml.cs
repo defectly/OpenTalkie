@@ -23,18 +23,58 @@ public partial class MainPage : ContentPage
         CreateSampleRateList();
         CreateChannelTypeList();
         CreateMicInputsList();
+
+        LoadData();
+        RegisterUserInputEvents();
+
         GetAndroidIPAddress();
         Connectivity.Current.ConnectivityChanged += GetAndroidIPAddress;
-        
-        //Android.Content.PM.ForegroundService.TypeMicrophone.
-
-        address.Text = "192.168.0.62";
-        port.Text = "6980";
 
         Battery.BatteryOptimizationTurned += BatteryOptimizationTurned;
     }
 
-    
+    private void RegisterUserInputEvents()
+    {
+        streamName.TextChanged += SaveData;
+        bufferSize.TextChanged += SaveData;
+        sampleRate.SelectedIndexChanged += SaveData;
+        channelType.SelectedIndexChanged += SaveData;
+        microphone.SelectedIndexChanged += SaveData;
+        address.TextChanged += SaveData;
+        port.TextChanged += SaveData;
+    }
+
+    private void SaveData()
+    {
+        Preferences.Set("StreamName", streamName.Text);
+        Preferences.Set("BufferSize", bufferSize.Text);
+        Preferences.Set("SampleRate", sampleRate.SelectedItem.ToString());
+        Preferences.Set("ChannelType", channelType.SelectedItem.ToString());
+        Preferences.Set("MicType", microphone.SelectedItem.ToString());
+        Preferences.Set("IPAddress", address.Text);
+        Preferences.Set("Port", port.Text);
+    }
+
+    private void SaveData(object sender, TextChangedEventArgs textChanged)
+    {
+        SaveData();
+    }
+    private void SaveData(object sender, EventArgs textChanged)
+    {
+        SaveData();
+    }
+
+    private void LoadData()
+    {
+        streamName.Text = Preferences.Get("StreamName", "Stream1");
+        bufferSize.Text = Preferences.Get("BufferSize", "1024");
+        sampleRate.SelectedItem = sampleRate.Items.FirstOrDefault(item => item == Preferences.Get("SampleRate", "48000"));
+        channelType.SelectedItem = channelType.Items.FirstOrDefault(item => item == Preferences.Get("ChannelType", "Default"));
+        microphone.SelectedItem = microphone.Items.FirstOrDefault(item => item == Preferences.Get("MicType", "Default"));
+        address.Text = Preferences.Get("IPAddress", "");
+        port.Text = Preferences.Get("Port", "6980");
+    }
+
     private void GetAndroidIPAddress()
     {
         try
@@ -130,7 +170,7 @@ public partial class MainPage : ContentPage
         {
             audioRecord = new AudioRecord(Enum.Parse<AudioSource>(microphone.SelectedItem.ToString()),
                 int.Parse(sampleRate.SelectedItem.ToString()),
-                Enum.Parse<ChannelIn>(channelType.SelectedItem.ToString()), Android.Media.Encoding.Pcm16bit, 1024);
+                Enum.Parse<ChannelIn>(channelType.SelectedItem.ToString()), Android.Media.Encoding.Pcm16bit, int.Parse(bufferSize.Text));
 
             audioRecord.StartRecording();
         }
@@ -147,7 +187,7 @@ public partial class MainPage : ContentPage
 
         intent ??= new Android.Content.Intent(Android.App.Application.Context, typeof(ForegroundServiceDemo));
         Android.App.Application.Context.StartForegroundService(intent);
-        
+
         return true;
     }
 
@@ -163,7 +203,7 @@ public partial class MainPage : ContentPage
 
     private void StreamMic(VBANSender vbanSender, CancellationToken token)
     {
-        float[] vbanBuffer = new float[1024];
+        float[] vbanBuffer = new float[int.Parse(bufferSize.Text)];
 
         while (true)
         {

@@ -19,23 +19,36 @@
                 SemanticProperties.HeadingLevel="Level1" />
             
             <FlexLayout JustifyContent="Center" Wrap="Wrap" Direction="Column" AlignItems="Stretch">
-                <Label
+                <Label HorizontalTextAlignment="Center"
                     Text="Last parsed local ip is"
                 />
-                <Label
+                <Label HorizontalTextAlignment="Center"
                     x:Name="myIPAddress"
                 />
             </FlexLayout>
 
             <Entry
                 x:Name="streamName"
-                Text="Stream1"
                 MaxLength="16"
                 Placeholder="Stream name"
                 FlexLayout.Grow="1.0"
                 Keyboard="Chat"
                 HorizontalTextAlignment="Center"
             />
+
+            <FlexLayout JustifyContent="Center" Wrap="Wrap" Direction="Column" AlignItems="Stretch">
+                <Label HorizontalTextAlignment="Center"
+                    Text="Buffer size"
+                />
+                <Entry
+                    x:Name="bufferSize"
+                    MaxLength="5"
+                    Placeholder="Buffer size"
+                    FlexLayout.Grow="1.0"
+                    Keyboard="Numeric"
+                    HorizontalTextAlignment="Center"
+                />
+            </FlexLayout>
 
             <FlexLayout JustifyContent="Center" Wrap="Wrap" Direction="Column" AlignItems="Stretch">
                 <Label HorizontalTextAlignment="Center"
