@@ -5,7 +5,7 @@ using AndroidX.Core.App;
 
 namespace vOpenTalkie;
 
-[Service]
+[Service(ForegroundServiceType = Android.Content.PM.ForegroundService.TypeMicrophone)]
 public class ForegroundServiceDemo : Service
 {
     private string NOTIFICATION_CHANNEL_ID = "1000";
@@ -14,7 +14,7 @@ public class ForegroundServiceDemo : Service
 
     private void startForegroundService()
     {
-        var notifcationManager = GetSystemService(Context.NotificationService) as NotificationManager;
+        var notifcationManager = GetSystemService(NotificationService) as NotificationManager;
 
         if (Build.VERSION.SdkInt >= BuildVersionCodes.O)
         {
@@ -25,9 +25,10 @@ public class ForegroundServiceDemo : Service
         notification.SetAutoCancel(false);
         notification.SetOngoing(true);
         notification.SetSmallIcon(Resource.Mipmap.appicon);
-        notification.SetContentTitle("ForegroundService");
-        notification.SetContentText("Foreground Service is running");
-        StartForeground(NOTIFICATION_ID, notification.Build());
+        notification.SetContentTitle("Open Talkie");
+        notification.SetContentText("Open Talkie Service is running");
+
+        StartForeground(NOTIFICATION_ID, notification.Build(), Android.Content.PM.ForegroundService.TypeMicrophone);
     }
 
     private void createNotificationChannel(NotificationManager notificationMnaManager)

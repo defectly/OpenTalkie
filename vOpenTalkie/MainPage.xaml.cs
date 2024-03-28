@@ -180,7 +180,7 @@ public partial class MainPage : ContentPage
 
         intent ??= new Android.Content.Intent(Android.App.Application.Context, typeof(ForegroundServiceDemo));
         Android.App.Application.Context.StartForegroundService(intent);
-
+        
         return true;
     }
 
