@@ -15,7 +15,7 @@ public partial class MainPage : ContentPage
 
     CancellationTokenSource cancelTokenSource;
 
-    
+    Android.Content.Intent intent;
 
     public MainPage()
     {
@@ -26,12 +26,15 @@ public partial class MainPage : ContentPage
         GetAndroidIPAddress();
         Connectivity.Current.ConnectivityChanged += GetAndroidIPAddress;
         
+        //Android.Content.PM.ForegroundService.TypeMicrophone.
+
         address.Text = "192.168.0.62";
         port.Text = "6980";
 
         Battery.BatteryOptimizationTurned += BatteryOptimizationTurned;
     }
 
+    
     private void GetAndroidIPAddress()
     {
         try
@@ -111,6 +114,8 @@ public partial class MainPage : ContentPage
         cancelTokenSource.Cancel();
         cancelTokenSource.Dispose();
 
+        Android.App.Application.Context.StopService(intent);
+
         StartStreamBtn.Text = "Start stream";
 
         return false;
@@ -140,6 +145,9 @@ public partial class MainPage : ContentPage
 
         StartStreamBtn.Text = "Stop stream";
 
+        intent ??= new Android.Content.Intent(Android.App.Application.Context, typeof(ForegroundServiceDemo));
+        Android.App.Application.Context.StartForegroundService(intent);
+        
         return true;
     }
 
