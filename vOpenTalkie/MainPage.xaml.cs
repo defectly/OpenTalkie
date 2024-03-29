@@ -11,8 +11,6 @@ public partial class MainPage : ContentPage
 {
     AudioRecord audioRecord;
 
-    public static bool UseRNNoise = false;
-
     StreamManager streamManager;
 
     ForegroundBatteryService batteryService = new();
@@ -25,7 +23,6 @@ public partial class MainPage : ContentPage
     {
         InitializeComponent();
 
-        StartStreamBtn.BindingContext = this;
         CreateSampleRateList();
         CreateChannelTypeList();
         CreateMicInputsList();
@@ -39,21 +36,29 @@ public partial class MainPage : ContentPage
         rnNoise.Toggled += RnNoise_Toggled;
     }
 
-    private void RnNoise_Toggled(object? sender, ToggledEventArgs e) =>
-        UseRNNoise = e.Value;
+    private void RnNoise_Toggled(object? sender, ToggledEventArgs e)
+    {
+        if (streamManager == null)
+            return;
+
+        if(e.Value)
+            streamManager.EnableRNNoise();
+        else
+            streamManager.DisableRNNoise();
+    }
 
     private void RegisterUserInputEvents()
     {
-        streamName.TextChanged += SaveData;
-        bufferSize.TextChanged += SaveData;
-        SampleRate.SelectedIndexChanged += SaveData;
-        ChannelType.SelectedIndexChanged += SaveData;
-        microphone.SelectedIndexChanged += SaveData;
-        address.TextChanged += SaveData;
-        port.TextChanged += SaveData;
+        streamName.TextChanged += DataChanged;
+        bufferSize.TextChanged += DataChanged;
+        SampleRate.SelectedIndexChanged += DataChanged;
+        ChannelType.SelectedIndexChanged += DataChanged;
+        microphone.SelectedIndexChanged += DataChanged;
+        address.TextChanged += DataChanged;
+        port.TextChanged += DataChanged;
     }
 
-    private async Task SaveData()
+    private async Task DataChanged()
     {
         dataChanged = true;
 
@@ -66,8 +71,8 @@ public partial class MainPage : ContentPage
         Preferences.Set("Port", port.Text);
     }
 
-    private void SaveData(object sender, TextChangedEventArgs textChanged) => SaveData();
-    private void SaveData(object sender, EventArgs textChanged) => SaveData();
+    private void DataChanged(object sender, TextChangedEventArgs textChanged) => DataChanged();
+    private void DataChanged(object sender, EventArgs textChanged) => DataChanged();
 
     private void LoadData()
     {
@@ -193,7 +198,7 @@ public partial class MainPage : ContentPage
         }
 
         WaveFormat waveFormat = new(audioRecord.SampleRate, 16, audioRecord.ChannelCount);
-        WaveAudioRecord waveAudioRecord = new(waveFormat, audioRecord);
+        WaveAudioRecord waveAudioRecord = new(waveFormat, audioRecord, rnNoise.IsToggled);
         streamManager = new StreamManager(waveAudioRecord, address.Text, int.Parse(port.Text), streamName.Text);
     }
 

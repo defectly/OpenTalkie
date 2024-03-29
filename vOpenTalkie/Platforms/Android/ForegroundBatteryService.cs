@@ -6,7 +6,7 @@ using AndroidX.Core.App;
 namespace vOpenTalkie;
 
 [Service(ForegroundServiceType = Android.Content.PM.ForegroundService.TypeMicrophone)]
-public class ForegroundServiceDemo : Service
+internal partial class ForegroundBatteryService : Service
 {
     private string NOTIFICATION_CHANNEL_ID = "1000";
     private int NOTIFICATION_ID = 1;
@@ -17,9 +17,7 @@ public class ForegroundServiceDemo : Service
         var notifcationManager = GetSystemService(NotificationService) as NotificationManager;
 
         if (Build.VERSION.SdkInt >= BuildVersionCodes.O)
-        {
             createNotificationChannel(notifcationManager);
-        }
 
         var notification = new NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID);
         notification.SetAutoCancel(false);
@@ -38,11 +36,7 @@ public class ForegroundServiceDemo : Service
         notificationMnaManager.CreateNotificationChannel(channel);
     }
 
-    public override IBinder OnBind(Intent intent)
-    {
-        return null;
-    }
-
+    public override IBinder OnBind(Intent intent) => null;
 
     public override StartCommandResult OnStartCommand(Intent intent, StartCommandFlags flags, int startId)
     {

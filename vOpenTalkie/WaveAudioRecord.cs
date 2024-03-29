@@ -13,8 +13,12 @@ public class WaveAudioRecord : IWaveProvider
 
     DoggyDenoiser _denoiser;
 
-    public WaveAudioRecord(WaveFormat waveFormat, AudioRecord audioRecord)
+    public bool RNNoise;
+
+    public WaveAudioRecord(WaveFormat waveFormat, AudioRecord audioRecord, bool rnNoise = false)
     {
+        RNNoise = rnNoise;
+
         _waveFormat = waveFormat;
         _audioRecord = audioRecord;
 
@@ -22,7 +26,7 @@ public class WaveAudioRecord : IWaveProvider
     }
 
     public int Read(byte[] buffer, int offset, int count) =>
-        MainPage.UseRNNoise == true ? ReadRNNoise(buffer, offset, count) : JustRead(buffer, offset, count);
+        RNNoise == true ? ReadRNNoise(buffer, offset, count) : JustRead(buffer, offset, count);
 
     private int JustRead(byte[] buffer, int offset, int count) =>
         _audioRecord.Read(buffer, offset, count);

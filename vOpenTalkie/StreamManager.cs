@@ -10,9 +10,7 @@ internal class StreamManager
 
     CancellationTokenSource _cancelTokenSource;
 
-    public static bool UseRNNoise = false;
-
-    WaveAudioRecord WaveAudioRecord;
+    public WaveAudioRecord WaveAudioRecord;
 
     int BufferSize => WaveAudioRecord.BufferSize;
 
@@ -30,6 +28,9 @@ internal class StreamManager
 
         WaveAudioRecord = waveAudioRecord;
     }
+
+    public void EnableRNNoise() => WaveAudioRecord.RNNoise = true;
+    public void DisableRNNoise() => WaveAudioRecord.RNNoise = false;
 
     public void StopStream()
     {

@@ -2,9 +2,9 @@
 
 namespace vOpenTalkie;
 
-internal class ForegroundBatteryService
+internal partial class ForegroundBatteryService
 {
-    private Intent _intent = new Intent(Android.App.Application.Context, typeof(ForegroundServiceDemo));
+    private Intent _intent = new Intent(Android.App.Application.Context, typeof(ForegroundBatteryService));
 
     public void Start() =>
         Android.App.Application.Context.StartForegroundService(_intent);
