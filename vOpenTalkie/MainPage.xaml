@@ -100,6 +100,16 @@
                 />
             </FlexLayout>
 
+            <FlexLayout JustifyContent="SpaceAround" Wrap="Wrap" AlignItems="Stretch">
+                <Label HorizontalTextAlignment="Center" VerticalTextAlignment="Center"
+                    Text="RNNoise"
+                />
+
+                <Switch
+                    x:Name="rnNoise"
+                />
+            </FlexLayout>
+
 
             <Button
                 x:Name="StartStreamBtn"

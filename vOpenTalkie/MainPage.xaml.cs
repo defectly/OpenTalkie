@@ -17,6 +17,8 @@ public partial class MainPage : ContentPage
 
     Android.Content.Intent intent;
 
+    public static bool UseRNNoise;
+
     public MainPage()
     {
         InitializeComponent();
@@ -29,7 +31,12 @@ public partial class MainPage : ContentPage
 
         GetAndroidIPAddress();
         Connectivity.Current.ConnectivityChanged += GetAndroidIPAddress;
+
+        rnNoise.Toggled += RnNoise_Toggled;
     }
+
+    private void RnNoise_Toggled(object? sender, ToggledEventArgs e) =>
+        UseRNNoise = e.Value;
 
     private void RegisterUserInputEvents()
     {
@@ -180,14 +187,16 @@ public partial class MainPage : ContentPage
 
         intent ??= new Android.Content.Intent(Android.App.Application.Context, typeof(ForegroundServiceDemo));
         Android.App.Application.Context.StartForegroundService(intent);
-        
+
         return true;
     }
 
     private void Stream(CancellationToken token)
     {
-        var waveAudioRecord = new WaveAudioRecord(new WaveFormat(int.Parse(sampleRate.SelectedItem.ToString()), 16,
-        (channelType.SelectedItem.ToString() == "Mono" || channelType.SelectedItem.ToString() == "Default") ? 1 : 2), audioRecord);
+        WaveFormat format = new(int.Parse(sampleRate.SelectedItem.ToString()), 16,
+        (channelType.SelectedItem.ToString() == "Mono" || channelType.SelectedItem.ToString() == "Default") ? 1 : 2);
+
+        var waveAudioRecord = new WaveAudioRecord(format, audioRecord);
 
         using var vbanSender = new VBANSender(waveAudioRecord.ToSampleProvider(), address.Text, int.Parse(port.Text), streamName.Text);
 
@@ -196,7 +205,7 @@ public partial class MainPage : ContentPage
 
     private void StreamMic(VBANSender vbanSender, CancellationToken token)
     {
-        float[] vbanBuffer = new float[int.Parse(bufferSize.Text)];
+        float[] vbanBuffer = new float[int.Parse(bufferSize.Text) / 4];
 
         while (true)
         {
@@ -227,19 +236,68 @@ public partial class MainPage : ContentPage
         private WaveFormat _waveFormat;
         public WaveFormat WaveFormat => _waveFormat;
 
+        DoggyDenoiser _denoiser;
 
         public WaveAudioRecord(WaveFormat waveFormat, AudioRecord audioRecord)
         {
             _waveFormat = waveFormat;
             _audioRecord = audioRecord;
+
+            _denoiser = new DoggyDenoiser();
         }
 
 
-        public int Read(byte[] buffer, int offset, int count)
+        public int Read(byte[] buffer, int offset, int count) =>
+            MainPage.UseRNNoise == true ? ReadRNNoise(buffer, offset, count) : JustRead(buffer, offset, count);
+
+        private int JustRead(byte[] buffer, int offset, int count) =>
+            _audioRecord.Read(buffer, offset, count);
+
+        private int ReadRNNoise(byte[] buffer, int offset, int count)
         {
-            return _audioRecord.Read(buffer, offset, count);
+            int length = _audioRecord.Read(buffer, offset, count);
+
+            float[] rnBuffer = Convert16BitToFloat(buffer.Take(length).ToArray());
+
+            int denoisedLength = _denoiser.Denoise(rnBuffer, false);
+
+            buffer = ConvertFloatTo16Bit(rnBuffer.Take(denoisedLength).ToArray());
+
+            return buffer.Length;
         }
 
+        public static float[] Convert16BitToFloat(byte[] input)
+        {
+            // 16 bit input, so 2 bytes per sample
+            int inputSamples = input.Length / 2;
+            float[] output = new float[inputSamples];
+            int outputIndex = 0;
+            for (int n = 0; n < inputSamples; n++)
+            {
+                short sample = BitConverter.ToInt16(input, n * 2);
+                output[outputIndex++] = sample / 32768f;
+            }
+            return output;
+        }
+
+        public static byte[] ConvertFloatTo16Bit(float[] samples)
+        {
+            int samplesCount = samples.Length;
+            var pcm = new byte[samplesCount * 2];
+            int sampleIndex = 0, pcmIndex = 0;
+
+            while (sampleIndex < samplesCount)
+            {
+                var outsample = (short)(samples[sampleIndex] * short.MaxValue);
+                pcm[pcmIndex] = (byte)(outsample & 0xff);
+                pcm[pcmIndex + 1] = (byte)((outsample >> 8) & 0xff);
+
+                sampleIndex++;
+                pcmIndex += 2;
+            }
+
+            return pcm;
+        }
     }
 }
 #endif
