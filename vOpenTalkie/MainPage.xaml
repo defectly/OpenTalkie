@@ -55,7 +55,7 @@
                     Text="Sample rate"
                 />
                 <Picker
-                    x:Name="sampleRate"
+                    x:Name="SampleRate"
                     FlexLayout.Grow="1.0"
                     HorizontalTextAlignment="Center"
                 />
@@ -66,7 +66,7 @@
                     Text="Channel type"
                 />
                 <Picker
-                    x:Name="channelType"
+                    x:Name="ChannelType"
                     FlexLayout.Grow="1.0"
                     HorizontalTextAlignment="Center"
                 />
@@ -86,7 +86,7 @@
 
             <FlexLayout JustifyContent="SpaceBetween" Wrap="Wrap" AlignItems="Stretch">
                 <Entry x:Name="address" 
-                       Placeholder="IP Address" 
+                       Placeholder="Hostname" 
                        HorizontalTextAlignment="Center" 
                        FlexLayout.Grow="1.0"
                 />
@@ -110,10 +110,9 @@
                 />
             </FlexLayout>
 
-
             <Button
                 x:Name="StartStreamBtn"
-                Text="Start stream" 
+                Text="Start stream"
                 SemanticProperties.Hint="Counts the number of times you click"
                 Clicked="OnCounterClicked"
                 HorizontalOptions="Fill"
