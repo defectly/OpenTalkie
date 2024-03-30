@@ -31,6 +31,18 @@ internal class StreamManager
         WaveAudioRecord = waveAudioRecord;
     }
 
+    public void DenoiseOn()
+    {
+        StopStream();
+        StartStream(useDenoise: true);
+    }
+
+    public void DenoiseOff()
+    {
+        StopStream();
+        StartStream();
+    }
+
     public void StopStream()
     {
         if (!IsStreaming)

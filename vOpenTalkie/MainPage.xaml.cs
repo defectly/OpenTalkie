@@ -26,7 +26,7 @@ public partial class MainPage : ContentPage
         CreateSampleRateList();
         CreateChannelTypeList();
         CreateMicInputsList();
-        
+
         LoadData();
         RegisterUserInputEvents();
 
@@ -38,19 +38,13 @@ public partial class MainPage : ContentPage
 
     private void OnDenoiseToggle(object? sender, ToggledEventArgs e)
     {
-        if (streamManager == null)
+        if (streamManager == null || !streamManager.IsStreaming)
             return;
 
         if (e.Value)
-        {
-            StartStreamButtonClicked();
-            StartStreamButtonClicked();
-        }
+            streamManager.DenoiseOn();
         else
-        {
-            StartStreamButtonClicked();
-            StartStreamButtonClicked();
-        }
+            streamManager.DenoiseOff();
 
     }
 
