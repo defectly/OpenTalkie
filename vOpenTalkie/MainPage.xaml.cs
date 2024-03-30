@@ -33,18 +33,25 @@ public partial class MainPage : ContentPage
         GetAndroidIPAddress();
         Connectivity.Current.ConnectivityChanged += GetAndroidIPAddress;
 
-        rnNoise.Toggled += RnNoise_Toggled;
+        denoise.Toggled += OnDenoiseToggle;
     }
 
-    private void RnNoise_Toggled(object? sender, ToggledEventArgs e)
+    private void OnDenoiseToggle(object? sender, ToggledEventArgs e)
     {
         if (streamManager == null)
             return;
 
-        if(e.Value)
-            streamManager.EnableRNNoise();
+        if (e.Value)
+        {
+            StartStreamButtonClicked();
+            StartStreamButtonClicked();
+        }
         else
-            streamManager.DisableRNNoise();
+        {
+            StartStreamButtonClicked();
+            StartStreamButtonClicked();
+        }
+
     }
 
     private void RegisterUserInputEvents()
@@ -145,7 +152,10 @@ public partial class MainPage : ContentPage
         microphone.SelectedItem = microphone.Items.FirstOrDefault(item => item == "Default");
     }
 
-    private void OnCounterClicked(object sender, EventArgs e)
+    private void OnCounterClicked(object sender, EventArgs e) =>
+        StartStreamButtonClicked();
+
+    private void StartStreamButtonClicked()
     {
         if (streamManager == null)
         {
@@ -176,7 +186,7 @@ public partial class MainPage : ContentPage
                 dataChanged = false;
             }
 
-            TryStartStream();
+            TryStartStream(denoise.IsToggled);
 
             batteryService.Start();
 
@@ -197,8 +207,8 @@ public partial class MainPage : ContentPage
             return;
         }
 
-        WaveFormat waveFormat = new(audioRecord.SampleRate, 16, audioRecord.ChannelCount);
-        WaveAudioRecord waveAudioRecord = new(waveFormat, audioRecord, rnNoise.IsToggled);
+        WaveAudioRecord waveAudioRecord = new(audioRecord);
+
         streamManager = new StreamManager(waveAudioRecord, address.Text, int.Parse(port.Text), streamName.Text);
     }
 
@@ -210,11 +220,11 @@ public partial class MainPage : ContentPage
         Encoding.Pcm16bit, int.Parse(bufferSize.Text));
     }
 
-    private void TryStartStream()
+    private void TryStartStream(bool useDenoise)
     {
         try
         {
-            streamManager.StartStream();
+            streamManager.StartStream(useDenoise);
         }
         catch (Exception exception)
         when (exception is Java.Lang.IllegalArgumentException ||

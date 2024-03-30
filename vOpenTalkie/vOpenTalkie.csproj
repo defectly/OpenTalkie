@@ -64,11 +64,13 @@
 
 	<ItemGroup>
 	  <None Remove="Platforms\Android\lib\arm64-v8a\librnnoise.so" />
+	  <None Remove="Platforms\Android\lib\arm64-v8a\librnnoise_default.so" />
 	  <None Remove="Platforms\Android\Resources\killmonday.mp3" />
 	</ItemGroup>
 
 	<ItemGroup>
 	  <AndroidNativeLibrary Include="Platforms\Android\lib\arm64-v8a\librnnoise.so" />
+	  <AndroidNativeLibrary Include="Platforms\Android\lib\arm64-v8a\librnnoise_default.so" />
 	</ItemGroup>
 
 	<ItemGroup>

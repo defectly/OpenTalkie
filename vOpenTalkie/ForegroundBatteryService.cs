@@ -1,4 +1,5 @@
-﻿using Intent = Android.Content.Intent;
+﻿#if ANDROID
+using Intent = Android.Content.Intent;
 
 namespace vOpenTalkie;
 
@@ -12,3 +13,4 @@ internal partial class ForegroundBatteryService
     public void Stop() =>
         Android.App.Application.Context.StopService(_intent);
 }
+#endif

@@ -106,7 +106,7 @@
                 />
 
                 <Switch
-                    x:Name="rnNoise"
+                    x:Name="denoise"
                 />
             </FlexLayout>
 

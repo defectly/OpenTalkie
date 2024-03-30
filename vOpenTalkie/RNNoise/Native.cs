@@ -5,7 +5,7 @@ namespace vOpenTalkie;
 
 public static class Native
 {
-    public const string LIBRARY_NAME = "librnnoise.so";
+    public const string LIBRARY_NAME = "librnnoise_default.so";
     public const int FRAME_SIZE = 480;
 
     public const float SIGNAL_SCALE = short.MaxValue;

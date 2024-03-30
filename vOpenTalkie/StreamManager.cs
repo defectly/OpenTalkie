@@ -1,4 +1,5 @@
-﻿using Android.Media;
+﻿#if ANDROID
+using Android.Media;
 using NAudio.Wave;
 
 namespace vOpenTalkie;
@@ -11,6 +12,7 @@ internal class StreamManager
     CancellationTokenSource _cancelTokenSource;
 
     public WaveAudioRecord WaveAudioRecord;
+    public ISampleProvider SampleAudioRecord => WaveAudioRecord.ToSampleProvider();
 
     int BufferSize => WaveAudioRecord.BufferSize;
 
@@ -29,11 +31,11 @@ internal class StreamManager
         WaveAudioRecord = waveAudioRecord;
     }
 
-    public void EnableRNNoise() => WaveAudioRecord.RNNoise = true;
-    public void DisableRNNoise() => WaveAudioRecord.RNNoise = false;
-
     public void StopStream()
     {
+        if (!IsStreaming)
+            return;
+
         WaveAudioRecord.Stop();
 
         _cancelTokenSource.Cancel();
@@ -42,26 +44,37 @@ internal class StreamManager
         IsStreaming = false;
         OnStreamToggle?.Invoke();
     }
-    public void StartStream()
+
+    public void StartStream(bool useDenoise = false)
     {
+        if (IsStreaming)
+            return;
+
         WaveAudioRecord.Start();
 
-        Task.Run(() => Stream());
+        Task.Run(() => Stream(useDenoise));
 
         IsStreaming = true;
         OnStreamToggle?.Invoke();
     }
 
-    private void Stream()
+    private void Stream(bool useDenoise)
     {
-        using var vbanSender = new VBANSender(WaveAudioRecord.ToSampleProvider(), Hostname, Port, StreamName);
+        ISampleProvider sampleProvider;
 
-        StreamMic(vbanSender, (_cancelTokenSource = new CancellationTokenSource()).Token);
+        if (useDenoise)
+            sampleProvider = new DenoisedSampleProvider(SampleAudioRecord);
+        else
+            sampleProvider = SampleAudioRecord;
+
+        using var vbanSender = new VBANSender(sampleProvider, Hostname, Port, StreamName);
+
+        Send(vbanSender, (_cancelTokenSource = new CancellationTokenSource()).Token);
     }
 
-    private void StreamMic(VBANSender vbanSender, CancellationToken token)
+    private void Send(VBANSender vbanSender, CancellationToken token)
     {
-        float[] vbanBuffer = new float[BufferSize / 4];
+        float[] vbanBuffer = new float[BufferSize / 2];
 
         while (true)
         {
@@ -72,3 +85,4 @@ internal class StreamManager
         }
     }
 }
+#endif
