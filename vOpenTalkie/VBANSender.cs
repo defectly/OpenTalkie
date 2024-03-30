@@ -105,7 +105,7 @@ public class VBANSender : IDisposable, ISampleProvider
         {
             _udpClient.Send(sendBytes.ToArray(), sendBytes.Count);
         }
-        catch (SocketException)
+        catch (SocketException exception)
         //when (exception.Message == "Connection refused")
         {
 

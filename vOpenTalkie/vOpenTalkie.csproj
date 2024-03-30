@@ -31,7 +31,7 @@
 
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">11.0</SupportedOSPlatformVersion>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">13.1</SupportedOSPlatformVersion>
-		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">29.0</SupportedOSPlatformVersion>
+		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">21.0</SupportedOSPlatformVersion>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
 		<TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'tizen'">6.5</SupportedOSPlatformVersion>
@@ -49,7 +49,7 @@
 		<MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#512BD4" />
 
 		<!-- Splash Screen -->
-		<MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#2C3D4D" BaseSize="128, 128" />
+		<MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#512BD4" BaseSize="128,128" />
 
 		<!-- Images -->
 		<MauiImage Include="Resources\Images\*" />
@@ -64,13 +64,13 @@
 
 	<ItemGroup>
 	  <None Remove="Platforms\Android\lib\arm64-v8a\librnnoise.so" />
-	  <None Remove="Platforms\Android\lib\armeabi-v7a\librnnoise.so" />
+	  <None Remove="Platforms\Android\lib\arm64-v8a\librnnoise_default.so" />
 	  <None Remove="Platforms\Android\Resources\killmonday.mp3" />
 	</ItemGroup>
 
 	<ItemGroup>
 	  <AndroidNativeLibrary Include="Platforms\Android\lib\arm64-v8a\librnnoise.so" />
-	  <AndroidNativeLibrary Include="Platforms\Android\lib\armeabi-v7a\librnnoise.so" />
+	  <AndroidNativeLibrary Include="Platforms\Android\lib\arm64-v8a\librnnoise_default.so" />
 	</ItemGroup>
 
 	<ItemGroup>

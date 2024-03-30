@@ -26,7 +26,7 @@ public partial class MainPage : ContentPage
         CreateSampleRateList();
         CreateChannelTypeList();
         CreateMicInputsList();
-        
+
         LoadData();
         RegisterUserInputEvents();
 

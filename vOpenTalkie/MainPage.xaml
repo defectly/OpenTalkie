@@ -1,20 +1,20 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="vOpenTalkie.MainPage" Title="">
+             x:Class="vOpenTalkie.MainPage">
 
-    <ScrollView VerticalOptions="Center">
+    <ScrollView>
         <VerticalStackLayout
             Padding="30,0"
             Spacing="25">
-            <!--<Image
+            <Image
                 Source="dotnet_bot.png"
                 HeightRequest="185"
                 Aspect="AspectFit"
-                SemanticProperties.Description="dot net bot in a race car number eight" />-->
+                SemanticProperties.Description="dot net bot in a race car number eight" />
 
             <Label
-                Text="OPEN TALKIE"
+                Text="vOpenTalkie"
                 Style="{StaticResource Headline}"
                 SemanticProperties.HeadingLevel="Level1" />
             
