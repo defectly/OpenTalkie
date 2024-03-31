@@ -7,17 +7,14 @@ namespace vOpenTalkie;
 internal class StreamManager
 {
     public bool IsStreaming = false;
-    public Action OnStreamToggle;
-
-    CancellationTokenSource _cancelTokenSource;
-
     public WaveAudioRecord WaveAudioRecord;
     public ISampleProvider SampleAudioRecord => WaveAudioRecord.ToSampleProvider();
+    public EventHandler<ToggledEventArgs> StreamToggled;
 
+    CancellationTokenSource _cancelTokenSource;
     int BufferSize => WaveAudioRecord.BufferSize;
-
     string Hostname;
-
+    Task currentStream;
     int Port;
 
     string StreamName;
@@ -31,21 +28,12 @@ internal class StreamManager
         WaveAudioRecord = waveAudioRecord;
     }
 
-    public void DenoiseOn()
-    {
-        StopStream();
-        StartStream(useDenoise: true);
-    }
-
-    public void DenoiseOff()
-    {
-        StopStream();
-        StartStream();
-    }
-
     public void StopStream()
     {
         if (!IsStreaming)
+            return;
+
+        if (currentStream != null && currentStream.Status == TaskStatus.RanToCompletion)
             return;
 
         WaveAudioRecord.Stop();
@@ -54,7 +42,7 @@ internal class StreamManager
         _cancelTokenSource.Dispose();
 
         IsStreaming = false;
-        OnStreamToggle?.Invoke();
+        StreamToggled?.Invoke(this, new ToggledEventArgs(false));
     }
 
     public void StartStream(bool useDenoise = false)
@@ -62,12 +50,15 @@ internal class StreamManager
         if (IsStreaming)
             return;
 
+        if (currentStream != null && currentStream.Status == TaskStatus.Running)
+            return;
+
         WaveAudioRecord.Start();
 
-        Task.Run(() => Stream(useDenoise));
-
+        currentStream = Task.Run(() => Stream(useDenoise));
+        //Stream(useDenoise);
         IsStreaming = true;
-        OnStreamToggle?.Invoke();
+        StreamToggled?.Invoke(this, new ToggledEventArgs(true));
     }
 
     private void Stream(bool useDenoise)
@@ -78,6 +69,9 @@ internal class StreamManager
             sampleProvider = new DenoisedSampleProvider(SampleAudioRecord);
         else
             sampleProvider = SampleAudioRecord;
+
+        if(WaveAudioRecord.WaveFormat.Channels < 2)
+            sampleProvider = sampleProvider.ToStereo();
 
         using var vbanSender = new VBANSender(sampleProvider, Hostname, Port, StreamName);
 

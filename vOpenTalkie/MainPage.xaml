@@ -114,7 +114,7 @@
                 x:Name="StartStreamBtn"
                 Text="Start stream"
                 SemanticProperties.Hint="Counts the number of times you click"
-                Clicked="OnCounterClicked"
+                Clicked="OnStartStreamBtnClick"
                 HorizontalOptions="Fill"
             />
         </VerticalStackLayout>

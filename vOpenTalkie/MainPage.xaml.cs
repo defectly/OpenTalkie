@@ -1,7 +1,5 @@
 ﻿#if ANDROID
 using Android.Media;
-using Microsoft.Maui.Controls.PlatformConfiguration;
-using NAudio.Wave;
 using System.Net;
 using System.Net.Sockets;
 
@@ -16,8 +14,6 @@ public partial class MainPage : ContentPage
     ForegroundBatteryService batteryService = new();
 
     bool dataChanged = false;
-
-    public string isStreaming = "Start stream";
 
     public MainPage()
     {
@@ -36,15 +32,25 @@ public partial class MainPage : ContentPage
         denoise.Toggled += OnDenoiseToggle;
     }
 
+    private void OnStreamToggle(object? sender, ToggledEventArgs e) =>
+        StartStreamBtn.Text = e.Value == true ? "Stop stream" : "Start stream";
+
     private void OnDenoiseToggle(object? sender, ToggledEventArgs e)
     {
         if (streamManager == null || !streamManager.IsStreaming)
             return;
 
         if (e.Value)
-            streamManager.DenoiseOn();
+        {
+            streamManager.StopStream();
+            streamManager.StartStream(useDenoise: true);
+        }
         else
-            streamManager.DenoiseOff();
+        {
+            streamManager.StopStream();
+            streamManager.StartStream();
+        }
+
 
     }
 
@@ -146,10 +152,10 @@ public partial class MainPage : ContentPage
         microphone.SelectedItem = microphone.Items.FirstOrDefault(item => item == "Default");
     }
 
-    private void OnCounterClicked(object sender, EventArgs e) =>
-        StartStreamButtonClicked();
+    private void OnStartStreamBtnClick(object sender, EventArgs e) =>
+        OnStartStreamButtonClick();
 
-    private void StartStreamButtonClicked()
+    private void OnStartStreamButtonClick()
     {
         if (streamManager == null)
         {
@@ -166,8 +172,6 @@ public partial class MainPage : ContentPage
         {
             streamManager.StopStream();
             batteryService.Stop();
-
-            StartStreamBtn.Text = "Start stream";
         }
         else
         {
@@ -183,8 +187,6 @@ public partial class MainPage : ContentPage
             TryStartStream(denoise.IsToggled);
 
             batteryService.Start();
-
-            StartStreamBtn.Text = "Stop stream";
         }
     }
 
@@ -204,6 +206,7 @@ public partial class MainPage : ContentPage
         WaveAudioRecord waveAudioRecord = new(audioRecord);
 
         streamManager = new StreamManager(waveAudioRecord, address.Text, int.Parse(port.Text), streamName.Text);
+        streamManager.StreamToggled += OnStreamToggle;
     }
 
     private void CreateAudioRecord()
