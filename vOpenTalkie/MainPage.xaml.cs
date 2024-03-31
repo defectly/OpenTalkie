@@ -50,8 +50,6 @@ public partial class MainPage : ContentPage
             streamManager.StopStream();
             streamManager.StartStream();
         }
-
-
     }
 
     private void RegisterUserInputEvents()
@@ -110,27 +108,8 @@ public partial class MainPage : ContentPage
 
     private void CreateSampleRateList()
     {
-        SampleRate.Items.Add("6000");
-        SampleRate.Items.Add("8000");
-        SampleRate.Items.Add("11025");
-        SampleRate.Items.Add("12000");
-        SampleRate.Items.Add("16000");
-        SampleRate.Items.Add("22050");
-        SampleRate.Items.Add("24000");
-        SampleRate.Items.Add("32000");
-        SampleRate.Items.Add("44100");
-        SampleRate.Items.Add("48000");
-        SampleRate.Items.Add("64000");
-        SampleRate.Items.Add("88200");
-        SampleRate.Items.Add("96000");
-        SampleRate.Items.Add("128000");
-        SampleRate.Items.Add("176400");
-        SampleRate.Items.Add("192000");
-        SampleRate.Items.Add("256000");
-        SampleRate.Items.Add("352800");
-        SampleRate.Items.Add("384000");
-        SampleRate.Items.Add("512000");
-        SampleRate.Items.Add("705600");
+        foreach (var item in VBANConsts.VBAN_SRList.Order())
+            SampleRate.Items.Add(item.ToString());
 
         SampleRate.SelectedItem = SampleRate.Items.FirstOrDefault(item => item == "48000");
     }
@@ -203,7 +182,7 @@ public partial class MainPage : ContentPage
             return;
         }
 
-        WaveAudioRecord waveAudioRecord = new(audioRecord);
+        WaveAudioRecord waveAudioRecord = new(audioRecord, int.Parse(bufferSize.Text));
 
         streamManager = new StreamManager(waveAudioRecord, address.Text, int.Parse(port.Text), streamName.Text);
         streamManager.StreamToggled += OnStreamToggle;

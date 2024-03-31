@@ -7,12 +7,14 @@ namespace vOpenTalkie;
 public class WaveAudioRecord : IWaveProvider
 {
     public WaveFormat WaveFormat => _waveFormat;
-    public int BufferSize => _audioRecord.BufferSizeInFrames;
+    public int BufferSize;
     private WaveFormat _waveFormat;
     private AudioRecord _audioRecord;
 
-    public WaveAudioRecord(AudioRecord audioRecord)
+    public WaveAudioRecord(AudioRecord audioRecord, int bufferSize)
     {
+        BufferSize = bufferSize;
+
         _audioRecord = audioRecord;
         _waveFormat = new WaveFormat(_audioRecord.SampleRate, 16, audioRecord.ChannelCount);
     }

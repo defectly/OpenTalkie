@@ -1,5 +1,6 @@
 ﻿using NAudio.Wave;
 using System.Net.Sockets;
+using System.Text;
 
 namespace vOpenTalkie;
 
@@ -17,14 +18,11 @@ public class VBANSender : IDisposable, ISampleProvider
     {
         DestHost = destHost;
         _source = source;
-        _streamName = streamName;
+        _streamName = streamName.Length > 16 ? streamName.Substring(0, 16) : streamName;
         _udpClient = new UdpClient(DestHost, destPort);
     }
 
-    public void Dispose()
-    {
-        _udpClient.Close();
-    }
+    public void Dispose() => _udpClient.Close();
 
     public int Read(float[] buffer, int offset, int count)
     {
@@ -32,6 +30,7 @@ public class VBANSender : IDisposable, ISampleProvider
 
         if (readed > 0)
             Sent(buffer, offset, readed);
+
         return readed;
     }
 
@@ -48,42 +47,28 @@ public class VBANSender : IDisposable, ISampleProvider
 
     private void SentUdp(IReadOnlyCollection<float> samples)
     {
-        IList<byte> sendBytes =
-        [
+        var sendBytes = new List<byte>(28)
+        {
             (byte)'V',//F
-                (byte)'B',//O
-                (byte)'A',//U
-                (byte)'N',//R
-                (byte)((int)VBanProtocol.VBAN_PROTOCOL_AUDIO << 5 | Array.IndexOf(VBANConsts.VBAN_SRList, WaveFormat.SampleRate)),//SR+Protocol
-                (byte)(samples.Count / WaveFormat.Channels - 1),//Number of samples 
-                (byte)(WaveFormat.Channels - 1),//Number of channels
-                (int)VBanCodec.VBAN_CODEC_PCM << 5 | 0 << 4 | (byte)VBanBitResolution.VBAN_BITFMT_16_INT,//DataFormat+1bit pad+CODEC
-            ];
+            (byte)'B',//O
+            (byte)'A',//U
+            (byte)'N',//R
+            (byte)((int)VBanProtocol.VBAN_PROTOCOL_AUDIO << 5 | Array.IndexOf(VBANConsts.VBAN_SRList, WaveFormat.SampleRate)),//SR+Protocol
+            (byte)(samples.Count / WaveFormat.Channels - 1),//Number of samples 
+            (byte)(WaveFormat.Channels - 1),//Number of channels
+            (int)VBanCodec.VBAN_CODEC_PCM << 5 | 0 << 4 | (byte)VBanBitResolution.VBAN_BITFMT_16_INT//DataFormat+1bit pad+CODEC
+        };
 
-        for (var i = 0; i < 16; i++)//StreamName char x 16
-        {
-            if (_streamName.ToCharArray().Length > i)
-            {
-                sendBytes.Add((byte)_streamName.ToCharArray()[i]);
-            }
-            else
-            {
-                sendBytes.Add((byte)0);//Number of samples 
-            }
-        }
-        var fc = BitConverter.GetBytes(_framecount);
-        for (var i = 0; i < 4; i++)//FrameCounter 32bits
-        {
-            sendBytes.Add(fc[i]);//temp padding
-        }
+        sendBytes.AddRange(Encoding.ASCII.GetBytes(_streamName));
+        sendBytes.AddRange(new byte[16 - _streamName.Length]);
+
+        sendBytes.AddRange(BitConverter.GetBytes(_framecount++));
 
         /* // for 32bit float out
         var byteArray = new byte[samples.Length * 4];
         Buffer.BlockCopy(samples, 0, byteArray, 0, byteArray.Length);
         foreach (var b in byteArray)
-        {
             sendBytes.Add(b);
-        }
         */
 
         foreach (var s in samples)// 16bit int out
@@ -95,10 +80,7 @@ public class VBANSender : IDisposable, ISampleProvider
             var i = (short)f;
 
             var bita = BitConverter.GetBytes(i);
-            foreach (var b in Reverse(bita, Endian.Little))
-            {
-                sendBytes.Add(b);
-            }
+            sendBytes.AddRange(Reverse(bita, Endian.Little));
         }
 
         try
@@ -110,8 +92,6 @@ public class VBANSender : IDisposable, ISampleProvider
         {
 
         }
-
-        _framecount++;
     }
 
     private static IEnumerable<byte> Reverse(IEnumerable<byte> bytes, Endian endian)
@@ -129,7 +109,15 @@ internal enum Endian
 }
 public static class VBANConsts
 {
-    public static readonly int[] VBAN_SRList = { 6000, 12000, 24000, 48000, 96000, 192000, 384000, 8000, 16000, 32000, 64000, 128000, 256000, 512000, 11025, 22050, 44100, 88200, 176400, 352800, 705600 };
+    public static readonly int[] VBAN_SRList = 
+        { 
+            6000, 12000, 24000, 48000, 
+            96000, 192000, 384000, 8000, 
+            16000, 32000, 64000, 128000, 
+            256000, 512000, 11025, 22050, 
+            44100, 88200, 176400, 352800, 
+            705600 
+        };
 
 }
 
