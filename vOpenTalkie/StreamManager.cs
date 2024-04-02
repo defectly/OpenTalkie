@@ -1,5 +1,4 @@
 ﻿#if ANDROID
-using Android.Media;
 using NAudio.Wave;
 
 namespace vOpenTalkie;
@@ -38,8 +37,8 @@ internal class StreamManager
 
         WaveAudioRecord.Stop();
 
-        _cancelTokenSource.Cancel();
-        _cancelTokenSource.Dispose();
+        _cancelTokenSource?.Cancel();
+        _cancelTokenSource?.Dispose();
 
         IsStreaming = false;
         StreamToggled?.Invoke(this, new ToggledEventArgs(false));
@@ -70,8 +69,9 @@ internal class StreamManager
         else
             sampleProvider = SampleAudioRecord;
 
-        if(WaveAudioRecord.WaveFormat.Channels < 2)
+        if (WaveAudioRecord.WaveFormat.Channels < 2)
             sampleProvider = sampleProvider.ToStereo();
+
 
         using var vbanSender = new VBANSender(sampleProvider, Hostname, Port, StreamName);
 
