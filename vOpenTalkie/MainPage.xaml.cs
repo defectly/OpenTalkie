@@ -134,28 +134,30 @@ public partial class MainPage : ContentPage
     private void OnStartStreamBtnClick(object sender, EventArgs e) =>
         OnStartStreamButtonClick();
 
-    private void OnStartStreamButtonClick()
+    private bool OnStartStreamButtonClick()
     {
         if (streamManager == null)
         {
             if (!CheckMicrophonePermission().Result)
-                return;
+                return false;
 
             CreateStreamManager();
 
             if (streamManager == null)
-                return;
+                return false;
         }
 
         if (streamManager.IsStreaming)
         {
             streamManager.StopStream();
             batteryService.Stop();
+
+            return false;
         }
         else
         {
             if (!CheckMicrophonePermission().Result)
-                return;
+                return false;
 
             if (dataChanged)
             {
@@ -166,6 +168,8 @@ public partial class MainPage : ContentPage
             TryStartStream(denoise.IsToggled);
 
             batteryService.Start();
+
+            return true;
         }
     }
 
@@ -223,6 +227,46 @@ public partial class MainPage : ContentPage
         }
 
         return true;
+    }
+
+    private void StreamButton_Clicked(object sender, EventArgs e)
+    {
+        StreamButton_Pressed(sender, e);
+        StreamButton_Released(sender, e);
+    }
+    private async void StreamButton_Pressed(object sender, EventArgs e)
+    {
+        Button button = (Button)sender;
+
+        if (button.StyleId == "StreamButtonDisabled")
+            await StreamGridDisabled.TranslateTo(0, 5, 50);
+        else
+            await StreamGridEnabled.TranslateTo(0, 5, 50);
+
+
+    }
+    private async void StreamButton_Released(object sender, EventArgs e)
+    {
+        if (((Button)sender).StyleId == "StreamButtonDisabled")
+        {
+            await StreamGridDisabled.TranslateTo(0, 0, 50);
+
+            if (OnStartStreamButtonClick())
+            {
+                StreamGridDisabled.IsVisible = false;
+                StreamGridEnabled.IsVisible = true;
+            }
+        }
+        else
+        {
+            await StreamGridEnabled.TranslateTo(0, 0, 50);
+
+            if(!OnStartStreamButtonClick())
+            {
+                StreamGridEnabled.IsVisible = false;
+                StreamGridDisabled.IsVisible = true;
+            }
+        }
     }
 }
 #endif

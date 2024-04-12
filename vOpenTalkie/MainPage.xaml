@@ -2,6 +2,30 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="vOpenTalkie.MainPage" Title="">
+    <ContentPage.Resources>
+        <Style x:Key="StreamButton" TargetType="Button">
+            <Setter Property="HorizontalOptions" Value="Center" />
+            <Setter Property="VerticalOptions" Value="Center" />
+            <Setter Property="FontSize" Value="40" />
+            <Setter Property="FontFamily" Value="JetBrainsMono"/>
+            <Setter Property="TextColor" Value="#FFF"/>
+            <Setter Property="FontAttributes" Value="Bold"/>
+            <Setter Property="CornerRadius" Value="30"/>
+            <Setter Property="BackgroundColor" Value="#2C3D4D"/>
+            <!--<Setter Property="BorderWidth" Value="10"/>
+            <Setter Property="BorderColor" Value="#68E6FA"/>-->
+        </Style>
+        <!--<Style x:Key="streamButtonGrid" TargetType="Grid">
+            <Style.Triggers>
+                <Trigger Property="IsFocused" Value="True">
+                    <Trigger.EnterActions>
+                    </Trigger.EnterActions>
+                    <Trigger.EnterActions>
+                    </Trigger.EnterActions>
+                </Trigger>
+            </Style.Triggers>
+        </Style>-->
+    </ContentPage.Resources>
 
     <ScrollView VerticalOptions="Center">
         <VerticalStackLayout
@@ -13,7 +37,9 @@
                 Aspect="AspectFit"
                 SemanticProperties.Description="dot net bot in a race car number eight" />-->
 
-            <Label
+            
+
+            <Label  
                 Text="OPEN TALKIE"
                 Style="{StaticResource Headline}"
                 SemanticProperties.HeadingLevel="Level1" />
@@ -117,6 +143,21 @@
                 Clicked="OnStartStreamBtnClick"
                 HorizontalOptions="Fill"
             />
+
+            <Grid x:Name="StreamGridDisabled" VerticalOptions="Center" HorizontalOptions="Center">
+                <Border Opacity="0.2" StrokeShape="RoundRectangle 30" HorizontalOptions="FillAndExpand" VerticalOptions="FillAndExpand" Stroke="Transparent" BackgroundColor="#000"/>
+                <Border Margin="10" HorizontalOptions="Center" StrokeThickness="3" VerticalOptions="Center" Stroke="Transparent" BackgroundColor="#68E6FA" Padding="0,0,0,10" StrokeShape="RoundRectangle 30">
+                    <Button Padding="75,10,75,10" Released="StreamButton_Released" Pressed="StreamButton_Pressed" Clicked="StreamButton_Clicked" x:Name="StreamButtonDisabled" Style="{StaticResource StreamButton}" Text="stream"/>
+                </Border>
+            </Grid>
+
+            <Grid x:Name="StreamGridEnabled" VerticalOptions="Center" HorizontalOptions="Center">
+                <Border Opacity="0.2" StrokeShape="RoundRectangle 30" HorizontalOptions="FillAndExpand" VerticalOptions="FillAndExpand" Stroke="Transparent" BackgroundColor="#000"/>
+                <Border Margin="10" HorizontalOptions="Center" StrokeThickness="3" VerticalOptions="Center" Stroke="Transparent" BackgroundColor="#2C3D4D" Padding="0,0,0,10" StrokeShape="RoundRectangle 30">
+                    <Button BackgroundColor="#68E6FA" Released="StreamButton_Released" Pressed="StreamButton_Pressed" Clicked="StreamButton_Clicked" x:Name="StreamButtonEnabled" Style="{StaticResource StreamButton}" Text="stop stream"/>
+                </Border>
+            </Grid>
+            
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>

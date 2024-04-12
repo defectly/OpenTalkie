@@ -66,6 +66,7 @@
 	  <None Remove="Platforms\Android\lib\arm64-v8a\librnnoise.so" />
 	  <None Remove="Platforms\Android\lib\armeabi-v7a\librnnoise.so" />
 	  <None Remove="Platforms\Android\Resources\killmonday.mp3" />
+	  <None Remove="Resources\Fonts\JetBrainsMono.ttf" />
 	</ItemGroup>
 
 	<ItemGroup>
