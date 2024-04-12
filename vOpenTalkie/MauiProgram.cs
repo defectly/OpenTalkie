@@ -18,6 +18,7 @@ namespace vOpenTalkie
 #if DEBUG
     		builder.Logging.AddDebug();
 #endif
+            builder.Services.AddHybridWebView();
 
             return builder.Build();
         }

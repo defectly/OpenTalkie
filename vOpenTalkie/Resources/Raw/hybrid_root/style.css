@@ -1,0 +1,183 @@
+@font-face {
+    font-family: "JetBrainsMono";
+    src: url("JetBrainsMono.ttf");
+}
+
+* {
+    font-family: "JetBrainsMono";
+    color: white;
+    margin: 0;
+    padding: 0;
+    text-decoration: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    background: url("background__piece.svg");
+    background-size: contain;
+    display: flex;
+    justify-content: center;
+    align-content: center;
+    flex-wrap: wrap;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+input {
+    border-radius: 10px;
+    width: 100%;
+    height: 2rem;
+    font-size: 100%;
+    opacity: 23%;
+    background-color: black;
+    border-width: 0;
+    appearance: textfield;
+    text-align: center;
+    outline: none;
+}
+
+.app__name {
+    display: grid;
+    grid-template-rows: 0;
+    text-align: center;
+}
+
+.app__name__front {
+    font-weight: 700;
+    z-index: 1;
+    text-shadow: 3px 3px #2C3D4D;
+}
+
+.app__name__back {
+    z-index: 0;
+    color: transparent;
+    transform: translate(3px, 6px);
+    text-shadow: 0 0.5px 2px #000;
+    opacity: 50%;
+}
+
+.parameter__name {
+    color: gray;
+    font-weight: bold;
+    text-shadow: 1px 1px #000;
+}
+
+.remote__address,
+.remote__address p {
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: column;
+    align-content: center;
+    gap: 0.5rem;
+}
+
+    .remote__address p {
+        font-size: larger;
+    }
+
+.rnnoise {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    font-size: larger;
+}
+
+.stream__button {
+    display: flex;
+    justify-content: center;
+}
+
+.stream__button_disable {
+    font-size: larger;
+    font-weight: 700;
+    background-color: #2C3D4D;
+    border: 0;
+    border-bottom: 0.4rem solid #68E6FA;
+    border-radius: 1rem;
+    padding: 0.5rem;
+    width: 90%;
+    max-height: 3rem;
+    outline: 0.7rem solid rgba(0,0,0,0.2);
+}
+
+.stream__button button:active {
+    transform: translate(0, 0.25rem);
+}
+
+.stream__button_enable {
+    font-size: larger;
+    font-weight: 700;
+    background-color: #68E6FA;
+    border: 0;
+    border-bottom: 0.4rem solid #2C3D4D;
+    border-radius: 1rem;
+    width: 90%;
+    max-height: 3rem;
+    outline: 0.7rem solid rgba(0,0,0,0.2);
+}
+
+/* The switch - the box around the slider */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 34px;
+    transform: scale(80%);
+}
+
+    /* Hide default HTML checkbox */
+    .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+/* The slider */
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    -webkit-transition: .4s;
+    transition: .4s;
+}
+
+    .slider:before {
+        position: absolute;
+        content: "";
+        height: 26px;
+        width: 26px;
+        left: 4px;
+        bottom: 4px;
+        background-color: #2C3D4D;
+        -webkit-transition: .4s;
+        transition: .4s;
+    }
+
+input:checked + .slider {
+    background-color: #68E6FA;
+}
+
+input:focus + .slider {
+    box-shadow: 0 0 1px #68E6FA;
+}
+
+input:checked + .slider:before {
+    -webkit-transform: translateX(26px);
+    -ms-transform: translateX(26px);
+    transform: translateX(26px);
+}
+
+/* Rounded sliders */
+.slider.round {
+    border-radius: 34px;
+}
+
+    .slider.round:before {
+        border-radius: 50%;
+    }

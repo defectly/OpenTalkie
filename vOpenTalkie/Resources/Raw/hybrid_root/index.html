@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <script src="_hwv/HybridWebView.js"></script>
+    <script src="myapp.js"></script>
+    <title>Document</title>
+</head>
+<body>
+    <div class="app__name">
+        <h1 class="app__name__front">OPEN TALKIE</h1>
+        <h1 class="app__name__back">OPEN TALKIE</h1>
+    </div>
+    <div class="remote__address">
+        <p class="parameter__name">destination</p>
+        <input id="hostname" oninput="HostnameChanged()" type="text">
+
+        <p class="parameter__name">port</p>
+        <input on oninput="PortChanged()" id="port" type="tel" maxlength="5">
+    </div>
+    <div class="rnnoise">
+        <p class="parameter__name">RNNoise</p>
+
+        <label class="switch">
+            <input id="denoise" onclick="ToggleDenoise()" type="checkbox">
+            <span class="slider round"></span>
+        </label>
+    </div>
+
+    <div class="stream__button">
+        <button class="stream__button_disable" onpointerup="ToggleStream()" id="stream_enable">stream</button>
+        <button class="stream__button_enable" onpointerup="ToggleStream()" id="stream_disable">stop stream</button>
+    </div>
+</body>
+</html>

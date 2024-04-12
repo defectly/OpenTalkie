@@ -1,5 +1,7 @@
 ﻿#if ANDROID
 using Android.Media;
+using Microsoft.Maui.Controls.Internals;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 
@@ -19,6 +21,8 @@ public partial class MainPage : ContentPage
     {
         InitializeComponent();
 
+        BindingContext = this;
+
         CreateSampleRateList();
         CreateChannelTypeList();
         CreateMicInputsList();
@@ -30,6 +34,47 @@ public partial class MainPage : ContentPage
         Connectivity.Current.ConnectivityChanged += GetAndroidIPAddress;
 
         denoise.Toggled += OnDenoiseToggle;
+
+        TalkieUI.JSInvokeTarget = new MyJSInvokeTarget(this);
+
+    }
+
+    public string GetPort()
+    {
+        return port.Text;
+    }
+    public bool GetStreamState()
+    {
+        return streamManager.IsStreaming;
+    }
+
+    private async void OnHybridWebViewRawMessageReceived(object sender, HybridWebView.HybridWebViewRawMessageReceivedEventArgs e)
+    {
+        await Dispatcher.DispatchAsync(async () =>
+        {
+            string[] data = e.Message.Split(";");
+
+            switch (data[0])
+            {
+                case "hostname":
+                    address.Text = data[1];
+                    DataChanged();
+                    break;
+                case "port":
+                    port.Text = data[1];
+                    DataChanged();
+                    break;
+                case "denoise":
+                    OnDenoiseToggle(this, new ToggledEventArgs(bool.Parse(data[1])));
+                    denoise.IsToggled = bool.Parse(data[1]);
+                    break;
+                case "stream":
+                    OnStartStreamBtnClick(this, new EventArgs());
+                    break;
+            }
+
+            //await DisplayAlert("JavaScript message", e.Message, "OK");
+        });
     }
 
     private void OnStreamToggle(object? sender, ToggledEventArgs e) =>
@@ -40,16 +85,8 @@ public partial class MainPage : ContentPage
         if (streamManager == null || !streamManager.IsStreaming)
             return;
 
-        if (e.Value)
-        {
-            streamManager.StopStream();
-            streamManager.StartStream(useDenoise: true);
-        }
-        else
-        {
-            streamManager.StopStream();
-            streamManager.StartStream();
-        }
+        streamManager.StopStream();
+        streamManager.StartStream(useDenoise: e.Value);
     }
 
     private void RegisterUserInputEvents()
@@ -134,28 +171,30 @@ public partial class MainPage : ContentPage
     private void OnStartStreamBtnClick(object sender, EventArgs e) =>
         OnStartStreamButtonClick();
 
-    private void OnStartStreamButtonClick()
+    public bool OnStartStreamButtonClick()
     {
         if (streamManager == null)
         {
             if (!CheckMicrophonePermission().Result)
-                return;
+                return false;
 
             CreateStreamManager();
 
             if (streamManager == null)
-                return;
+                return false;
         }
 
         if (streamManager.IsStreaming)
         {
             streamManager.StopStream();
             batteryService.Stop();
+
+            return false;
         }
         else
         {
             if (!CheckMicrophonePermission().Result)
-                return;
+                return false;
 
             if (dataChanged)
             {
@@ -166,6 +205,8 @@ public partial class MainPage : ContentPage
             TryStartStream(denoise.IsToggled);
 
             batteryService.Start();
+
+            return true;
         }
     }
 
@@ -221,8 +262,56 @@ public partial class MainPage : ContentPage
 
             return false;
         }
-
+        
         return true;
+    }
+
+    internal string GetHostname()
+    {
+        return address.Text;
+    }
+
+    internal bool GetDenoiseState()
+    {
+        return denoise.IsToggled;
+    }
+}
+
+class MyJSInvokeTarget
+{
+    private readonly MainPage _mainPage;
+
+    public MyJSInvokeTarget(MainPage mainPage)
+    {
+        _mainPage = mainPage;
+    }
+
+    public string FillAttribute(string attribute)
+    {
+        switch(attribute)
+        {
+            case "hostname":
+                return _mainPage.GetHostname();
+            case "port":
+                return _mainPage.GetPort();
+
+            default:
+                return null;
+        }
+    }
+
+    public bool GetDenoiseState()
+    {
+        return _mainPage.GetDenoiseState();
+    }
+    public bool GetStreamState()
+    {
+        return _mainPage.GetStreamState();
+    }
+
+    public bool ToggleStream()
+    {
+       return _mainPage.OnStartStreamButtonClick();
     }
 }
 #endif

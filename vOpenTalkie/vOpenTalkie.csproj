@@ -63,9 +63,18 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <MauiCss Remove="Resources\raw\hybrid_root\style.css" />
+	</ItemGroup>
+
+	<ItemGroup>
 	  <None Remove="Platforms\Android\lib\arm64-v8a\librnnoise.so" />
 	  <None Remove="Platforms\Android\lib\armeabi-v7a\librnnoise.so" />
 	  <None Remove="Platforms\Android\Resources\killmonday.mp3" />
+	  <None Remove="Resources\raw\hybrid_root\background.svg" />
+	  <None Remove="Resources\raw\hybrid_root\background__piece.svg" />
+	  <None Remove="Resources\raw\hybrid_root\index.html" />
+	  <None Remove="Resources\raw\hybrid_root\JetBrainsMono.ttf" />
+	  <None Remove="resources\raw\hybrid_root\myapp.js" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -74,6 +83,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<PackageReference Include="EJL.MauiHybridWebView" Version="1.0.0-preview6" />
 		<PackageReference Include="Microsoft.Maui.Controls" Version="8.0.14" />
 		<PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="8.0.14" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="8.0.0" />
