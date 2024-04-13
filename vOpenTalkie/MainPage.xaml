@@ -136,25 +136,17 @@
                 />
             </FlexLayout>
 
-            <Button
-                x:Name="StartStreamBtn"
-                Text="Start stream"
-                SemanticProperties.Hint="Counts the number of times you click"
-                Clicked="OnStartStreamBtnClick"
-                HorizontalOptions="Fill"
-            />
-
             <Grid x:Name="StreamGridDisabled" VerticalOptions="Center" HorizontalOptions="Center">
                 <Border Opacity="0.2" StrokeShape="RoundRectangle 30" HorizontalOptions="FillAndExpand" VerticalOptions="FillAndExpand" Stroke="Transparent" BackgroundColor="#000"/>
                 <Border Margin="10" HorizontalOptions="Center" StrokeThickness="3" VerticalOptions="Center" Stroke="Transparent" BackgroundColor="#68E6FA" Padding="0,0,0,10" StrokeShape="RoundRectangle 30">
-                    <Button Padding="75,10,75,10" Released="StreamButton_Released" Pressed="StreamButton_Pressed" Clicked="StreamButton_Clicked" x:Name="StreamButtonDisabled" Style="{StaticResource StreamButton}" Text="stream"/>
+                    <Button Padding="75,10,75,10" Released="StreamButton_Released" Pressed="StreamButton_Pressed" x:Name="StreamButtonDisabled" Style="{StaticResource StreamButton}" Text="stream"/>
                 </Border>
             </Grid>
 
             <Grid x:Name="StreamGridEnabled" VerticalOptions="Center" HorizontalOptions="Center">
                 <Border Opacity="0.2" StrokeShape="RoundRectangle 30" HorizontalOptions="FillAndExpand" VerticalOptions="FillAndExpand" Stroke="Transparent" BackgroundColor="#000"/>
                 <Border Margin="10" HorizontalOptions="Center" StrokeThickness="3" VerticalOptions="Center" Stroke="Transparent" BackgroundColor="#2C3D4D" Padding="0,0,0,10" StrokeShape="RoundRectangle 30">
-                    <Button BackgroundColor="#68E6FA" Released="StreamButton_Released" Pressed="StreamButton_Pressed" Clicked="StreamButton_Clicked" x:Name="StreamButtonEnabled" Style="{StaticResource StreamButton}" Text="stop stream"/>
+                    <Button BackgroundColor="#68E6FA" Released="StreamButton_Released" Pressed="StreamButton_Pressed" x:Name="StreamButtonEnabled" Style="{StaticResource StreamButton}" Text="stop stream"/>
                 </Border>
             </Grid>
             

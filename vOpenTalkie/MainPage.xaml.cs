@@ -32,8 +32,20 @@ public partial class MainPage : ContentPage
         denoise.Toggled += OnDenoiseToggle;
     }
 
-    private void OnStreamToggle(object? sender, ToggledEventArgs e) =>
-        StartStreamBtn.Text = e.Value == true ? "Stop stream" : "Start stream";
+    private void OnStreamToggle(object? sender, ToggledEventArgs e)
+    {
+        if (e.Value)
+        {
+            StreamGridEnabled.IsVisible = true;
+            StreamGridDisabled.IsVisible = false;
+        }
+        else
+        {
+            StreamGridEnabled.IsVisible = false;
+            StreamGridDisabled.IsVisible = true;
+
+        }
+    }
 
     private void OnDenoiseToggle(object? sender, ToggledEventArgs e)
     {
@@ -134,17 +146,17 @@ public partial class MainPage : ContentPage
     private void OnStartStreamBtnClick(object sender, EventArgs e) =>
         OnStartStreamButtonClick();
 
-    private bool OnStartStreamButtonClick()
+    private void OnStartStreamButtonClick()
     {
         if (streamManager == null)
         {
             if (!CheckMicrophonePermission().Result)
-                return false;
+                return;
 
             CreateStreamManager();
 
             if (streamManager == null)
-                return false;
+                return;
         }
 
         if (streamManager.IsStreaming)
@@ -152,12 +164,12 @@ public partial class MainPage : ContentPage
             streamManager.StopStream();
             batteryService.Stop();
 
-            return false;
+            return;
         }
         else
         {
             if (!CheckMicrophonePermission().Result)
-                return false;
+                return;
 
             if (dataChanged)
             {
@@ -169,7 +181,7 @@ public partial class MainPage : ContentPage
 
             batteryService.Start();
 
-            return true;
+            return;
         }
     }
 
@@ -228,45 +240,21 @@ public partial class MainPage : ContentPage
 
         return true;
     }
-
-    private void StreamButton_Clicked(object sender, EventArgs e)
-    {
-        StreamButton_Pressed(sender, e);
-        StreamButton_Released(sender, e);
-    }
     private async void StreamButton_Pressed(object sender, EventArgs e)
     {
-        Button button = (Button)sender;
-
-        if (button.StyleId == "StreamButtonDisabled")
+        if (((Button)sender).StyleId == "StreamButtonDisabled")
             await StreamGridDisabled.TranslateTo(0, 5, 50);
         else
             await StreamGridEnabled.TranslateTo(0, 5, 50);
-
-
     }
     private async void StreamButton_Released(object sender, EventArgs e)
     {
         if (((Button)sender).StyleId == "StreamButtonDisabled")
-        {
             await StreamGridDisabled.TranslateTo(0, 0, 50);
-
-            if (OnStartStreamButtonClick())
-            {
-                StreamGridDisabled.IsVisible = false;
-                StreamGridEnabled.IsVisible = true;
-            }
-        }
         else
-        {
             await StreamGridEnabled.TranslateTo(0, 0, 50);
-
-            if(!OnStartStreamButtonClick())
-            {
-                StreamGridEnabled.IsVisible = false;
-                StreamGridDisabled.IsVisible = true;
-            }
-        }
+        
+        OnStartStreamBtnClick(this, e);
     }
 }
 #endif
