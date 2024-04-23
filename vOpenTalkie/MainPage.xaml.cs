@@ -88,6 +88,7 @@ public partial class MainPage : ContentPage
         microphone.SelectedItem = microphone.Items.FirstOrDefault(item => item == Preferences.Get("MicType", "Default"));
         address.Text = Preferences.Get("IPAddress", "");
         port.Text = Preferences.Get("Port", "6980");
+
     }
 
     private void GetAndroidIPAddress()
@@ -176,7 +177,6 @@ public partial class MainPage : ContentPage
             CreateAudioRecord();
         }
         catch (Exception exception)
-        when (exception is Java.Lang.IllegalArgumentException)
         {
             DisplayAlert("Error", exception.Message, "Ok");
             return;
