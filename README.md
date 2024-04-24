@@ -1,5 +1,5 @@
-vban csharp iplementation used from: https://github.com/fumitti/NAudio.VBAN \
-rnnoise csharp iplementation used from: \
+vban csharp implementation used from: https://github.com/fumitti/NAudio.VBAN \
+rnnoise csharp implementation used from: \
 https://github.com/Yellow-Dog-Man/RNNoise.Net \
 https://github.com/gsgou/RNNoiseSharp \
 (idk which one is original...)
