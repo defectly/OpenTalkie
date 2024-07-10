@@ -1,6 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:local="clr-namespace:vOpenTalkie"
              x:Class="vOpenTalkie.MainPage" Title="">
 
     <ScrollView VerticalOptions="Center">
@@ -109,13 +110,22 @@
                     x:Name="denoise"
                 />
             </FlexLayout>
+            
+            <FlexLayout JustifyContent="Center" Wrap="Wrap" Direction="Column" AlignItems="Stretch">
+                <Label HorizontalTextAlignment="Center"
+                    Text="Output mode"
+                />
+                <Picker
+                x:Name="OutputSource"
+                FlexLayout.Grow="1.0"
+                SelectedItem="Microphone"
+                HorizontalTextAlignment="Center"/>
+            </FlexLayout>
 
-            <Button
-                x:Name="StartStreamBtn"
-                Text="Start stream"
-                SemanticProperties.Hint="Counts the number of times you click"
-                Clicked="OnStartStreamBtnClick"
-                HorizontalOptions="Fill"
+            <local:ToggleButton
+                x:Name="StreamButton"
+                Text="start stream"
+                Clicked="OnStreamButtonClicked"
             />
         </VerticalStackLayout>
     </ScrollView>

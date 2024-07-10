@@ -2,6 +2,10 @@
 using Android.Media;
 using System.Net;
 using System.Net.Sockets;
+using System.Text;
+using System.Threading.Channels;
+using vOpenTalkie.Platforms.Android;
+using Encoding = Android.Media.Encoding;
 
 namespace vOpenTalkie;
 
@@ -12,6 +16,9 @@ public partial class MainPage : ContentPage
     StreamManager streamManager;
 
     ForegroundBatteryService batteryService = new();
+    ForegroundMediaProjectionService mediaProjectionService = new();
+
+    SystemAudioCapture systemAudioCapture = new();
 
     bool dataChanged = false;
 
@@ -29,11 +36,21 @@ public partial class MainPage : ContentPage
         GetAndroidIPAddress();
         Connectivity.Current.ConnectivityChanged += GetAndroidIPAddress;
 
-        denoise.Toggled += OnDenoiseToggle;
+        //denoise.Toggled += OnDenoiseToggle;
+
+        OutputSource.Items.Add("Microphone");
+        OutputSource.Items.Add("System Audio");
+        OutputSource.SelectedIndex = 0;
+
+        systemAudioCapture.SystemAudioCaptureCallback.Running += OnCapturePermissionChanged;
     }
 
-    private void OnStreamToggle(object? sender, ToggledEventArgs e) =>
-        StartStreamBtn.Text = e.Value == true ? "Stop stream" : "Start stream";
+
+    private void OnStreamToggle(object? sender, ToggledEventArgs e)
+    {
+        //StartStreamBtn.Text = e.Value == true ? "Stop stream" : "Start stream";
+        return;
+    }
 
     private void OnDenoiseToggle(object? sender, ToggledEventArgs e)
     {
@@ -152,21 +169,23 @@ public partial class MainPage : ContentPage
         {
             streamManager.StopStream();
             batteryService.Stop();
+            systemAudioCapture.Stop();
+            mediaProjectionService.Stop();
+
         }
         else
         {
             if (!CheckMicrophonePermission().Result)
                 return;
 
+            CreateStreamManager();
+
             if (dataChanged)
             {
-                CreateStreamManager();
                 dataChanged = false;
             }
 
             TryStartStream(denoise.IsToggled);
-
-            batteryService.Start();
         }
     }
 
@@ -190,10 +209,33 @@ public partial class MainPage : ContentPage
 
     private void CreateAudioRecord()
     {
-        audioRecord = new(Enum.Parse<AudioSource>(microphone.SelectedItem.ToString()),
-        int.Parse(SampleRate.SelectedItem.ToString()),
-        Enum.Parse<ChannelIn>(ChannelType.SelectedItem.ToString()),
-        Encoding.Pcm16bit, int.Parse(bufferSize.Text));
+        if (OutputSource.SelectedIndex == 0)
+        {
+            audioRecord = 
+                new(Enum.Parse<AudioSource>(microphone.SelectedItem.ToString()),
+                    int.Parse(SampleRate.SelectedItem.ToString()),
+                    Enum.Parse<ChannelIn>(ChannelType.SelectedItem.ToString()),
+                    Encoding.Pcm16bit,
+                    int.Parse(bufferSize.Text));
+
+        }
+        else
+        {
+            var config = new AudioPlaybackCaptureConfiguration.Builder(SystemAudioCaptureCallback.MediaProjection)
+                .AddMatchingUsage(AudioUsageKind.Media)
+                .Build();
+
+            var audioFormat = new AudioFormat.Builder()
+                .SetEncoding(Encoding.Pcm16bit)
+                .SetSampleRate(int.Parse(SampleRate.SelectedItem.ToString()))
+                .SetChannelMask(ChannelOut.Stereo)
+                .Build();
+
+            audioRecord = new AudioRecord.Builder()
+                .SetAudioPlaybackCaptureConfig(config)
+                .SetAudioFormat(audioFormat)
+                .Build();
+        }
     }
 
     private void TryStartStream(bool useDenoise)
@@ -223,6 +265,73 @@ public partial class MainPage : ContentPage
         }
 
         return true;
+    }
+
+    private void OnStreamButtonClicked(object sender, EventArgs e)
+    {
+        var button = (ToggleButton)sender;
+
+        if (button.IsToggled)
+        {
+            if (!CheckMicrophonePermission().Result)
+            {
+                button.IsToggled = false;
+                return;
+            }
+
+            if (OutputSource.SelectedIndex == 1)
+            {
+                button.IsToggled = false;
+                mediaProjectionService.Start();
+                systemAudioCapture.Start();
+                return;
+            }
+
+            CreateStreamManager();
+
+            if (dataChanged)
+            {
+                dataChanged = false;
+            }
+
+            TryStartStream(denoise.IsToggled);
+
+            button.Text = "stop stream";
+        }
+        else
+        {
+            streamManager.StopStream();
+            batteryService.Stop();
+            systemAudioCapture.Stop();
+            mediaProjectionService.Stop();
+
+            button.Text = "start stream";
+        }
+    }
+
+    private void OnCapturePermissionChanged(bool obj)
+    {
+        if(!obj)
+        {
+            StreamButton.IsToggled = false;
+            DisplayAlert("Mic permission", "Please, give stream permission to let this app work", "Ok");
+            return;
+        }
+
+        mediaProjectionService.Start();
+
+
+        CreateStreamManager();
+
+        if (dataChanged)
+        {
+            dataChanged = false;
+        }
+
+        TryStartStream(denoise.IsToggled);
+
+        StreamButton.Text = "stop stream";
+        StreamButton.IsToggled = true;
     }
 }
 #endif
