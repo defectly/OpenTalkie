@@ -38,6 +38,7 @@
 		<PublishTrimmed>False</PublishTrimmed>
 		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
 		<PublishAot>False</PublishAot>
+		<Version>$(ApplicationDisplayVersion)</Version>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net8.0-android|AnyCPU'">
@@ -45,10 +46,20 @@
 	  <PublishTrimmed>True</PublishTrimmed>
 	  <EnableLLVM>False</EnableLLVM>
 	  <AndroidLinkTool>r8</AndroidLinkTool>
+	  <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net8.0-android|AnyCPU'">
 	  <EnableLLVM>False</EnableLLVM>
+	  <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net8.0-maccatalyst|AnyCPU'">
+	  <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net8.0-maccatalyst|AnyCPU'">
+	  <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
 	</PropertyGroup>
 
 	<ItemGroup>

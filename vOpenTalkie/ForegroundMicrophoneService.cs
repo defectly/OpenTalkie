@@ -3,9 +3,9 @@ using Intent = Android.Content.Intent;
 
 namespace vOpenTalkie;
 
-internal partial class ForegroundBatteryService
+internal partial class ForegroundMicrophoneService
 {
-    private Intent _intent = new Intent(Android.App.Application.Context, typeof(ForegroundBatteryService));
+    private Intent _intent = new Intent(Android.App.Application.Context, typeof(ForegroundMicrophoneService));
 
     public void Start() =>
         Android.App.Application.Context.StartForegroundService(_intent);

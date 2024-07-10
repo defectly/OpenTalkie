@@ -15,7 +15,7 @@ public partial class MainPage : ContentPage
 
     StreamManager streamManager;
 
-    ForegroundBatteryService batteryService = new();
+    ForegroundMicrophoneService microphoneService = new();
     ForegroundMediaProjectionService mediaProjectionService = new();
 
     SystemAudioCapture systemAudioCapture = new();
@@ -168,7 +168,7 @@ public partial class MainPage : ContentPage
         if (streamManager.IsStreaming)
         {
             streamManager.StopStream();
-            batteryService.Stop();
+            microphoneService.Stop();
             systemAudioCapture.Stop();
             mediaProjectionService.Stop();
 
@@ -286,6 +286,10 @@ public partial class MainPage : ContentPage
                 systemAudioCapture.Start();
                 return;
             }
+            else
+            {
+                microphoneService.Start();
+            }
 
             CreateStreamManager();
 
@@ -301,7 +305,7 @@ public partial class MainPage : ContentPage
         else
         {
             streamManager.StopStream();
-            batteryService.Stop();
+            microphoneService.Stop();
             systemAudioCapture.Stop();
             mediaProjectionService.Stop();
 
