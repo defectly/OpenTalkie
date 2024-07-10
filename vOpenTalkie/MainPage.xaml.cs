@@ -313,6 +313,9 @@ public partial class MainPage : ContentPage
     {
         if(!obj)
         {
+            systemAudioCapture.Stop();
+            mediaProjectionService.Stop();
+
             StreamButton.IsToggled = false;
             DisplayAlert("Mic permission", "Please, give stream permission to let this app work", "Ok");
             return;
