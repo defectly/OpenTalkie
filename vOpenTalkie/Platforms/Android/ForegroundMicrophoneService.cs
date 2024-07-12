@@ -10,7 +10,7 @@ internal partial class ForegroundMicrophoneService : Service
 {
     private string NOTIFICATION_CHANNEL_ID = "1000";
     private int NOTIFICATION_ID = 1;
-    private string NOTIFICATION_CHANNEL_NAME = "notification";
+    private string NOTIFICATION_CHANNEL_NAME = "microphone_notification";
 
     private void startForegroundService()
     {
@@ -24,7 +24,7 @@ internal partial class ForegroundMicrophoneService : Service
         notification.SetOngoing(true);
         notification.SetSmallIcon(Resource.Mipmap.appicon);
         notification.SetContentTitle("Open Talkie");
-        notification.SetContentText("Open Talkie Service is running");
+        notification.SetContentText("Microphone capture service is running");
 
         StartForeground(NOTIFICATION_ID, notification.Build(), Android.Content.PM.ForegroundService.TypeMicrophone);
     }

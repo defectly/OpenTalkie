@@ -8,9 +8,9 @@ namespace vOpenTalkie;
 [Service(ForegroundServiceType = Android.Content.PM.ForegroundService.TypeMediaProjection)]
 internal partial class ForegroundMediaProjectionService : Service
 {
-    private string NOTIFICATION_CHANNEL_ID = "1000";
-    private int NOTIFICATION_ID = 1;
-    private string NOTIFICATION_CHANNEL_NAME = "notification";
+    private string NOTIFICATION_CHANNEL_ID = "1001";
+    private int NOTIFICATION_ID = 2;
+    private string NOTIFICATION_CHANNEL_NAME = "system_audio_notification";
 
     private void StartForegroundService()
     {
@@ -24,7 +24,7 @@ internal partial class ForegroundMediaProjectionService : Service
         notification.SetOngoing(true);
         notification.SetSmallIcon(Resource.Mipmap.appicon);
         notification.SetContentTitle("Open Talkie");
-        notification.SetContentText("Open Talkie MediaProjection Service is running");
+        notification.SetContentText("System audio capture service is running");
 
         StartForeground(NOTIFICATION_ID, notification.Build(), Android.Content.PM.ForegroundService.TypeMediaProjection);
     }

@@ -110,22 +110,27 @@
                     x:Name="denoise"
                 />
             </FlexLayout>
-            
-            <FlexLayout JustifyContent="Center" Wrap="Wrap" Direction="Column" AlignItems="Stretch">
-                <Label HorizontalTextAlignment="Center"
-                    Text="Output mode"
-                />
-                <Picker
-                x:Name="OutputSource"
-                FlexLayout.Grow="1.0"
-                SelectedItem="Microphone"
-                HorizontalTextAlignment="Center"/>
-            </FlexLayout>
+
 
             <local:ToggleButton
-                x:Name="StreamButton"
-                Text="start stream"
-                Clicked="OnStreamButtonClicked"
+                x:Name="StreamMicButton"
+                Text="start mic stream"
+                Clicked="OnMicStreamButtonClicked"
+            />
+            
+            <Entry
+                x:Name="SysAudioStreamName"
+                MaxLength="16"
+                Placeholder="system audio stream name"
+                FlexLayout.Grow="1.0"
+                Keyboard="Chat"
+                HorizontalTextAlignment="Center"
+            />
+            
+            <local:ToggleButton
+                x:Name="StreamSysAudioButton"
+                Text="start apps audio stream"
+                Clicked="OnSysAudioStreamButtonClicked"
             />
         </VerticalStackLayout>
     </ScrollView>
