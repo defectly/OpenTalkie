@@ -1,43 +1,45 @@
 ﻿using NAudio.Wave;
 using System.Net.Sockets;
-using System.Reflection.Emit;
-using System.Reflection;
-
-using System.Text;
 
 namespace OpenTalkie;
 
 public class VBANSender : IDisposable, ISampleProvider
 {
-    private string DestHost { get; }
+    private readonly string DestionationHost;
     private readonly ISampleProvider _source;
     private readonly string _streamName;
     private readonly UdpClient _udpClient;
-    private uint _framecount;
+    private readonly AtomicUInt _framecount;
 
     public WaveFormat WaveFormat => _source.WaveFormat;
 
     public VBANSender(ISampleProvider source, string destHost, int destPort, string streamName)
     {
-        DestHost = destHost;
+        DestionationHost = destHost;
         _source = source;
         _streamName = streamName.Length > 16 ? streamName.Substring(0, 16) : streamName;
-        _udpClient = new UdpClient(DestHost, destPort);
+        _udpClient = new UdpClient(DestionationHost, destPort);
+
+        _framecount = new();
     }
 
-    public void Dispose() => _udpClient.Close();
+    public void Dispose()
+    {
+        _udpClient.Close();
+        GC.SuppressFinalize(this);
+    }
 
     public int Read(float[] buffer, int offset, int count)
     {
         var readed = _source.Read(buffer, offset, count);
 
         if (readed > 0)
-            Sent(buffer, offset, readed);
+            SplitAndSend(buffer, offset, readed);
 
         return readed;
     }
 
-    private void Sent(ReadOnlyMemory<float> buffer, int offset, int readed)
+    private void SplitAndSend(ReadOnlyMemory<float> buffer, int offset, int readed)
     {
         var samples = buffer.Slice(offset, readed);
         const int _count = 256;
@@ -46,51 +48,19 @@ public class VBANSender : IDisposable, ISampleProvider
         for (int i = 0; i < totalChunks; i++)
         {
             int chunkSize = Math.Min(_count, samples.Length - i * _count);
-            SentUdp(samples.Slice(i * _count, chunkSize).Span);
+            _ = SendUdpAsync(samples.Slice(i * _count, chunkSize));
         }
     }
 
-    private void SentUdp(ReadOnlySpan<float> samples)
+    private async Task SendUdpAsync(ReadOnlyMemory<float> samples)
     {
-        var sendBytes = new List<byte>(1500)
-        {
-            (byte)'V',//F
-            (byte)'B',//O
-            (byte)'A',//U
-            (byte)'N',//R
-            (byte)((int)VBanProtocol.VBAN_PROTOCOL_AUDIO << 5 | Array.IndexOf(VBANConsts.VBAN_SRList, WaveFormat.SampleRate)),//SR+Protocol
-            (byte)(samples.Length / WaveFormat.Channels - 1),//Number of samples 
-            (byte)(WaveFormat.Channels - 1),//Number of channels
-            (int)VBanCodec.VBAN_CODEC_PCM << 5 | 0 << 4 | (byte)VBanBitResolution.VBAN_BITFMT_16_INT//DataFormat+1bit pad+CODEC
-        };
+        byte[] packet = CreatePacket(samples.Length);
 
-        sendBytes.AddRange(Encoding.ASCII.GetBytes(_streamName));
-        sendBytes.AddRange(new byte[16 - _streamName.Length]);
-
-        sendBytes.AddRange(BitConverter.GetBytes(_framecount++));
-
-        /* // for 32bit float out
-        var byteArray = new byte[samples.Length * 4];
-        Buffer.BlockCopy(samples, 0, byteArray, 0, byteArray.Length);
-        foreach (var b in byteArray)
-            sendBytes.Add(b);
-        */
-
-        for (int j = 0; j < samples.Length; j++)// 16bit int out
-        {
-            var f = samples[j];
-            f = f * 32768;
-            if (f > 32767) f = 32767;
-            if (f < -32768) f = -32768;
-            var i = (short)f;
-
-            var bita = BitConverter.GetBytes(i);
-            sendBytes.AddRange(Reverse(bita, Endian.Little));
-        }
+        AddDataToPacket(samples, packet);
 
         try
         {
-            _udpClient.Send(sendBytes.GetInternalArray(), sendBytes.Count);
+            await _udpClient.SendAsync(packet.AsMemory());
         }
         catch (SocketException)
         //when (exception.Message == "Connection refused")
@@ -99,55 +69,84 @@ public class VBANSender : IDisposable, ISampleProvider
         }
     }
 
-    private static byte[] Reverse(byte[] bytes, Endian endian)
+    private static void AddDataToPacket(ReadOnlyMemory<float> samples, byte[] packet)
     {
-        if (BitConverter.IsLittleEndian ^ endian == Endian.Little)
-            Array.Reverse(bytes);
+        int last = 27;
 
-        return bytes;
-    }
-}
-
-public static class ListExtensions
-{
-    static class ArrayAccessor<T>
-    {
-        public static Func<List<T>, T[]> Getter;
-
-        static ArrayAccessor()
+        for (int j = 0; j < samples.Length; j++) // 16bit int out
         {
-            var dm = new DynamicMethod("get", MethodAttributes.Static | MethodAttributes.Public, CallingConventions.Standard, typeof(T[]), [typeof(List<T>)], typeof(ArrayAccessor<T>), true);
-            var il = dm.GetILGenerator();
-            il.Emit(OpCodes.Ldarg_0); // Load List<T> argument
-            il.Emit(OpCodes.Ldfld, typeof(List<T>).GetField("_items", BindingFlags.NonPublic | BindingFlags.Instance)); // Replace argument by field
-            il.Emit(OpCodes.Ret); // Return field
-            Getter = (Func<List<T>, T[]>)dm.CreateDelegate(typeof(Func<List<T>, T[]>));
+            var f = samples.Span[j];
+            f = f * 32768;
+
+            if (f > 32767)
+                f = 32767;
+            else if (f < -32768)
+                f = -32768;
+
+            var i = (short)f;
+
+            var bita = BitConverter.GetBytes(i);
+            ReverseIfNeeded(bita, Endian.Little);
+
+            last += 1;
+
+            for (int k = 0; k < bita.Length; k++)
+            {
+                last += k;
+                packet[last] = bita[k];
+            }
         }
     }
 
-    public static T[] GetInternalArray<T>(this List<T> list)
+    private byte[] CreatePacket(int samplesLength)
     {
-        return ArrayAccessor<T>.Getter(list);
+        byte[] packet = new byte[540];
+
+        packet[0] = (byte)'V';
+        packet[1] = (byte)'B';
+        packet[2] = (byte)'A';
+        packet[3] = (byte)'N';
+
+        packet[4] = (byte)((int)VBanProtocol.VBAN_PROTOCOL_AUDIO << 5 | Array.IndexOf(VBANConsts.SAMPLERATES, WaveFormat.SampleRate)); // Samplerate + sub protocol
+        packet[5] = (byte)(samplesLength / WaveFormat.Channels - 1); // Number of samples 
+        packet[6] = (byte)(WaveFormat.Channels - 1); // Number of channels
+        packet[7] = (int)VBanCodec.VBAN_CODEC_PCM << 5 | 0 << 4 | (byte)VBanBitResolution.VBAN_BITFMT_16_INT; // DataFormat + 1bit + CODEC
+
+        for (int i = 0; i < _streamName.Length; i++)
+            packet[i + 8] = (byte)_streamName[i];
+
+        _framecount.Increment();
+        var convertedCounter = BitConverter.GetBytes(_framecount.GetValue());
+
+        for (int i = 24; i < 28; i++)
+            packet[i] = convertedCounter[i - 24];
+
+        return packet;
+    }
+
+    private static void ReverseIfNeeded(byte[] bytes, Endian endian)
+    {
+        if (BitConverter.IsLittleEndian ^ endian == Endian.Little)
+            Array.Reverse(bytes);
     }
 }
-
 
 internal enum Endian
 {
     Little, Big
 }
+
 public static class VBANConsts
 {
-    public static readonly int[] VBAN_SRList =
-        {
-            6000, 12000, 24000, 48000,
-            96000, 192000, 384000, 8000,
-            16000, 32000, 64000, 128000,
-            256000, 512000, 11025, 22050,
-            44100, 88200, 176400, 352800,
-            705600
-        };
-
+    public static readonly int[] SAMPLERATES =
+    {
+        6000, 12000, 24000, 48000,
+        96000, 192000, 384000, 8000,
+        16000, 32000, 64000, 128000,
+        256000, 512000, 11025, 22050,
+        44100, 88200, 176400, 352800,
+        705600
+    };
 }
 
 public enum VBanBitResolution

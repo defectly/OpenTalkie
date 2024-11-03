@@ -107,7 +107,7 @@ public partial class MainPage : ContentPage
 
     private void CreateSampleRateList()
     {
-        foreach (var item in VBANConsts.VBAN_SRList.Order())
+        foreach (var item in VBANConsts.SAMPLERATES.Order())
             SampleRate.Items.Add(item.ToString());
 
         SampleRate.SelectedItem = SampleRate.Items.FirstOrDefault(item => item == "48000");

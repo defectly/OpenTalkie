@@ -1,137 +1,137 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:local="clr-namespace:OpenTalkie"
-             x:Class="OpenTalkie.MainPage" Title="">
+<ContentPage
+    x:Class="OpenTalkie.MainPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:local="clr-namespace:OpenTalkie"
+    Title="">
 
     <ScrollView VerticalOptions="Center">
-        <VerticalStackLayout
-            Padding="30,0"
-            Spacing="25">
-            <!--<Image
-                Source="dotnet_bot.png"
-                HeightRequest="185"
-                Aspect="AspectFit"
-                SemanticProperties.Description="dot net bot in a race car number eight" />-->
+        <VerticalStackLayout Padding="30,0" Spacing="25">
 
             <Label
-                Text="OPEN TALKIE"
+                SemanticProperties.HeadingLevel="Level1"
                 Style="{StaticResource Headline}"
-                SemanticProperties.HeadingLevel="Level1" />
-            
-            <FlexLayout JustifyContent="Center" Wrap="Wrap" Direction="Column" AlignItems="Stretch">
-                <Label HorizontalTextAlignment="Center"
-                    Text="Last parsed local ip is"
-                />
-                <Label HorizontalTextAlignment="Center"
-                    x:Name="myIPAddress"
-                />
+                Text="OPEN TALKIE" />
+
+            <FlexLayout
+                AlignItems="Stretch"
+                Direction="Column"
+                JustifyContent="Center"
+                Wrap="Wrap">
+                <Label HorizontalTextAlignment="Center" Text="Last parsed local ip is" />
+                <Label x:Name="myIPAddress" HorizontalTextAlignment="Center" />
             </FlexLayout>
 
             <Entry
                 x:Name="streamName"
-                MaxLength="16"
-                Placeholder="Stream name"
                 FlexLayout.Grow="1.0"
-                Keyboard="Chat"
                 HorizontalTextAlignment="Center"
-            />
+                Keyboard="Chat"
+                MaxLength="16"
+                Placeholder="Stream name" />
 
-            <FlexLayout JustifyContent="Center" Wrap="Wrap" Direction="Column" AlignItems="Stretch">
-                <Label HorizontalTextAlignment="Center"
-                    Text="Buffer size"
-                />
+            <FlexLayout
+                AlignItems="Stretch"
+                Direction="Column"
+                JustifyContent="Center"
+                Wrap="Wrap">
+                <Label HorizontalTextAlignment="Center" Text="Buffer size" />
                 <Entry
                     x:Name="bufferSize"
-                    MaxLength="5"
-                    Placeholder="Buffer size"
                     FlexLayout.Grow="1.0"
-                    Keyboard="Numeric"
                     HorizontalTextAlignment="Center"
-                />
+                    Keyboard="Numeric"
+                    MaxLength="5"
+                    Placeholder="Buffer size" />
             </FlexLayout>
 
-            <FlexLayout JustifyContent="Center" Wrap="Wrap" Direction="Column" AlignItems="Stretch">
-                <Label HorizontalTextAlignment="Center"
-                    Text="Sample rate"
-                />
+            <FlexLayout
+                AlignItems="Stretch"
+                Direction="Column"
+                JustifyContent="Center"
+                Wrap="Wrap">
+                <Label HorizontalTextAlignment="Center" Text="Sample rate" />
                 <Picker
                     x:Name="SampleRate"
                     FlexLayout.Grow="1.0"
-                    HorizontalTextAlignment="Center"
-                />
+                    HorizontalTextAlignment="Center" />
             </FlexLayout>
 
-            <FlexLayout JustifyContent="Center" Wrap="Wrap" Direction="Column" AlignItems="Stretch">
-                <Label HorizontalTextAlignment="Center"
-                    Text="Channel type"
-                />
+            <FlexLayout
+                AlignItems="Stretch"
+                Direction="Column"
+                JustifyContent="Center"
+                Wrap="Wrap">
+                <Label HorizontalTextAlignment="Center" Text="Channel type" />
                 <Picker
                     x:Name="ChannelType"
                     FlexLayout.Grow="1.0"
-                    HorizontalTextAlignment="Center"
-                />
+                    HorizontalTextAlignment="Center" />
             </FlexLayout>
 
-            <FlexLayout JustifyContent="Center" Wrap="Wrap" Direction="Column" AlignItems="Stretch">
-                <Label HorizontalTextAlignment="Center"
-                    Text="Microphone type"
-                />
+            <FlexLayout
+                AlignItems="Stretch"
+                Direction="Column"
+                JustifyContent="Center"
+                Wrap="Wrap">
+                <Label HorizontalTextAlignment="Center" Text="Microphone type" />
                 <Picker
                     x:Name="microphone"
                     FlexLayout.Grow="1.0"
-                    SelectedIndex="0"
                     HorizontalTextAlignment="Center"
-                />
+                    SelectedIndex="0" />
             </FlexLayout>
 
-            <FlexLayout JustifyContent="SpaceBetween" Wrap="Wrap" AlignItems="Stretch">
-                <Entry x:Name="address" 
-                       Placeholder="Hostname" 
-                       HorizontalTextAlignment="Center" 
-                       FlexLayout.Grow="1.0"
-                />
+            <FlexLayout
+                AlignItems="Stretch"
+                JustifyContent="SpaceBetween"
+                Wrap="Wrap">
+                <Entry
+                    x:Name="address"
+                    FlexLayout.Grow="1.0"
+                    HorizontalTextAlignment="Center"
+                    Placeholder="Hostname" />
 
-                <Entry x:Name="port" 
-                       Placeholder="Port" 
-                       HorizontalTextAlignment="Center" 
-                       FlexLayout.Grow="0.5"
-                       Keyboard="Numeric"
-                       MaxLength="5"
-                />
+                <Entry
+                    x:Name="port"
+                    FlexLayout.Grow="0.5"
+                    HorizontalTextAlignment="Center"
+                    Keyboard="Numeric"
+                    MaxLength="5"
+                    Placeholder="Port" />
             </FlexLayout>
 
-            <FlexLayout JustifyContent="SpaceAround" Wrap="Wrap" AlignItems="Stretch">
-                <Label HorizontalTextAlignment="Center" VerticalTextAlignment="Center"
+            <FlexLayout
+                AlignItems="Stretch"
+                JustifyContent="SpaceAround"
+                Wrap="Wrap">
+                <Label
+                    HorizontalTextAlignment="Center"
                     Text="RNNoise"
-                />
+                    VerticalTextAlignment="Center" />
 
-                <Switch
-                    x:Name="denoise"
-                />
+                <Switch x:Name="denoise" />
             </FlexLayout>
 
 
             <local:ToggleButton
                 x:Name="StreamMicButton"
-                Text="start mic stream"
                 Clicked="OnMicStreamButtonClicked"
-            />
-            
+                Text="start mic stream" />
+
             <Entry
                 x:Name="SysAudioStreamName"
-                MaxLength="16"
-                Placeholder="system audio stream name"
                 FlexLayout.Grow="1.0"
-                Keyboard="Chat"
                 HorizontalTextAlignment="Center"
-            />
-            
+                Keyboard="Chat"
+                MaxLength="16"
+                Placeholder="system audio stream name" />
+
             <local:ToggleButton
                 x:Name="StreamSysAudioButton"
-                Text="start apps audio stream"
                 Clicked="OnSysAudioStreamButtonClicked"
-            />
+                Text="start apps audio stream" />
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>
