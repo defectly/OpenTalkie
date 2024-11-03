@@ -1,5 +1,4 @@
 ﻿using Android.App;
-using Android.Content;
 using Android.Content.PM;
 using Android.Media.Projection;
 using Android.OS;

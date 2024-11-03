@@ -12,11 +12,19 @@ internal partial class ForegroundMicrophoneService : Service
     private readonly int NOTIFICATION_ID = 1;
     private readonly string NOTIFICATION_CHANNEL_NAME = "microphone_notification";
 
+    private Intent _intent = new(Android.App.Application.Context, typeof(ForegroundMicrophoneService));
+
+    public void Start() =>
+        Android.App.Application.Context.StartForegroundService(_intent);
+
+    public void Stop() =>
+        Android.App.Application.Context.StopService(_intent);
+
     private void StartForegroundService()
     {
         var notifcationManager = GetSystemService(NotificationService) as NotificationManager;
 
-        if (Build.VERSION.SdkInt >= BuildVersionCodes.O)
+        if (OperatingSystem.IsAndroidVersionAtLeast(26))
             CreateNotificationChannel(notifcationManager);
 
         var notification = new NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID);

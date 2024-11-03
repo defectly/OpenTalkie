@@ -2,6 +2,7 @@
 using Android.Content;
 using Android.OS;
 using AndroidX.Core.App;
+using Microsoft.Maui.Platform;
 
 namespace OpenTalkie;
 
@@ -12,11 +13,20 @@ internal partial class ForegroundMediaProjectionService : Service
     private readonly int NOTIFICATION_ID = 2;
     private readonly string NOTIFICATION_CHANNEL_NAME = "system_audio_notification";
 
+    private Intent _intent = new(Android.App.Application.Context, typeof(ForegroundMediaProjectionService));
+
+    public void Start() =>
+        Android.App.Application.Context.StartForegroundService(_intent);
+
+    public void Stop() =>
+        Android.App.Application.Context.StopService(_intent);
+
+
     private void StartForegroundService()
     {
         var notifcationManager = GetSystemService(NotificationService) as NotificationManager;
 
-        if (Build.VERSION.SdkInt >= BuildVersionCodes.O)
+        if (OperatingSystem.IsAndroidVersionAtLeast(26))
             CreateNotificationChannel(notifcationManager);
 
         var notification = new NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID);
@@ -26,7 +36,10 @@ internal partial class ForegroundMediaProjectionService : Service
         notification.SetContentTitle("Open Talkie");
         notification.SetContentText("System audio capture service is running");
 
-        StartForeground(NOTIFICATION_ID, notification.Build(), Android.Content.PM.ForegroundService.TypeMediaProjection);
+        if (OperatingSystem.IsAndroidVersionAtLeast(29))
+            StartForeground(NOTIFICATION_ID, notification.Build(), Android.Content.PM.ForegroundService.TypeMediaProjection);
+        else
+            StartForeground(NOTIFICATION_ID, notification.Build());
     }
 
     private void CreateNotificationChannel(NotificationManager notificationMnaManager)
