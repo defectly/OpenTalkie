@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView
+    x:Class="OpenTalkie.Views.StreamCardView"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:OpenTalkie.ViewModels">
+
+    <ContentView.BindingContext>
+        <vm:StreamCardViewModel />
+    </ContentView.BindingContext>
+
+    <Frame
+        Margin="5"
+        Padding="10"
+        BorderColor="Gray"
+        CornerRadius="0">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition />
+                <RowDefinition />
+            </Grid.RowDefinitions>
+            <Grid Grid.Row="0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition />
+                    <ColumnDefinition />
+                </Grid.ColumnDefinitions>
+                <Grid Grid.Column="0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition />
+                        <RowDefinition />
+                    </Grid.RowDefinitions>
+                    <Label Grid.Row="0" Text="{Binding StreamSettings.Name}" />
+                    <Label Grid.Row="1" Text="{Binding StreamSettings.Description}" />
+                </Grid>
+                <Switch Grid.Column="1" />
+            </Grid>
+            <HorizontalStackLayout
+                Grid.Row="1"
+                HorizontalOptions="End"
+                Spacing="10">
+                <Button
+                    Command="{Binding DeleteCommand}"
+                    CommandParameter="{Binding .}"
+                    Text="Удалить" />
+                <Button Command="{Binding OpenCommand}" Text="Открыть" />
+            </HorizontalStackLayout>
+        </Grid>
+        <Frame.GestureRecognizers>
+            <TapGestureRecognizer Command="{Binding SwitchTurnedCommand}" />
+        </Frame.GestureRecognizers>
+    </Frame>
+</ContentView>

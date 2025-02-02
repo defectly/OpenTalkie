@@ -6,7 +6,7 @@
     xmlns:local="clr-namespace:OpenTalkie"
     Title="">
 
-    <ScrollView VerticalOptions="Center">
+    <ScrollView Padding="0,0,0,50" VerticalOptions="Center">
         <VerticalStackLayout Padding="30,0" Spacing="25">
 
             <Label

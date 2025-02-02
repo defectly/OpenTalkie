@@ -4,12 +4,18 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:local="clr-namespace:OpenTalkie"
-    Shell.FlyoutBehavior="Disabled"
-    Title="vOpenTalkie">
+    xmlns:views="clr-namespace:OpenTalkie.Views"
+    Title="OpenTalkie"
+    Shell.FlyoutBehavior="Disabled">
+
+    <TabBar>
+        <ShellContent Title="Home" ContentTemplate="{DataTemplate local:MainPage}" />
+        <ShellContent Title="Streams" ContentTemplate="{DataTemplate views:StreamsView}" />
+        <ShellContent Title="Mic" ContentTemplate="{DataTemplate views:MicrophoneView}" />
+    </TabBar>
 
     <ShellContent
-        Title="Home"
-        ContentTemplate="{DataTemplate local:MainPage}"
-        Route="MainPage" />
-
+        Title="Stream Settings"
+        ContentTemplate="{DataTemplate views:StreamCardView}"
+        Route="streamcard" />
 </Shell>

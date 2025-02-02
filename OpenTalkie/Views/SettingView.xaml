@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView
+    x:Class="OpenTalkie.Views.SettingView"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:OpenTalkie.ViewModels">
+
+    <ContentView.BindingContext>
+        <vm:SettingViewModel />
+    </ContentView.BindingContext>
+
+    <Frame
+        Margin="5"
+        Padding="10"
+        BorderColor="Gray"
+        CornerRadius="0">
+        <StackLayout Orientation="Horizontal" Spacing="10">
+            <Image
+                x:Name="Icon"
+                HeightRequest="40"
+                Source="{Binding IconPath}"
+                WidthRequest="40" />
+            <StackLayout>
+                <Label
+                    x:Name="Title"
+                    FontAttributes="Bold"
+                    Text="{Binding Name}" />
+                <Label
+                    x:Name="Parameter"
+                    FontAttributes="Italic"
+                    Text="{Binding SelectedValue}" />
+            </StackLayout>
+        </StackLayout>
+        <Frame.GestureRecognizers>
+            <TapGestureRecognizer Command="{Binding SettingTappedCommand}" />
+        </Frame.GestureRecognizers>
+    </Frame>
+</ContentView>
