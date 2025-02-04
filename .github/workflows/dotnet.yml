@@ -41,11 +41,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: OpenTalkie.apk
-          path: OpenTalkie/bin/Release/net8.0-android/OpenTalkie-Signed.apk
+          path: OpenTalkie/bin/Release/net8.0-android/io.github.defectly.opentalkie-Signed.apk
       - name: Upload Other Stuff
         uses: actions/upload-artifact@v4
         with:
           name: Other Stuff
           path: |
             OpenTalkie/bin/Release/net8.0-android/
-            !OpenTalkie/bin/Release/net8.0-android/OpenTalkie-Signed.apk
+            !OpenTalkie/bin/Release/net8.0-android/io.github.defectly.opentalkie-Signed.apk
