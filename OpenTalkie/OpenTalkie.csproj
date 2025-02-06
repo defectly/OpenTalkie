@@ -47,12 +47,14 @@
 	  <EnableLLVM>False</EnableLLVM>
 	  <AndroidLinkTool>r8</AndroidLinkTool>
 	  <ApplicationDisplayVersion>1.1.0-alpha.5</ApplicationDisplayVersion>
+	  <AndroidEnableMultiDex>True</AndroidEnableMultiDex>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net8.0-android|AnyCPU'">
 	  <EnableLLVM>False</EnableLLVM>
 	  <ApplicationDisplayVersion>1.1.0-alpha.5</ApplicationDisplayVersion>
 	  <EmbedAssembliesIntoApk>True</EmbedAssembliesIntoApk>
+	  <AndroidEnableMultiDex>True</AndroidEnableMultiDex>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net8.0-maccatalyst|AnyCPU'">
