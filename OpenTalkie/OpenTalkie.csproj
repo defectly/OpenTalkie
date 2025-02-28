@@ -102,6 +102,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <Compile Update="IMicrophoneService.cs">
+	    <ExcludeFromCurrentConfiguration>false</ExcludeFromCurrentConfiguration>
+	  </Compile>
 	  <Compile Update="Views\SettingView.xaml.cs">
 	    <DependentUpon>SettingView.xaml</DependentUpon>
 	  </Compile>

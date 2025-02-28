@@ -119,19 +119,6 @@
                 x:Name="StreamMicButton"
                 Clicked="OnMicStreamButtonClicked"
                 Text="start mic stream" />
-
-            <Entry
-                x:Name="SysAudioStreamName"
-                FlexLayout.Grow="1.0"
-                HorizontalTextAlignment="Center"
-                Keyboard="Chat"
-                MaxLength="16"
-                Placeholder="system audio stream name" />
-
-            <local:ToggleButton
-                x:Name="StreamSysAudioButton"
-                Clicked="OnSysAudioStreamButtonClicked"
-                Text="start apps audio stream" />
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>
