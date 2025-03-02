@@ -3,7 +3,7 @@ using NAudio.Wave;
 
 namespace OpenTalkie.Platforms.Android;
 
-public class ProvideHelper : IWaveProvider
+public class ProvideHelper : IWaveProvider, IDisposable
 {
     private readonly AudioRecord _audioRecord;
 
@@ -31,5 +31,10 @@ public class ProvideHelper : IWaveProvider
             Encoding.Pcm32bit => 32,
             _ => throw new NotSupportedException($"No such encoding supported: {encoding}")
         };
+    }
+
+    public void Dispose()
+    {
+        GC.SuppressFinalize(this);
     }
 }

@@ -9,10 +9,10 @@ public partial class MainPage : ContentPage
     private readonly BroadcastService _broadcastService;
     private readonly EndpointRepository _endpointRepository;
     private readonly IMicrophoneService _microphoneService;
-    private readonly IParameterRepository _parameterRepository;
+    private readonly IMicrophoneRepository _parameterRepository;
 
     public MainPage(BroadcastService broadcastService, EndpointRepository endpointRepository,
-        IMicrophoneService microphoneService, IParameterRepository parameterRepository)
+        IMicrophoneService microphoneService, IMicrophoneRepository parameterRepository)
     {
         InitializeComponent();
 
@@ -63,8 +63,6 @@ public partial class MainPage : ContentPage
 
     private void LoadPreferences()
     {
-        LoadMicrophonePreferences();
-
         LoadEndpointPreferences();
     }
 
@@ -76,27 +74,6 @@ public partial class MainPage : ContentPage
         bufferSize.Text = _microphoneService.BufferSize.ToString();
         address.Text = _endpointRepository.Endpoints[0].Hostname;
         port.Text = _endpointRepository.Endpoints[0].Port.ToString();
-    }
-
-    private void LoadMicrophonePreferences()
-    {
-        foreach (var parameter in _parameterRepository.GetSampleRates())
-            SampleRate.Items.Add(parameter);
-        foreach (var parameter in _parameterRepository.GetInputChannels())
-            ChannelType.Items.Add(parameter);
-        foreach (var parameter in _parameterRepository.GetAudioSources())
-            microphone.Items.Add(parameter);
-
-        var selectedMicrophonePreferences = _microphoneService.GetPreferencesAsString();
-
-        var selectedSampleRate = selectedMicrophonePreferences.Single(p => p.Name == "MicrophoneSampleRate");
-        SampleRate.SelectedItem = SampleRate.Items.Single(item => item == selectedSampleRate.Parameter);
-
-        var selectedInputChannel = selectedMicrophonePreferences.Single(p => p.Name == "MicrophoneChannel");
-        ChannelType.SelectedItem = ChannelType.Items.Single(item => item == selectedInputChannel.Parameter);
-
-        var selectedSource = selectedMicrophonePreferences.Single(p => p.Name == "MicrophoneSource");
-        microphone.SelectedItem = microphone.Items.Single(item => item == selectedSource.Parameter);
     }
 
     private void GetAndroidIPAddress()
@@ -117,10 +94,11 @@ public partial class MainPage : ContentPage
 
     private async Task<bool> CheckMicrophonePermissionAsync()
     {
-        if (await Permissions.CheckStatusAsync<Permissions.Microphone>() == PermissionStatus.Granted)
+        var permissionStatus = await Permissions.CheckStatusAsync<Permissions.Microphone>();
+        if (permissionStatus == PermissionStatus.Granted)
             return true;
 
-        var permissionStatus = await Permissions.RequestAsync<Permissions.Microphone>();
+        permissionStatus = await Permissions.RequestAsync<Permissions.Microphone>();
 
         if (permissionStatus == PermissionStatus.Granted)
             return true;

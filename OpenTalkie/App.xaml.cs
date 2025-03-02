@@ -6,7 +6,7 @@
         {
             InitializeComponent();
 
-            MainPage = serviceProvider.GetService<MainPage>();
+            MainPage = serviceProvider.GetService<AppShell>();
         }
     }
 }

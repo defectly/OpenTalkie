@@ -2,12 +2,11 @@
 using Android.Content;
 using Android.OS;
 using AndroidX.Core.App;
-using Microsoft.Maui.Platform;
 
 namespace OpenTalkie;
 
 [Service(ForegroundServiceType = Android.Content.PM.ForegroundService.TypeMediaProjection)]
-internal partial class ForegroundMediaProjectionService : Service
+internal class ForegroundMediaProjectionService : Service
 {
     private readonly string NOTIFICATION_CHANNEL_ID = "1001";
     private readonly int NOTIFICATION_ID = 2;

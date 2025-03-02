@@ -1,6 +1,8 @@
 ﻿using NAudio.Wave;
 using OpenTalkie.VBAN;
+using System.Net;
 using System.Net.Sockets;
+using System.Xml.Linq;
 
 namespace OpenTalkie;
 
@@ -8,6 +10,7 @@ public class Sender : IDisposable
 {
     private readonly ISampleProvider _source;
     private readonly List<Endpoint> _endpoints;
+    private int _framecount;
 
     public Sender(ISampleProvider source, List<Endpoint> endpoints)
     {
@@ -39,36 +42,41 @@ public class Sender : IDisposable
         for (int i = 0; i < totalChunks; i++)
         {
             int chunkSize = Math.Min(_count, samples.Length - i * _count);
-            _ = SendAsync(samples.Slice(i * _count, chunkSize))
-                .ConfigureAwait(false);
+            //_ = SendAsync(samples.Slice(i * _count, chunkSize))
+            //    .ConfigureAwait(false);
+            Send(samples.Slice(i * _count, chunkSize));
         }
     }
 
-    private async Task SendAsync(ReadOnlyMemory<float> samples)
+    private void Send(ReadOnlyMemory<float> samples)
     {
         byte[] packet = CreatePacket(samples.Length);
 
         FillPacketData(samples, packet);
 
-        await Parallel.ForEachAsync(_endpoints, async (endpoint, ct) =>
+        for (int i = 0; i < _endpoints.Count; i++)
         {
-            if (!endpoint.StreamState)
-                return;
+            if (!_endpoints[i].StreamState)
+                continue;
 
-            byte[] packetCopy = new byte[540];
-            Array.Copy(packet, packetCopy, packet.Length);
+            for (int j = 0; j < _endpoints[i].Name.Length; j++)
+                packet[j + 8] = (byte)_endpoints[i].Name[j];
 
-            endpoint.CorrectPacket(packetCopy);
+            var convertedCounter = BitConverter.GetBytes(_framecount);
+
+            for (int k = 24; k < 28; k++)
+                packet[k] = convertedCounter[k - 24];
 
             try
             {
-                _ = endpoint.UdpClient.SendAsync(packetCopy, ct)
-                .ConfigureAwait(false);
+                _endpoints[i].UdpClient.Send(packet);
             }
             catch (SocketException)
             {
             }
-        });
+        }
+
+        _framecount++;
     }
 
     private static void FillPacketData(ReadOnlyMemory<float> samples, byte[] packet)

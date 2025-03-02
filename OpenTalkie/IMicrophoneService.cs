@@ -10,5 +10,6 @@ public interface IMicrophoneService : IDisposable
     Task<int> ReadAsync(byte[] buffer, int offset, int count);
     ISampleProvider ToSampleProvider();
     IWaveProvider ToWaveProvider();
-    List<(string Name, string Parameter)> GetPreferencesAsString();
+    void Start();
+    void Stop();
 }

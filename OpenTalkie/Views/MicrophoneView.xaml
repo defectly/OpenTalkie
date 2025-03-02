@@ -7,9 +7,9 @@
     xmlns:vm="clr-namespace:OpenTalkie.ViewModels"
     Title="MicrophoneView">
 
-    <ContentPage.BindingContext>
+    <!--<ContentPage.BindingContext>
         <vm:MicrophoneViewModel />
-    </ContentPage.BindingContext>
+    </ContentPage.BindingContext>-->
 
     <ListView HasUnevenRows="True" ItemsSource="{Binding Settings}">
         <ListView.ItemTemplate>

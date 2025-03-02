@@ -6,7 +6,7 @@ using AndroidX.Core.App;
 namespace OpenTalkie;
 
 [Service(ForegroundServiceType = Android.Content.PM.ForegroundService.TypeMicrophone)]
-internal partial class AndroidForegroundMicrophoneService : Service
+internal class AndroidForegroundMicrophoneService : Service
 {
     private readonly string NOTIFICATION_CHANNEL_ID = "1000";
     private readonly int NOTIFICATION_ID = 1;

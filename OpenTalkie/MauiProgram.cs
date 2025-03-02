@@ -1,5 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using OpenTalkie.Repositories;
+using OpenTalkie.ViewModels;
+using OpenTalkie.Views;
 
 #if ANDROID
 using OpenTalkie.Platforms.Android;
@@ -23,29 +25,40 @@ public static class MauiProgram
 #if DEBUG
         builder.Logging.AddDebug();
 #endif
-        RegisterRepositories(builder);
-        RegisterServices(builder);
-
         builder.Services.AddSingleton<App>();
+        builder.Services.AddSingleton<AppShell>();
         builder.Services.AddTransient<MainPage>();
+
+        RegisterRepositories(builder.Services);
+        RegisterServices(builder.Services);
+        RegisterViewModels(builder.Services);
+        RegisterViews(builder.Services);
 
         return builder.Build();
     }
 
-    public static void RegisterRepositories(MauiAppBuilder builder)
+    public static void RegisterRepositories(IServiceCollection services)
     {
 #if ANDROID
-        builder.Services.AddSingleton<IParameterRepository, ParameterRepository>();
+        services.AddSingleton<IMicrophoneRepository, MicrophoneRepository>();
 #endif
-        builder.Services.AddSingleton<EndpointRepository>();
+        services.AddSingleton<EndpointRepository>();
     }
 
-    public static void RegisterServices(MauiAppBuilder builder)
+    public static void RegisterServices(IServiceCollection services)
     {
 
 #if ANDROID
-        builder.Services.AddSingleton<IMicrophoneService, MicrophoneService>();
+        services.AddSingleton<IMicrophoneService, MicrophoneService>();
 #endif
-        builder.Services.AddSingleton<BroadcastService>();
+        services.AddSingleton<BroadcastService>();
+    }
+    private static void RegisterViewModels(IServiceCollection services)
+    {
+        services.AddTransient<MicrophoneViewModel>();
+    }
+    private static void RegisterViews(IServiceCollection services)
+    {
+        services.AddTransient<MicrophoneView>();
     }
 }

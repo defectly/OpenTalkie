@@ -1,5 +1,4 @@
 ﻿using OpenTalkie.Repositories;
-using System.Collections.Concurrent;
 
 namespace OpenTalkie;
 
@@ -24,18 +23,27 @@ public class BroadcastService
         {
             _cancellationTokenSource.Cancel();
             BroadcastState = !BroadcastState;
+            _microphoneService.Stop();
         }
         else
         {
             _cancellationTokenSource = new();
-            Task.Run(() => StartSendingLoop(_cancellationTokenSource.Token));
+
+            var thread = new Thread(() => StartSendingLoop(_cancellationTokenSource.Token))
+            {
+                IsBackground = true
+            };
+
+            thread.Start();
             BroadcastState = !BroadcastState;
         }
     }
 
     private void StartSendingLoop(CancellationToken cancellationToken)
     {
-        Sender sender = new(_microphoneService.ToSampleProvider(), _endpointRepository.Endpoints);
+        _microphoneService.Start();
+        var sampleProvider = _microphoneService.ToSampleProvider();
+        Sender sender = new(sampleProvider, _endpointRepository.Endpoints);
 
         float[] vbanBuffer = new float[_microphoneService.BufferSize / 2];
 
