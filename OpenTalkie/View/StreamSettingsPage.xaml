@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="OpenTalkie.View.StreamSettingsPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit">
+    <StackLayout Padding="10" Spacing="10">
+        <!--  Name  -->
+        <Frame
+            Padding="10"
+            BorderColor="Gray"
+            CornerRadius="5">
+            <Frame.GestureRecognizers>
+                <TapGestureRecognizer Command="{Binding EditNameCommand}" CommandParameter="Name" />
+            </Frame.GestureRecognizers>
+            <HorizontalStackLayout Spacing="10">
+                <Image
+                    HeightRequest="24"
+                    Source="name_icon.png"
+                    VerticalOptions="Center"
+                    WidthRequest="24" />
+                <Grid
+                    ColumnDefinitions="*"
+                    RowDefinitions="Auto, Auto"
+                    VerticalOptions="Center">
+                    <Label
+                        Grid.Row="0"
+                        FontAttributes="Bold"
+                        Text="Name" />
+                    <Label
+                        Grid.Row="1"
+                        Text="{Binding Endpoint.Name}"
+                        TextColor="Gray" />
+                </Grid>
+            </HorizontalStackLayout>
+        </Frame>
+
+        <!--  Hostname  -->
+        <Frame
+            Padding="10"
+            BorderColor="Gray"
+            CornerRadius="5">
+            <Frame.GestureRecognizers>
+                <TapGestureRecognizer Command="{Binding EditHostnameCommand}" CommandParameter="Address" />
+            </Frame.GestureRecognizers>
+            <HorizontalStackLayout Spacing="10">
+                <Image
+                    HeightRequest="24"
+                    Source="address_icon.png"
+                    VerticalOptions="Center"
+                    WidthRequest="24" />
+                <Grid
+                    ColumnDefinitions="*"
+                    RowDefinitions="Auto, Auto"
+                    VerticalOptions="Center">
+                    <Label
+                        Grid.Row="0"
+                        FontAttributes="Bold"
+                        Text="Hostname" />
+                    <Label
+                        Grid.Row="1"
+                        Text="{Binding Endpoint.Hostname}"
+                        TextColor="Gray" />
+                </Grid>
+            </HorizontalStackLayout>
+        </Frame>
+
+        <!--  Port  -->
+        <Frame
+            Padding="10"
+            BorderColor="Gray"
+            CornerRadius="5">
+            <Frame.GestureRecognizers>
+                <TapGestureRecognizer Command="{Binding EditPortCommand}" CommandParameter="Port" />
+            </Frame.GestureRecognizers>
+            <HorizontalStackLayout Spacing="10">
+                <Image
+                    HeightRequest="24"
+                    Source="port_icon.png"
+                    VerticalOptions="Center"
+                    WidthRequest="24" />
+                <Grid
+                    ColumnDefinitions="*"
+                    RowDefinitions="Auto, Auto"
+                    VerticalOptions="Center">
+                    <Label
+                        Grid.Row="0"
+                        FontAttributes="Bold"
+                        Text="Port" />
+                    <Label
+                        Grid.Row="1"
+                        Text="{Binding Endpoint.Port}"
+                        TextColor="Gray" />
+                </Grid>
+            </HorizontalStackLayout>
+        </Frame>
+    </StackLayout>
+</ContentPage>

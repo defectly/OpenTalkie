@@ -1,4 +1,4 @@
-﻿namespace OpenTalkie;
+﻿namespace OpenTalkie.Common.Repositories.Interfaces;
 
 public interface IMicrophoneRepository
 {
@@ -10,6 +10,8 @@ public interface IMicrophoneRepository
     string GetSelectedInputChannel();
     string GetSelectedSampleRate();
     string GetSelectedEncoding();
+    string GetSelectedBufferSize();
+    void SetSelectedBufferSize(string bufferSize);
     void SetSelectedSource(string source);
     void SetSelectedInputChannel(string inputChannel);
     void SetSelectedSampleRate(string sampleRate);

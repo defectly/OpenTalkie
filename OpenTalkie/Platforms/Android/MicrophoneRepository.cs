@@ -1,6 +1,6 @@
 ﻿using Android.Media;
+using OpenTalkie.Common.Repositories.Interfaces;
 using OpenTalkie.VBAN;
-using static Android.Graphics.ImageDecoder;
 
 namespace OpenTalkie.Platforms.Android;
 
@@ -61,6 +61,16 @@ public class MicrophoneRepository : IMicrophoneRepository
 
         return converted.ToString();
     }
+    public string GetSelectedBufferSize()
+    {
+        var bufferSize = Preferences.Get("MicrophoneBufferSize", 1024);
+
+        return bufferSize.ToString();
+    }
+    public void SetSelectedBufferSize(string bufferSize)
+    {
+        Preferences.Set("MicrophoneBufferSize", int.Parse(bufferSize));
+    }
     public void SetSelectedSource(string source)
     {
         var parsedSource = Enum.Parse<AudioSource>(source);
@@ -88,6 +98,7 @@ public class MicrophoneRepository : IMicrophoneRepository
             Encoding.Pcm16bit => 16,
             Encoding.Pcm24bitPacked => 24,
             Encoding.Pcm32bit => 32,
+            Encoding.Invalid => 16,
             _ => throw new NotSupportedException($"No such encoding supported: {encoding}")
         };
     }

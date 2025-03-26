@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace OpenTalkie.Repositories;
+namespace OpenTalkie.Common.Repositories;
 
 public class PreferencesRepository
 {

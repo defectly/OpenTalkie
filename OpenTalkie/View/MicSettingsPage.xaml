@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="OpenTalkie.View.MicSettingsPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit">
+    <StackLayout Padding="10" Spacing="10">
+        <!--  Audio Source  -->
+        <Frame
+            Padding="10"
+            BorderColor="Gray"
+            CornerRadius="5">
+            <Frame.GestureRecognizers>
+                <TapGestureRecognizer Command="{Binding EditFieldCommand}" CommandParameter="Source" />
+            </Frame.GestureRecognizers>
+            <HorizontalStackLayout Spacing="10">
+                <Image
+                    HeightRequest="24"
+                    Source="mic_icon.png"
+                    VerticalOptions="Center"
+                    WidthRequest="24" />
+                <Grid
+                    ColumnDefinitions="*"
+                    RowDefinitions="Auto, Auto"
+                    VerticalOptions="Center">
+                    <Label
+                        Grid.Row="0"
+                        FontAttributes="Bold"
+                        Text="Audio Source" />
+                    <Label
+                        Grid.Row="1"
+                        Text="{Binding SelectedSource}"
+                        TextColor="Gray" />
+                </Grid>
+            </HorizontalStackLayout>
+        </Frame>
+
+        <!--  Input Channel  -->
+        <Frame
+            Padding="10"
+            BorderColor="Gray"
+            CornerRadius="5">
+            <Frame.GestureRecognizers>
+                <TapGestureRecognizer Command="{Binding EditFieldCommand}" CommandParameter="InputChannel" />
+            </Frame.GestureRecognizers>
+            <HorizontalStackLayout Spacing="10">
+                <Image
+                    HeightRequest="24"
+                    Source="channel_icon.png"
+                    VerticalOptions="Center"
+                    WidthRequest="24" />
+                <Grid
+                    ColumnDefinitions="*"
+                    RowDefinitions="Auto, Auto"
+                    VerticalOptions="Center">
+                    <Label
+                        Grid.Row="0"
+                        FontAttributes="Bold"
+                        Text="Input Channel" />
+                    <Label
+                        Grid.Row="1"
+                        Text="{Binding SelectedInputChannel}"
+                        TextColor="Gray" />
+                </Grid>
+            </HorizontalStackLayout>
+        </Frame>
+
+        <!--  Sample Rate  -->
+        <Frame
+            Padding="10"
+            BorderColor="Gray"
+            CornerRadius="5">
+            <Frame.GestureRecognizers>
+                <TapGestureRecognizer Command="{Binding EditFieldCommand}" CommandParameter="SampleRate" />
+            </Frame.GestureRecognizers>
+            <HorizontalStackLayout Spacing="10">
+                <Image
+                    HeightRequest="24"
+                    Source="samplerate_icon.png"
+                    VerticalOptions="Center"
+                    WidthRequest="24" />
+                <Grid
+                    ColumnDefinitions="*"
+                    RowDefinitions="Auto, Auto"
+                    VerticalOptions="Center">
+                    <Label
+                        Grid.Row="0"
+                        FontAttributes="Bold"
+                        Text="Sample rate" />
+                    <Label
+                        Grid.Row="1"
+                        Text="{Binding SelectedSampleRate}"
+                        TextColor="Gray" />
+                </Grid>
+            </HorizontalStackLayout>
+        </Frame>
+
+        <!--  Encoding  -->
+        <Frame
+            Padding="10"
+            BorderColor="Gray"
+            CornerRadius="5">
+            <Frame.GestureRecognizers>
+                <TapGestureRecognizer Command="{Binding EditFieldCommand}" CommandParameter="Encoding" />
+            </Frame.GestureRecognizers>
+            <HorizontalStackLayout Spacing="10">
+                <Image
+                    HeightRequest="24"
+                    Source="encoding_icon.png"
+                    VerticalOptions="Center"
+                    WidthRequest="24" />
+                <Grid
+                    ColumnDefinitions="*"
+                    RowDefinitions="Auto, Auto"
+                    VerticalOptions="Center">
+                    <Label
+                        Grid.Row="0"
+                        FontAttributes="Bold"
+                        Text="Encoding" />
+                    <Label
+                        Grid.Row="1"
+                        Text="{Binding SelectedEncoding}"
+                        TextColor="Gray" />
+                </Grid>
+            </HorizontalStackLayout>
+        </Frame>
+
+        <!--  Buffer Size  -->
+        <Frame
+            Padding="10"
+            BorderColor="Gray"
+            CornerRadius="5">
+            <Frame.GestureRecognizers>
+                <TapGestureRecognizer Command="{Binding EditBufferSizeCommand}" CommandParameter="BufferSize" />
+            </Frame.GestureRecognizers>
+            <HorizontalStackLayout Spacing="10">
+                <Image
+                    HeightRequest="24"
+                    Source="buffer_icon.png"
+                    VerticalOptions="Center"
+                    WidthRequest="24" />
+                <Grid
+                    ColumnDefinitions="*"
+                    RowDefinitions="Auto, Auto"
+                    VerticalOptions="Center">
+                    <Label
+                        Grid.Row="0"
+                        FontAttributes="Bold"
+                        Text="Buffer size" />
+                    <Label
+                        Grid.Row="1"
+                        Text="{Binding SelectedBufferSize}"
+                        TextColor="Gray" />
+                </Grid>
+            </HorizontalStackLayout>
+        </Frame>
+    </StackLayout>
+</ContentPage>

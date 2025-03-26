@@ -1,18 +1,17 @@
 ﻿using NAudio.Wave;
 using OpenTalkie.VBAN;
-using System.Net;
+using System.Collections.ObjectModel;
 using System.Net.Sockets;
-using System.Xml.Linq;
 
 namespace OpenTalkie;
 
 public class Sender : IDisposable
 {
     private readonly ISampleProvider _source;
-    private readonly List<Endpoint> _endpoints;
+    private readonly ObservableCollection<Endpoint> _endpoints;
     private int _framecount;
 
-    public Sender(ISampleProvider source, List<Endpoint> endpoints)
+    public Sender(ISampleProvider source, ObservableCollection<Endpoint> endpoints)
     {
         _source = source;
         _endpoints = endpoints;
@@ -42,8 +41,6 @@ public class Sender : IDisposable
         for (int i = 0; i < totalChunks; i++)
         {
             int chunkSize = Math.Min(_count, samples.Length - i * _count);
-            //_ = SendAsync(samples.Slice(i * _count, chunkSize))
-            //    .ConfigureAwait(false);
             Send(samples.Slice(i * _count, chunkSize));
         }
     }
@@ -56,7 +53,7 @@ public class Sender : IDisposable
 
         for (int i = 0; i < _endpoints.Count; i++)
         {
-            if (!_endpoints[i].StreamState)
+            if (!_endpoints[i].IsEnabled)
                 continue;
 
             for (int j = 0; j < _endpoints[i].Name.Length; j++)

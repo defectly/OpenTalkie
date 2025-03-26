@@ -1,6 +1,6 @@
 ﻿using NAudio.Wave;
 
-namespace OpenTalkie;
+namespace OpenTalkie.Common.Services;
 
 public interface IMicrophoneService : IDisposable
 {

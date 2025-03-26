@@ -1,7 +1,12 @@
 ﻿using Microsoft.Extensions.Logging;
-using OpenTalkie.Repositories;
-using OpenTalkie.ViewModels;
-using OpenTalkie.Views;
+using OpenTalkie.ViewModel;
+using OpenTalkie.View;
+using CommunityToolkit.Maui;
+using System.Reflection;
+using OpenTalkie.Common.Repositories.Interfaces;
+using OpenTalkie.Common.Repositories;
+using OpenTalkie.Common.Services;
+
 
 #if ANDROID
 using OpenTalkie.Platforms.Android;
@@ -15,6 +20,7 @@ public static class MauiProgram
     {
         var builder = MauiApp.CreateBuilder();
         builder
+            .UseMauiCommunityToolkit()
             .UseMauiApp<App>()
             .ConfigureFonts(fonts =>
             {
@@ -25,6 +31,7 @@ public static class MauiProgram
 #if DEBUG
         builder.Logging.AddDebug();
 #endif
+        builder.Services.AddAutoMapper(Assembly.GetExecutingAssembly());
         builder.Services.AddSingleton<App>();
         builder.Services.AddSingleton<AppShell>();
         builder.Services.AddTransient<MainPage>();
@@ -42,7 +49,7 @@ public static class MauiProgram
 #if ANDROID
         services.AddSingleton<IMicrophoneRepository, MicrophoneRepository>();
 #endif
-        services.AddSingleton<EndpointRepository>();
+        services.AddSingleton<IEndpointRepository, EndpointRepository>();
     }
 
     public static void RegisterServices(IServiceCollection services)
@@ -55,10 +62,16 @@ public static class MauiProgram
     }
     private static void RegisterViewModels(IServiceCollection services)
     {
-        services.AddTransient<MicrophoneViewModel>();
+        services.AddTransient<HomeViewModel>();
+        services.AddTransient<StreamsViewModel>();
+        services.AddTransient<StreamSettingsViewModel>();
+        services.AddTransient<MicSettingsViewModel>();
     }
     private static void RegisterViews(IServiceCollection services)
     {
-        services.AddTransient<MicrophoneView>();
+        services.AddTransient<HomePage>();
+        services.AddTransient<StreamsPage>();
+        services.AddTransient<StreamSettingsPage>();
+        services.AddTransient<MicSettingsPage>();
     }
 }

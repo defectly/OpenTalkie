@@ -1,4 +1,4 @@
-﻿using OpenTalkie.Views;
+﻿using OpenTalkie.View;
 
 namespace OpenTalkie
 {
@@ -8,7 +8,7 @@ namespace OpenTalkie
         {
             InitializeComponent();
 
-            Routing.RegisterRoute("streamcard/streamsettings", typeof(StreamSettingsView));
+            Routing.RegisterRoute("StreamSettingsPage", typeof(StreamSettingsPage));
         }
     }
 }
