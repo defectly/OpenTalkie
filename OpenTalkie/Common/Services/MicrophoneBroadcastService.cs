@@ -8,7 +8,7 @@ using System.ComponentModel;
 
 namespace OpenTalkie;
 
-public class BroadcastService
+public class MicrophoneBroadcastService
 {
     private IMapper _mapper;
     private CancellationTokenSource _cancellationTokenSource;
@@ -17,7 +17,7 @@ public class BroadcastService
     public ObservableCollection<Endpoint> Endpoints;
     public bool BroadcastState { get; private set; }
 
-    public BroadcastService(IMicrophoneService microphoneService, IEndpointRepository endpointRepository, IMapper mapper)
+    public MicrophoneBroadcastService(IMicrophoneService microphoneService, IEndpointRepository endpointRepository, IMapper mapper)
     {
         _microphoneService = microphoneService;
         _endpointRepository = endpointRepository;

@@ -6,18 +6,13 @@ namespace OpenTalkie.Platforms.Android;
 
 public class MicrophoneService : IMicrophoneService
 {
-    private readonly AndroidForegroundMicrophoneService _foregroundService;
+    private readonly AndroidForegroundMicrophoneService _foregroundService = new();
     private AudioRecord? _audioRecord;
     private int _microphoneSource;
     private int _microphoneChannel;
     private int _microphoneSampleRate;
     private int _microphoneEncoding;
     public int BufferSize { get; set; }
-
-    public MicrophoneService()
-    {
-        _foregroundService = new();
-    }
 
     public void Start()
     {
@@ -39,13 +34,13 @@ public class MicrophoneService : IMicrophoneService
         if (_audioRecord == null)
             return;
 
-        if (_audioRecord.RecordingState != RecordState.Stopped)
-        {
-            _audioRecord.Stop();
-            _audioRecord.Dispose();
-            _audioRecord = null;
-            _foregroundService.Stop();
-        }
+        if (_audioRecord.RecordingState == RecordState.Stopped)
+            return;
+
+        _audioRecord.Stop();
+        _audioRecord.Dispose();
+        _audioRecord = null;
+        _foregroundService.Stop();
     }
 
     public int Read(byte[] buffer, int offset, int count)

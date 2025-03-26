@@ -6,10 +6,10 @@ namespace OpenTalkie.ViewModel;
 
 public partial class StreamsViewModel : ObservableObject
 {
-    private BroadcastService _broadcastService;
+    private MicrophoneBroadcastService _broadcastService;
     public ObservableCollection<Endpoint> Endpoints => _broadcastService.Endpoints;
 
-    public StreamsViewModel(BroadcastService broadcastService)
+    public StreamsViewModel(MicrophoneBroadcastService broadcastService)
     {
         _broadcastService = broadcastService;
     }

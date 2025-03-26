@@ -7,9 +7,9 @@ public partial class HomeViewModel : ObservableObject
 {
     [ObservableProperty]
     private string broadcastButtonText;
-    public BroadcastService BroadcastService { get; set; }
+    public MicrophoneBroadcastService BroadcastService { get; set; }
 
-    public HomeViewModel(BroadcastService broadcastService)
+    public HomeViewModel(MicrophoneBroadcastService broadcastService)
     {
         BroadcastService = broadcastService;
         BroadcastButtonText = "Start service";

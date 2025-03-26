@@ -1,12 +1,12 @@
-﻿using Microsoft.Extensions.Logging;
-using OpenTalkie.ViewModel;
-using OpenTalkie.View;
-using CommunityToolkit.Maui;
-using System.Reflection;
-using OpenTalkie.Common.Repositories.Interfaces;
+﻿using CommunityToolkit.Maui;
+using Microsoft.Extensions.Logging;
 using OpenTalkie.Common.Repositories;
+using OpenTalkie.Common.Repositories.Interfaces;
 using OpenTalkie.Common.Services;
-
+using OpenTalkie.Common.Services.Interfaces;
+using OpenTalkie.View;
+using OpenTalkie.ViewModel;
+using System.Reflection;
 
 #if ANDROID
 using OpenTalkie.Platforms.Android;
@@ -57,8 +57,9 @@ public static class MauiProgram
 
 #if ANDROID
         services.AddSingleton<IMicrophoneService, MicrophoneService>();
+        services.AddSingleton<IPlaybackService, PlaybackService>();
 #endif
-        services.AddSingleton<BroadcastService>();
+        services.AddSingleton<MicrophoneBroadcastService>();
     }
     private static void RegisterViewModels(IServiceCollection services)
     {
