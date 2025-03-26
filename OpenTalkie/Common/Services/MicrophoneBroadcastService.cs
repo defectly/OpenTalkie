@@ -1,12 +1,11 @@
 ﻿using AutoMapper;
 using OpenTalkie.Common.Dto;
 using OpenTalkie.Common.Repositories.Interfaces;
-using OpenTalkie.Common.Services;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 
-namespace OpenTalkie;
+namespace OpenTalkie.Common.Services;
 
 public class MicrophoneBroadcastService
 {

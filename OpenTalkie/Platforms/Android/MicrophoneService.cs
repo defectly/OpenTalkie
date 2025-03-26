@@ -6,7 +6,7 @@ namespace OpenTalkie.Platforms.Android;
 
 public class MicrophoneService : IMicrophoneService
 {
-    private readonly AndroidForegroundMicrophoneService _foregroundService = new();
+    private readonly MicrophoneForegroundService _foregroundService = new();
     private AudioRecord? _audioRecord;
     private int _microphoneSource;
     private int _microphoneChannel;

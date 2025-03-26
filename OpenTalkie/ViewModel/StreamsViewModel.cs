@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using OpenTalkie.Common.Services;
 using System.Collections.ObjectModel;
 
 namespace OpenTalkie.ViewModel;

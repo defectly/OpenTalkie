@@ -11,7 +11,7 @@ public class PlaybackService : IPlaybackService
     private int _sampleRate;
     private ChannelOut _channelOut;
 
-    private readonly ForegroundMediaProjectionService _foregroundService = new();
+    private readonly MediaProjectionForegroundService _foregroundService = new();
     private AudioRecord? _audioRecord;
 
     public int Read(byte[] buffer, int offset, int count)
