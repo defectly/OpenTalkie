@@ -45,7 +45,7 @@ public class MicrophoneRepository : IMicrophoneRepository
     }
     public string GetSelectedInputChannel()
     {
-        int channel = Preferences.Get("MicrophoneChannel", (int)ChannelIn.Default);
+        int channel = Preferences.Get("MicrophoneInputChannel", (int)ChannelIn.Default);
 
         return ((ChannelIn)channel).ToString();
     }
@@ -79,11 +79,11 @@ public class MicrophoneRepository : IMicrophoneRepository
     public void SetSelectedInputChannel(string inputChannel)
     {
         var parsedInputChannel = Enum.Parse<ChannelIn>(inputChannel);
-        Preferences.Set("MicrophoneSource", (int)parsedInputChannel);
+        Preferences.Set("MicrophoneInputChannel", (int)parsedInputChannel);
     }
     public void SetSelectedSampleRate(string sampleRate)
     {
-        Preferences.Set("MicrophoneSource", int.Parse(sampleRate));
+        Preferences.Set("MicrophoneSampleRate", int.Parse(sampleRate));
     }
     public void SetSelectedEncoding(string encoding)
     {
