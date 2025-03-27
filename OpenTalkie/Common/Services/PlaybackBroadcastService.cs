@@ -2,28 +2,29 @@
 using OpenTalkie.Common.Dto;
 using OpenTalkie.Common.Enums;
 using OpenTalkie.Common.Repositories.Interfaces;
+using OpenTalkie.Common.Services.Interfaces;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 
 namespace OpenTalkie.Common.Services;
 
-public class MicrophoneBroadcastService
+public class PlaybackBroadcastService
 {
-    private IMapper _mapper;
+    private readonly IMapper _mapper;
     private CancellationTokenSource _cancellationTokenSource;
-    private readonly IMicrophoneService _microphoneService;
+    private readonly IPlaybackService _playbackService;
     private readonly IEndpointRepository _endpointRepository;
     public ObservableCollection<Endpoint> Endpoints;
     public bool BroadcastState { get; private set; }
 
-    public MicrophoneBroadcastService(IMicrophoneService microphoneService, IEndpointRepository endpointRepository, IMapper mapper)
+    public PlaybackBroadcastService(IPlaybackService playbackService, IEndpointRepository endpointRepository, IMapper mapper)
     {
-        _microphoneService = microphoneService;
+        _playbackService = playbackService;
         _endpointRepository = endpointRepository;
         _mapper = mapper;
 
-        Endpoints = mapper.Map<ObservableCollection<Endpoint>>(_endpointRepository.List().Where(e => e.Type == EndpointType.Microphone));
+        Endpoints = mapper.Map<ObservableCollection<Endpoint>>(_endpointRepository.List().Where(e => e.Type == EndpointType.Playback));
         Endpoints.CollectionChanged += EndpointsCollectionChanged;
 
         foreach (var endpoint in Endpoints)
@@ -34,7 +35,7 @@ public class MicrophoneBroadcastService
     {
         if (e.Action == NotifyCollectionChangedAction.Remove)
         {
-            if(e.OldItems != null)
+            if (e.OldItems != null)
             {
                 foreach (Endpoint endpoint in e.OldItems)
                 {
@@ -67,16 +68,22 @@ public class MicrophoneBroadcastService
         _endpointRepository.UpdateAsync(endpointDto);
     }
 
+    public async Task<bool> RequestPermissionAsync()
+    {
+        return await _playbackService.RequestPermissionAsync();
+    }
+
     public void Switch()
     {
         if (BroadcastState)
         {
             _cancellationTokenSource.Cancel();
+            _playbackService.Stop();
             BroadcastState = !BroadcastState;
-            _microphoneService.Stop();
         }
         else
         {
+            _playbackService.Start();
             _cancellationTokenSource = new();
 
             var thread = new Thread(() => StartSendingLoop(_cancellationTokenSource.Token))
@@ -91,11 +98,10 @@ public class MicrophoneBroadcastService
 
     private void StartSendingLoop(CancellationToken cancellationToken)
     {
-        _microphoneService.Start();
-        var sampleProvider = _microphoneService.ToSampleProvider();
+        var sampleProvider = _playbackService.ToSampleProvider();
         Sender sender = new(sampleProvider, Endpoints);
 
-        float[] vbanBuffer = new float[_microphoneService.BufferSize / 2];
+        float[] vbanBuffer = new float[_playbackService.GetBufferSize() / 2];
 
         while (true)
         {

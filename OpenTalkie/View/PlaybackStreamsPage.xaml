@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="OpenTalkie.View.PlaybackStreamsPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:OpenTalkie.ViewModel">
+    <AbsoluteLayout>
+        <CollectionView
+            AbsoluteLayout.LayoutBounds="0,0,1,1"
+            AbsoluteLayout.LayoutFlags="All"
+            ItemsSource="{Binding Endpoints}">
+            <CollectionView.ItemTemplate>
+                <DataTemplate>
+                    <Frame BackgroundColor="DarkKhaki">
+                        <StackLayout>
+                            <Label Text="{Binding Name}" />
+                            <Label Text="{Binding Hostname}" />
+                            <Switch IsToggled="{Binding IsEnabled}" />
+                            <HorizontalStackLayout Spacing="10">
+                                <Button
+                                    Command="{Binding BindingContext.OpenSettingsCommand, Source={RelativeSource AncestorType={x:Type ContentPage}}}"
+                                    CommandParameter="{Binding}"
+                                    Text="Open" />
+                                <Button
+                                    BackgroundColor="Red"
+                                    Command="{Binding BindingContext.DeleteStreamCommand, Source={RelativeSource AncestorType={x:Type ContentPage}}}"
+                                    CommandParameter="{Binding}"
+                                    Text="Delete"
+                                    TextColor="White" />
+                            </HorizontalStackLayout>
+                        </StackLayout>
+                    </Frame>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+
+        <Button
+            AbsoluteLayout.LayoutBounds="0.95,0.95,AutoSize,AutoSize"
+            AbsoluteLayout.LayoutFlags="PositionProportional"
+            BackgroundColor="Blue"
+            Command="{Binding AddStreamCommand}"
+            CornerRadius="25"
+            FontSize="Large"
+            HeightRequest="50"
+            Text="+"
+            TextColor="White"
+            WidthRequest="50" />
+    </AbsoluteLayout>
+</ContentPage>

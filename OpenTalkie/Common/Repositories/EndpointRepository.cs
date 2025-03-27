@@ -37,6 +37,7 @@ public class EndpointRepository : IEndpointRepository
         var endpoint = new EndpointDto
         {
             Id = endpointDto.Id,
+            Type = endpointDto.Type,
             Name = endpointDto.Name,
             Hostname = endpointDto.Hostname,
             Port = endpointDto.Port,
@@ -74,6 +75,7 @@ public class EndpointRepository : IEndpointRepository
         if (endpoint == null)
             throw new Exception($"Endpoint with id {endpointDto.Id} not found");
 
+        endpoint.Type = endpointDto.Type;
         endpoint.Name = endpointDto.Name;
         endpoint.Hostname = endpointDto.Hostname;
         endpoint.Port = endpointDto.Port;
@@ -89,16 +91,7 @@ public class EndpointRepository : IEndpointRepository
 
         for (int i = 0; i < Endpoints.Count; i++)
         {
-            var serializableEndpoint = new
-            {
-                Endpoints[i].Id,
-                Endpoints[i].Name,
-                Endpoints[i].Hostname,
-                Endpoints[i].Port,
-                Endpoints[i].IsEnabled,
-            };
-
-            var json = JsonSerializer.Serialize(serializableEndpoint);
+            var json = JsonSerializer.Serialize(Endpoints[i]);
             string filePath = $"{Path.Combine(_endpointDirectory, Endpoints[i].Id.ToString())}.json";
 
             await File.WriteAllTextAsync($"{filePath}", json);

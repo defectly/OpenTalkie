@@ -1,35 +1,61 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using OpenTalkie.Common.Services;
+using OpenTalkie.Common.Services.Interfaces;
 
 namespace OpenTalkie.ViewModel;
 
 public partial class HomeViewModel : ObservableObject
 {
     [ObservableProperty]
-    private string broadcastButtonText;
-    public MicrophoneBroadcastService BroadcastService { get; set; }
+    private string microphoneBroadcastButtonText;
+    [ObservableProperty]
+    private string playbackBroadcastButtonText;
+    public MicrophoneBroadcastService MicrophoneBroadcastService { get; set; }
+    public PlaybackBroadcastService PlaybackBroadcastService { get; set; }
 
-    public HomeViewModel(MicrophoneBroadcastService broadcastService)
+    public HomeViewModel(MicrophoneBroadcastService microphoneBroadcastService,
+        PlaybackBroadcastService playbackBroadcastService)
     {
-        BroadcastService = broadcastService;
-        BroadcastButtonText = "Start service";
+        MicrophoneBroadcastService = microphoneBroadcastService;
+        PlaybackBroadcastService = playbackBroadcastService;
+        microphoneBroadcastButtonText = "Start service";
+        playbackBroadcastButtonText = "Start service";
     }
 
     [RelayCommand]
-    private async Task SwitchBroadcast()
+    private async Task SwitchMicrophoneBroadcast()
     {
         bool isPermissionGranted = await CheckMicrophonePermissionAsync();
 
         if (!isPermissionGranted)
             return;
 
-        BroadcastService.Switch();
+        MicrophoneBroadcastService.Switch();
 
-        if (BroadcastService.BroadcastState)
-            BroadcastButtonText = "Stop service";
+        if (MicrophoneBroadcastService.BroadcastState)
+            MicrophoneBroadcastButtonText = "Stop service";
         else
-            BroadcastButtonText = "Start service";
+            MicrophoneBroadcastButtonText = "Start service";
+    }
+
+    [RelayCommand]
+    private async Task SwitchPlaybackBroadcast()
+    {
+        bool isPermissionGranted = await CheckMicrophonePermissionAsync();
+
+        if (!isPermissionGranted)
+            return;
+
+        if (!await PlaybackBroadcastService.RequestPermissionAsync())
+            return;
+
+        PlaybackBroadcastService.Switch();
+
+        if (PlaybackBroadcastService.BroadcastState)
+            PlaybackBroadcastButtonText = "Stop service";
+        else
+            PlaybackBroadcastButtonText = "Start service";
     }
 
     private static async Task<bool> CheckMicrophonePermissionAsync()

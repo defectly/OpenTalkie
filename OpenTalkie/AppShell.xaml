@@ -11,8 +11,11 @@
         <Tab Title="Home" Icon="home.png">
             <ShellContent ContentTemplate="{DataTemplate view:HomePage}" Route="HomePage" />
         </Tab>
-        <Tab Title="Streams" Icon="streams.png">
-            <ShellContent ContentTemplate="{DataTemplate view:StreamsPage}" Route="StreamsPage" />
+        <Tab Title="Mic Streams" Icon="mic_streams.png">
+            <ShellContent ContentTemplate="{DataTemplate view:MicrophoneStreamsPage}" Route="MicrophoneStreamsPage" />
+        </Tab>
+        <Tab Title="Play Streams" Icon="playback_streams.png">
+            <ShellContent ContentTemplate="{DataTemplate view:PlaybackStreamsPage}" Route="PlaybackStreamsPage" />
         </Tab>
         <Tab Title="Mic Settings" Icon="mic.png">
             <ShellContent ContentTemplate="{DataTemplate view:MicSettingsPage}" Route="MicSettingsPage" />

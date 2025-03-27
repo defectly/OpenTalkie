@@ -1,4 +1,5 @@
 ﻿using Android.Media;
+using Android.Media.Projection;
 using NAudio.Wave;
 using OpenTalkie.Common.Services.Interfaces;
 using Encoding = Android.Media.Encoding;
@@ -11,8 +12,18 @@ public class PlaybackService : IPlaybackService
     private int _sampleRate;
     private ChannelOut _channelOut;
 
-    private readonly MediaProjectionForegroundService _foregroundService = new();
     private AudioRecord? _audioRecord;
+    private MediaProjectionProvider _mediaProjectionProvider;
+
+    public PlaybackService()
+    {
+        var mediaProjectionProvider = ((MainActivity)Platform.CurrentActivity!).MediaProjectionProvider;
+
+        if (mediaProjectionProvider == null)
+            throw new NullReferenceException($"Media projection provider is null");
+
+        _mediaProjectionProvider = mediaProjectionProvider;
+    }
 
     public int Read(byte[] buffer, int offset, int count)
     {
@@ -34,7 +45,7 @@ public class PlaybackService : IPlaybackService
     {
         _encoding = (Encoding)Preferences.Get("PlaybackEncoding", (int)Encoding.Default);
         _sampleRate = Preferences.Get("PlaybackSampleRate", 48000);
-        _channelOut = (ChannelOut)Preferences.Get("ChannelOut", (int)ChannelOut.Default);
+        _channelOut = (ChannelOut)Preferences.Get("PlaybackChannelOut", (int)ChannelOut.Stereo);
     }
 
     public void Start()
@@ -42,25 +53,33 @@ public class PlaybackService : IPlaybackService
         if (_audioRecord != null)
             return;
 
+        var mediaProjection = _mediaProjectionProvider.GetMediaProjection();
+
+        if (mediaProjection == null)
+            throw new NullReferenceException($"Media projection not provided");
+
         LoadPreferences();
-        CreateAudioRecord();
+        CreateAudioRecord(mediaProjection);
 
         if (_audioRecord == null)
             throw new NullReferenceException($"Audio record not created");
 
-        if (_audioRecord.RecordingState != RecordState.Stopped)
-            return;
-
-        _foregroundService.Start();
         _audioRecord.StartRecording();
+
+        return;
     }
 
-    private void CreateAudioRecord()
+    public async Task<bool> RequestPermissionAsync()
+    {
+        return await _mediaProjectionProvider.RequestMediaProjectionPermissionAsync();
+    }
+
+    private void CreateAudioRecord(MediaProjection mediaProjection)
     {
         if (!OperatingSystem.IsAndroidVersionAtLeast(29))
             throw new NotSupportedException($"Minimum android version is 10 (SDK 29)");
 
-        var config = new AudioPlaybackCaptureConfiguration.Builder(SystemAudioCaptureCallback.MediaProjection)
+        var config = new AudioPlaybackCaptureConfiguration.Builder(mediaProjection)
         .AddMatchingUsage(AudioUsageKind.Media)
         .Build();
 
@@ -90,7 +109,7 @@ public class PlaybackService : IPlaybackService
         _audioRecord.Stop();
         _audioRecord.Dispose();
         _audioRecord = null;
-        _foregroundService.Stop();
+        _mediaProjectionProvider.DisposeMediaProjection();
     }
 
     public ISampleProvider ToSampleProvider()
@@ -106,5 +125,13 @@ public class PlaybackService : IPlaybackService
         var provideHelper = new ProvideHelper(_audioRecord);
 
         return provideHelper;
+    }
+
+    public int GetBufferSize()
+    {
+        if (_audioRecord == null)
+            throw new NullReferenceException($"Audio record is not created");
+
+        return _audioRecord.BufferSizeInFrames;
     }
 }

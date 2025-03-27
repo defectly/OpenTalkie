@@ -1,37 +1,43 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using OpenTalkie.Common.Services;
-using System.Collections.ObjectModel;
 
 namespace OpenTalkie.ViewModel;
 
 public partial class StreamsViewModel : ObservableObject
 {
-    private MicrophoneBroadcastService _broadcastService;
-    public ObservableCollection<Endpoint> Endpoints => _broadcastService.Endpoints;
+    [ObservableProperty]
+    private MicrophoneStreamsViewModel microphoneStreamsViewModel;
 
-    public StreamsViewModel(MicrophoneBroadcastService broadcastService)
+    [ObservableProperty]
+    private PlaybackStreamsViewModel playbackStreamsViewModel;
+
+    [ObservableProperty]
+    private bool isMicrophoneTabSelected;
+
+    [ObservableProperty]
+    private bool isPlaybackTabSelected;
+
+    public StreamsViewModel(MicrophoneStreamsViewModel microphoneVM, PlaybackStreamsViewModel playbackVM)
     {
-        _broadcastService = broadcastService;
+        MicrophoneStreamsViewModel = microphoneVM;
+        PlaybackStreamsViewModel = playbackVM;
+        ShowMicrophoneStreams(); // По умолчанию
+        Console.WriteLine("StreamsViewModel initialized");
     }
 
     [RelayCommand]
-    private async Task OpenSettings(Endpoint endpoint)
+    public void ShowMicrophoneStreams()
     {
-        await Shell.Current
-            .GoToAsync("StreamSettingsPage", new Dictionary<string, object> { { "Endpoint", endpoint } });
+        IsMicrophoneTabSelected = true;
+        IsPlaybackTabSelected = false;
+        Console.WriteLine($"Showing Microphone Streams: IsMicrophoneTabSelected={IsMicrophoneTabSelected}, IsPlaybackTabSelected={IsPlaybackTabSelected}");
     }
 
     [RelayCommand]
-    private void DeleteStream(Endpoint endpoint)
+    public void ShowPlaybackStreams()
     {
-        Endpoints.Remove(endpoint);
-    }
-
-    [RelayCommand]
-    private void AddStream()
-    {
-        var newEndpoint = new Endpoint("New Stream", "192.168.1.1", 1234);
-        Endpoints.Add(newEndpoint);
+        IsMicrophoneTabSelected = false;
+        IsPlaybackTabSelected = true;
+        Console.WriteLine($"Showing Playback Streams: IsMicrophoneTabSelected={IsMicrophoneTabSelected}, IsPlaybackTabSelected={IsPlaybackTabSelected}");
     }
 }

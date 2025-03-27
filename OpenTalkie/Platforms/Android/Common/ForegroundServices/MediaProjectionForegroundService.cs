@@ -7,7 +7,7 @@ using OpenTalkie.Platforms.Android;
 namespace OpenTalkie;
 
 [Service(ForegroundServiceType = Android.Content.PM.ForegroundService.TypeMediaProjection)]
-internal class MediaProjectionForegroundService : Service
+public class MediaProjectionForegroundService : Service
 {
     private readonly string NOTIFICATION_CHANNEL_ID = "1001";
     private readonly int NOTIFICATION_ID = 2;
@@ -20,7 +20,6 @@ internal class MediaProjectionForegroundService : Service
 
     public void Stop() =>
         Android.App.Application.Context.StopService(_intent);
-
 
     private void StartForegroundService()
     {

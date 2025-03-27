@@ -10,4 +10,6 @@ public interface IPlaybackService
     IWaveProvider ToWaveProvider();
     void Start();
     void Stop();
+    int GetBufferSize();
+    Task<bool> RequestPermissionAsync();
 }
