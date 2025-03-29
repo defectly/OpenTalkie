@@ -1,42 +1,37 @@
 ﻿using CommunityToolkit.Maui.Views;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Microsoft.Maui.Controls;
 using OpenTalkie.Common.Repositories.Interfaces;
 using OpenTalkie.View.Popups;
 
 namespace OpenTalkie.ViewModel;
 
-public partial class MicSettingsViewModel : ObservableObject
+public partial class PlaybackSettingsViewModel : ObservableObject
 {
-    private readonly IMicrophoneRepository _microphoneRepository;
+    private readonly IPlaybackRepository _playbackRepository;
     private readonly AppShell _mainPage;
 
     [ObservableProperty]
-    private string selectedSource;
-
-    [ObservableProperty]
-    private string selectedInputChannel;
-
-    [ObservableProperty]
-    private string selectedSampleRate;
+    private string selectedChannelOut;
 
     [ObservableProperty]
     private string selectedEncoding;
 
     [ObservableProperty]
+    private string selectedSampleRate;
+
+    [ObservableProperty]
     private string selectedBufferSize;
 
-    public MicSettingsViewModel(AppShell mainPage, IMicrophoneRepository microphoneRepository)
+    public PlaybackSettingsViewModel(AppShell mainPage, IPlaybackRepository playbackRepository)
     {
         _mainPage = mainPage;
-        _microphoneRepository = microphoneRepository;
+        _playbackRepository = playbackRepository;
 
-        SelectedSource = _microphoneRepository.GetSelectedSource();
-        SelectedInputChannel = _microphoneRepository.GetSelectedInputChannel();
-        SelectedSampleRate = _microphoneRepository.GetSelectedSampleRate();
-        SelectedEncoding = _microphoneRepository.GetSelectedEncoding();
-        SelectedBufferSize = _microphoneRepository.GetSelectedBufferSize();
+        SelectedChannelOut = _playbackRepository.GetSelectedChannelOut();
+        SelectedEncoding = _playbackRepository.GetSelectedEncoding();
+        SelectedSampleRate = _playbackRepository.GetSelectedSampleRate();
+        SelectedBufferSize = _playbackRepository.GetSelectedBufferSize();
     }
 
     [RelayCommand]
@@ -44,17 +39,15 @@ public partial class MicSettingsViewModel : ObservableObject
     {
         string[] options = fieldName switch
         {
-            "Source" => [.. _microphoneRepository.GetAudioSources()],
-            "InputChannel" => [.. _microphoneRepository.GetInputChannels()],
-            "SampleRate" => [.. _microphoneRepository.GetSampleRates()],
-            "Encoding" => [.. _microphoneRepository.GetEncodings()],
+            "ChannelOut" => _playbackRepository.GetOutputChannels().ToArray(),
+            "SampleRate" => _playbackRepository.GetSampleRates().ToArray(),
+            "Encoding" => _playbackRepository.GetEncodings().ToArray(),
             _ => []
         };
 
         string currentValue = fieldName switch
         {
-            "Source" => SelectedSource,
-            "InputChannel" => SelectedInputChannel,
+            "ChannelOut" => SelectedChannelOut,
             "SampleRate" => SelectedSampleRate,
             "Encoding" => SelectedEncoding,
             _ => ""
@@ -69,21 +62,17 @@ public partial class MicSettingsViewModel : ObservableObject
                 {
                     switch (fieldName)
                     {
-                        case "Source":
-                            SelectedSource = result;
-                            _microphoneRepository.SetSelectedSource(result);
-                            break;
-                        case "InputChannel":
-                            SelectedInputChannel = result;
-                            _microphoneRepository.SetSelectedInputChannel(result);
+                        case "ChannelOut":
+                            SelectedChannelOut = result;
+                            _playbackRepository.SetSelectedChannelOut(result);
                             break;
                         case "SampleRate":
                             SelectedSampleRate = result;
-                            _microphoneRepository.SetSelectedSampleRate(result);
+                            _playbackRepository.SetSelectedSampleRate(result);
                             break;
                         case "Encoding":
                             SelectedEncoding = result;
-                            _microphoneRepository.SetSelectedEncoding(result);
+                            _playbackRepository.SetSelectedEncoding(result);
                             break;
                     }
                 }
@@ -95,7 +84,7 @@ public partial class MicSettingsViewModel : ObservableObject
     [RelayCommand]
     private async Task EditBufferSize()
     {
-        string currentValue = SelectedBufferSize ?? _microphoneRepository.GetSelectedBufferSize();
+        string currentValue = SelectedBufferSize ?? _playbackRepository.GetSelectedBufferSize();
 
         var popup = new EditFieldPopup(
             "Change buffer size",
@@ -106,7 +95,7 @@ public partial class MicSettingsViewModel : ObservableObject
                 if (result != null && int.TryParse(result, out int bufferSize) && bufferSize > 0)
                 {
                     SelectedBufferSize = result;
-                    _microphoneRepository.SetSelectedBufferSize(result);
+                    _playbackRepository.SetSelectedBufferSize(result);
                 }
                 else if (result != null)
                 {

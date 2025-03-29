@@ -4,7 +4,7 @@ using NAudio.Wave;
 using OpenTalkie.Common.Services.Interfaces;
 using Encoding = Android.Media.Encoding;
 
-namespace OpenTalkie.Platforms.Android;
+namespace OpenTalkie.Platforms.Android.Common.Services;
 
 public class PlaybackService : IPlaybackService
 {
@@ -14,6 +14,7 @@ public class PlaybackService : IPlaybackService
 
     private AudioRecord? _audioRecord;
     private MediaProjectionProvider _mediaProjectionProvider;
+    private WaveFormat? _waveFormat;
 
     public PlaybackService()
     {
@@ -110,6 +111,7 @@ public class PlaybackService : IPlaybackService
         _audioRecord.Dispose();
         _audioRecord = null;
         _mediaProjectionProvider.DisposeMediaProjection();
+        _waveFormat = null;
     }
 
     public ISampleProvider ToSampleProvider()
@@ -133,5 +135,10 @@ public class PlaybackService : IPlaybackService
             throw new NullReferenceException($"Audio record is not created");
 
         return _audioRecord.BufferSizeInFrames;
+    }
+
+    public WaveFormat GetWaveFormat()
+    {
+        return _waveFormat ??= new WaveFormat(_audioRecord.SampleRate, 16, _audioRecord.ChannelCount);
     }
 }

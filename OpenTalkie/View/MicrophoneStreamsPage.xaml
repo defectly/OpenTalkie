@@ -3,7 +3,9 @@
     x:Class="OpenTalkie.View.MicrophoneStreamsPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    xmlns:vm="clr-namespace:OpenTalkie.ViewModel">
+    xmlns:vm="clr-namespace:OpenTalkie.ViewModel"
+    Padding="16,16,16,0"
+    BackgroundColor="#121212">
     <AbsoluteLayout>
         <CollectionView
             AbsoluteLayout.LayoutBounds="0,0,1,1"
@@ -11,24 +13,64 @@
             ItemsSource="{Binding Endpoints}">
             <CollectionView.ItemTemplate>
                 <DataTemplate>
-                    <Frame BackgroundColor="DarkKhaki">
-                        <StackLayout>
-                            <Label Text="{Binding Name}" />
-                            <Label Text="{Binding Hostname}" />
-                            <Switch IsToggled="{Binding IsEnabled}" />
-                            <HorizontalStackLayout Spacing="10">
+                    <Frame
+                        Margin="0,8"
+                        BackgroundColor="#1E1E1E"
+                        CornerRadius="8"
+                        Shadow="{StaticResource MaterialShadowDark}">
+                        <Grid
+                            ColumnDefinitions="*,Auto"
+                            RowDefinitions="Auto,Auto"
+                            RowSpacing="16">
+                            <Grid
+                                Grid.Row="0"
+                                Grid.Column="0"
+                                RowDefinitions="*,Auto">
+                                <Label
+                                    Grid.Row="0"
+                                    FontAttributes="Bold"
+                                    FontSize="16"
+                                    Text="{Binding Name}"
+                                    TextColor="#FFFFFF" />
+                                <Label
+                                    Grid.Row="1"
+                                    FontSize="14"
+                                    Text="{Binding Hostname}"
+                                    TextColor="#B0B0B0" />
+                            </Grid>
+                            <Switch
+                                Grid.Column="1"
+                                IsToggled="{Binding IsEnabled}"
+                                OnColor="#6200EE"
+                                ThumbColor="#BB86FC" />
+                            <HorizontalStackLayout
+                                Grid.Row="1"
+                                Grid.Column="0"
+                                Spacing="10">
                                 <Button
+                                    Padding="16,8"
+                                    BackgroundColor="#BB86FC"
                                     Command="{Binding BindingContext.OpenSettingsCommand, Source={RelativeSource AncestorType={x:Type ContentPage}}}"
                                     CommandParameter="{Binding}"
-                                    Text="Open" />
+                                    CornerRadius="8"
+                                    FontAttributes="Bold"
+                                    FontSize="14"
+                                    Shadow="{StaticResource MaterialShadowDark}"
+                                    Text="Open"
+                                    TextColor="#FFFFFF" />
                                 <Button
-                                    BackgroundColor="Red"
+                                    Padding="16,8"
+                                    BackgroundColor="#CF6679"
                                     Command="{Binding BindingContext.DeleteStreamCommand, Source={RelativeSource AncestorType={x:Type ContentPage}}}"
                                     CommandParameter="{Binding}"
+                                    CornerRadius="8"
+                                    FontAttributes="Bold"
+                                    FontSize="14"
+                                    Shadow="{StaticResource MaterialShadowDark}"
                                     Text="Delete"
-                                    TextColor="White" />
+                                    TextColor="#FFFFFF" />
                             </HorizontalStackLayout>
-                        </StackLayout>
+                        </Grid>
                     </Frame>
                 </DataTemplate>
             </CollectionView.ItemTemplate>
@@ -37,13 +79,24 @@
         <Button
             AbsoluteLayout.LayoutBounds="0.95,0.95,AutoSize,AutoSize"
             AbsoluteLayout.LayoutFlags="PositionProportional"
-            BackgroundColor="Blue"
+            BackgroundColor="#03DAC6"
             Command="{Binding AddStreamCommand}"
             CornerRadius="25"
-            FontSize="Large"
+            FontAttributes="Bold"
+            FontSize="24"
             HeightRequest="50"
+            Shadow="{StaticResource MaterialShadowDark}"
             Text="+"
-            TextColor="White"
+            TextColor="#FFFFFF"
             WidthRequest="50" />
     </AbsoluteLayout>
+
+    <ContentPage.Resources>
+        <Shadow
+            x:Key="MaterialShadowDark"
+            Brush="#80FFFFFF"
+            Opacity="0.2"
+            Radius="4"
+            Offset="0,2" />
+    </ContentPage.Resources>
 </ContentPage>

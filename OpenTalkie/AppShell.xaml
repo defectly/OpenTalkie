@@ -17,8 +17,8 @@
         <Tab Title="Play Streams" Icon="playback_streams.png">
             <ShellContent ContentTemplate="{DataTemplate view:PlaybackStreamsPage}" Route="PlaybackStreamsPage" />
         </Tab>
-        <Tab Title="Mic Settings" Icon="mic.png">
-            <ShellContent ContentTemplate="{DataTemplate view:MicSettingsPage}" Route="MicSettingsPage" />
+        <Tab Title="Settings" Icon="mic.png">
+            <ShellContent ContentTemplate="{DataTemplate view:SettingsPage}" Route="SettingsPage" />
         </Tab>
     </TabBar>
 </Shell>

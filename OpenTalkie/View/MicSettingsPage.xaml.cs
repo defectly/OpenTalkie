@@ -1,4 +1,5 @@
 using OpenTalkie.ViewModel;
+using CommunityToolkit.Maui.Animations;
 
 namespace OpenTalkie.View;
 

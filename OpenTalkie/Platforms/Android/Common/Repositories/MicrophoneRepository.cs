@@ -2,7 +2,7 @@
 using OpenTalkie.Common.Repositories.Interfaces;
 using OpenTalkie.VBAN;
 
-namespace OpenTalkie.Platforms.Android;
+namespace OpenTalkie.Platforms.Android.Common.Repositories;
 
 public class MicrophoneRepository : IMicrophoneRepository
 {

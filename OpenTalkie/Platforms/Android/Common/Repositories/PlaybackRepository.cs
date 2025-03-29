@@ -1,10 +1,45 @@
 ﻿using Android.Media;
 using OpenTalkie.Common.Repositories.Interfaces;
+using OpenTalkie.VBAN;
 
-namespace OpenTalkie.Platforms.Android;
+namespace OpenTalkie.Platforms.Android.Common.Repositories;
 
 public class PlaybackRepository : IPlaybackRepository
 {
+    public List<string> GetSampleRates()
+    {
+        List<string> sampleRates = [];
+
+        foreach (var item in VBANConsts.SAMPLERATES.Order())
+            sampleRates.Add(item.ToString());
+
+        return sampleRates;
+    }
+    public List<string> GetOutputChannels()
+    {
+        List<string> inputChannels = [];
+
+        foreach (var source in Enum.GetNames<ChannelOut>())
+            inputChannels.Add(source.ToString());
+
+        return inputChannels;
+    }
+    public List<string> GetEncodings()
+    {
+        return ["8", "16", "24", "32"];
+    }
+
+    public string GetSelectedBufferSize()
+    {
+        var encoding = Preferences.Get("PlaybackBufferSize", 1920);
+
+        return 1920.ToString();
+    }
+    public void SetSelectedBufferSize(string bufferSize)
+    {
+        Preferences.Set("PlaybackBufferSize", int.Parse(bufferSize));
+    }
+
     public string GetSelectedSampleRate()
     {
         return Preferences.Get("PlaybackSampleRate", 48000).ToString();

@@ -3,17 +3,24 @@
     x:Class="OpenTalkie.View.MicSettingsPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit">
-    <StackLayout Padding="10" Spacing="10">
+    xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+    Padding="16"
+    BackgroundColor="#121212">
+    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,*" RowSpacing="16">
+
         <!--  Audio Source  -->
         <Frame
-            Padding="10"
-            BorderColor="Gray"
-            CornerRadius="5">
+            x:Name="AudioSourceFrame"
+            Grid.Row="0"
+            Padding="16"
+            BackgroundColor="#1E1E1E"
+            BorderColor="#2E2E2E"
+            CornerRadius="8"
+            Shadow="{StaticResource MaterialShadowDark}">
             <Frame.GestureRecognizers>
                 <TapGestureRecognizer Command="{Binding EditFieldCommand}" CommandParameter="Source" />
             </Frame.GestureRecognizers>
-            <HorizontalStackLayout Spacing="10">
+            <HorizontalStackLayout Spacing="12">
                 <Image
                     HeightRequest="24"
                     Source="mic_icon.png"
@@ -21,29 +28,36 @@
                     WidthRequest="24" />
                 <Grid
                     ColumnDefinitions="*"
-                    RowDefinitions="Auto, Auto"
+                    RowDefinitions="Auto,Auto"
+                    RowSpacing="4"
                     VerticalOptions="Center">
                     <Label
                         Grid.Row="0"
                         FontAttributes="Bold"
-                        Text="Audio Source" />
+                        FontSize="16"
+                        Text="Audio Source"
+                        TextColor="#FFFFFF" />
                     <Label
                         Grid.Row="1"
+                        FontSize="14"
                         Text="{Binding SelectedSource}"
-                        TextColor="Gray" />
+                        TextColor="#B0B0B0" />
                 </Grid>
             </HorizontalStackLayout>
         </Frame>
 
         <!--  Input Channel  -->
         <Frame
-            Padding="10"
-            BorderColor="Gray"
-            CornerRadius="5">
+            Grid.Row="1"
+            Padding="16"
+            BackgroundColor="#1E1E1E"
+            BorderColor="#2E2E2E"
+            CornerRadius="8"
+            Shadow="{StaticResource MaterialShadowDark}">
             <Frame.GestureRecognizers>
                 <TapGestureRecognizer Command="{Binding EditFieldCommand}" CommandParameter="InputChannel" />
             </Frame.GestureRecognizers>
-            <HorizontalStackLayout Spacing="10">
+            <HorizontalStackLayout Spacing="12">
                 <Image
                     HeightRequest="24"
                     Source="channel_icon.png"
@@ -51,29 +65,36 @@
                     WidthRequest="24" />
                 <Grid
                     ColumnDefinitions="*"
-                    RowDefinitions="Auto, Auto"
+                    RowDefinitions="Auto,Auto"
+                    RowSpacing="4"
                     VerticalOptions="Center">
                     <Label
                         Grid.Row="0"
                         FontAttributes="Bold"
-                        Text="Input Channel" />
+                        FontSize="16"
+                        Text="Input Channel"
+                        TextColor="#FFFFFF" />
                     <Label
                         Grid.Row="1"
+                        FontSize="14"
                         Text="{Binding SelectedInputChannel}"
-                        TextColor="Gray" />
+                        TextColor="#B0B0B0" />
                 </Grid>
             </HorizontalStackLayout>
         </Frame>
 
         <!--  Sample Rate  -->
         <Frame
-            Padding="10"
-            BorderColor="Gray"
-            CornerRadius="5">
+            Grid.Row="2"
+            Padding="16"
+            BackgroundColor="#1E1E1E"
+            BorderColor="#2E2E2E"
+            CornerRadius="8"
+            Shadow="{StaticResource MaterialShadowDark}">
             <Frame.GestureRecognizers>
                 <TapGestureRecognizer Command="{Binding EditFieldCommand}" CommandParameter="SampleRate" />
             </Frame.GestureRecognizers>
-            <HorizontalStackLayout Spacing="10">
+            <HorizontalStackLayout Spacing="12">
                 <Image
                     HeightRequest="24"
                     Source="samplerate_icon.png"
@@ -81,29 +102,36 @@
                     WidthRequest="24" />
                 <Grid
                     ColumnDefinitions="*"
-                    RowDefinitions="Auto, Auto"
+                    RowDefinitions="Auto,Auto"
+                    RowSpacing="4"
                     VerticalOptions="Center">
                     <Label
                         Grid.Row="0"
                         FontAttributes="Bold"
-                        Text="Sample rate" />
+                        FontSize="16"
+                        Text="Sample Rate"
+                        TextColor="#FFFFFF" />
                     <Label
                         Grid.Row="1"
+                        FontSize="14"
                         Text="{Binding SelectedSampleRate}"
-                        TextColor="Gray" />
+                        TextColor="#B0B0B0" />
                 </Grid>
             </HorizontalStackLayout>
         </Frame>
 
         <!--  Encoding  -->
         <Frame
-            Padding="10"
-            BorderColor="Gray"
-            CornerRadius="5">
+            Grid.Row="3"
+            Padding="16"
+            BackgroundColor="#1E1E1E"
+            BorderColor="#2E2E2E"
+            CornerRadius="8"
+            Shadow="{StaticResource MaterialShadowDark}">
             <Frame.GestureRecognizers>
                 <TapGestureRecognizer Command="{Binding EditFieldCommand}" CommandParameter="Encoding" />
             </Frame.GestureRecognizers>
-            <HorizontalStackLayout Spacing="10">
+            <HorizontalStackLayout Spacing="12">
                 <Image
                     HeightRequest="24"
                     Source="encoding_icon.png"
@@ -111,29 +139,36 @@
                     WidthRequest="24" />
                 <Grid
                     ColumnDefinitions="*"
-                    RowDefinitions="Auto, Auto"
+                    RowDefinitions="Auto,Auto"
+                    RowSpacing="4"
                     VerticalOptions="Center">
                     <Label
                         Grid.Row="0"
                         FontAttributes="Bold"
-                        Text="Encoding" />
+                        FontSize="16"
+                        Text="Encoding"
+                        TextColor="#FFFFFF" />
                     <Label
                         Grid.Row="1"
+                        FontSize="14"
                         Text="{Binding SelectedEncoding}"
-                        TextColor="Gray" />
+                        TextColor="#B0B0B0" />
                 </Grid>
             </HorizontalStackLayout>
         </Frame>
 
         <!--  Buffer Size  -->
         <Frame
-            Padding="10"
-            BorderColor="Gray"
-            CornerRadius="5">
+            Grid.Row="4"
+            Padding="16"
+            BackgroundColor="#1E1E1E"
+            BorderColor="#2E2E2E"
+            CornerRadius="8"
+            Shadow="{StaticResource MaterialShadowDark}">
             <Frame.GestureRecognizers>
                 <TapGestureRecognizer Command="{Binding EditBufferSizeCommand}" CommandParameter="BufferSize" />
             </Frame.GestureRecognizers>
-            <HorizontalStackLayout Spacing="10">
+            <HorizontalStackLayout Spacing="12">
                 <Image
                     HeightRequest="24"
                     Source="buffer_icon.png"
@@ -141,18 +176,31 @@
                     WidthRequest="24" />
                 <Grid
                     ColumnDefinitions="*"
-                    RowDefinitions="Auto, Auto"
+                    RowDefinitions="Auto,Auto"
+                    RowSpacing="4"
                     VerticalOptions="Center">
                     <Label
                         Grid.Row="0"
                         FontAttributes="Bold"
-                        Text="Buffer size" />
+                        FontSize="16"
+                        Text="Buffer Size"
+                        TextColor="#FFFFFF" />
                     <Label
                         Grid.Row="1"
+                        FontSize="14"
                         Text="{Binding SelectedBufferSize}"
-                        TextColor="Gray" />
+                        TextColor="#B0B0B0" />
                 </Grid>
             </HorizontalStackLayout>
         </Frame>
-    </StackLayout>
+    </Grid>
+
+    <ContentPage.Resources>
+        <Shadow
+            x:Key="MaterialShadowDark"
+            Brush="#80FFFFFF"
+            Opacity="0.2"
+            Radius="4"
+            Offset="0,2" />
+    </ContentPage.Resources>
 </ContentPage>

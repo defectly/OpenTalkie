@@ -2,10 +2,9 @@
 
 namespace OpenTalkie.Common.Services.Interfaces;
 
-public interface IPlaybackService
+public interface IPlaybackService : IInputStream
 {
     int Read(byte[] buffer, int offset, int count);
-    Task<int> ReadAsync(byte[] buffer, int offset, int count);
     ISampleProvider ToSampleProvider();
     IWaveProvider ToWaveProvider();
     void Start();

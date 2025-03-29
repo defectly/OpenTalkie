@@ -1,117 +1,125 @@
-﻿namespace OpenTalkie.RNNoise;
+﻿using System.Buffers;
+using System.Runtime.CompilerServices;
 
-public class DoggyDenoiser : IDisposable
+namespace OpenTalkie.RNNoise;
+
+public class Denoiser : IDisposable
 {
-    private nint state;
-    private float[] processingBuffer;
+    private readonly nint state;
+    private readonly float[] processingBuffer;
+    private readonly float[] processedData;
     private int processingBufferDataStart;
-    private float[] processedData;
     private int processedDataRemaining;
 
-    public DoggyDenoiser()
+    public Denoiser()
     {
         state = Native.rnnoise_create(nint.Zero);
-
         processingBuffer = new float[Native.FRAME_SIZE];
         processedData = new float[Native.FRAME_SIZE];
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public unsafe int Denoise(byte[] buffer, int offset, int byteCount, bool finish = true)
+    {
+        if (buffer == null || offset < 0 || offset > buffer.Length ||
+            byteCount < 0 || offset + byteCount > buffer.Length ||
+            byteCount % 2 != 0)
+            throw new ArgumentException();
+
+        int sampleCount = byteCount >> 1;
+        float[] floatBuffer = ArrayPool<float>.Shared.Rent(sampleCount);
+        try
+        {
+            fixed (byte* bytePtr = buffer)
+            {
+                short* shortPtr = (short*)(bytePtr + offset);
+                for (int i = 0; i < sampleCount; i++)
+                    floatBuffer[i] = shortPtr[i] * (1.0f / 32768.0f);
+
+                int processedSamples = Denoise(floatBuffer.AsSpan(0, sampleCount), finish);
+
+                for (int i = 0; i < processedSamples; i++)
+                {
+                    float sample = floatBuffer[i] * 32768.0f;
+                    shortPtr[i] = (short)Math.Clamp(sample, -32768.0f, 32767.0f);
+                }
+
+                return processedSamples << 1;
+            }
+        }
+        finally
+        {
+            ArrayPool<float>.Shared.Return(floatBuffer);
+        }
     }
 
     public unsafe int Denoise(Span<float> buffer, bool finish = true)
     {
         int count = 0;
+        int bufferLength = buffer.Length;
 
-        fixed (float* processingPtr = &processingBuffer[0])
         fixed (float* bufferPtr = buffer)
+        fixed (float* procBufferPtr = processingBuffer)
+        fixed (float* procDataPtr = processedData)
         {
-            while (buffer.Length > 0 || processingBufferDataStart == Native.FRAME_SIZE)
+            while (bufferLength > 0 || processingBufferDataStart == Native.FRAME_SIZE)
             {
+                if (processingBufferDataStart == 0 && bufferLength >= Native.FRAME_SIZE)
+                {
+                    int fullFrames = bufferLength / Native.FRAME_SIZE;
+                    ProcessFullFrames(bufferPtr + count, fullFrames);
+                    int processedLength = fullFrames * Native.FRAME_SIZE;
+                    count += processedLength;
+                    bufferLength -= processedLength;
+                    continue;
+                }
+
                 if (processedDataRemaining > 0)
                 {
-                    var sourceSlice = buffer;
+                    int copyLength = Math.Min(processedDataRemaining, bufferLength);
+                    Buffer.MemoryCopy(
+                        procDataPtr + Native.FRAME_SIZE - processedDataRemaining,
+                        bufferPtr + count,
+                        copyLength * sizeof(float),
+                        copyLength * sizeof(float));
 
-                    if (sourceSlice.Length > processedDataRemaining)
-                        sourceSlice = sourceSlice.Slice(0, processedDataRemaining);
-
-                    sourceSlice.CopyTo(processingBuffer.AsSpan().Slice(processingBufferDataStart));
-                    processingBufferDataStart += sourceSlice.Length;
-
-                    var processed = processedData.AsSpan().Slice(processedData.Length - processedDataRemaining);
-
-                    if (processed.Length > buffer.Length)
-                        processed = processed.Slice(0, buffer.Length);
-
-                    processed.CopyTo(buffer);
-
-                    buffer = buffer.Slice(processed.Length);
-
-                    processedDataRemaining -= processed.Length;
-                    count += processed.Length;
+                    processingBufferDataStart += copyLength;
+                    processedDataRemaining -= copyLength;
+                    count += copyLength;
+                    bufferLength -= copyLength;
                 }
 
-                if (processingBufferDataStart > 0 || buffer.Length < Native.FRAME_SIZE)
+                if (processingBufferDataStart > 0 || bufferLength < Native.FRAME_SIZE)
                 {
-                    var processing = processingBuffer.AsSpan();
-                    processing = processing.Slice(processingBufferDataStart);
+                    int remainingSpace = Native.FRAME_SIZE - processingBufferDataStart;
+                    int copyLength = Math.Min(remainingSpace, bufferLength);
 
-                    var sourceSlice = buffer;
+                    Buffer.MemoryCopy(
+                        bufferPtr + count,
+                        procBufferPtr + processingBufferDataStart,
+                        copyLength * sizeof(float),
+                        copyLength * sizeof(float));
 
-                    if (sourceSlice.Length > processing.Length)
-                        sourceSlice = sourceSlice.Slice(0, processing.Length);
+                    processingBufferDataStart += copyLength;
 
-                    sourceSlice.CopyTo(processing);
-
-                    processingBufferDataStart += sourceSlice.Length;
-
-                    processing = processing.Slice(sourceSlice.Length);
-
-                    if (processing.Length == 0 || finish)
+                    if (processingBufferDataStart == Native.FRAME_SIZE || finish)
                     {
-                        if (processing.Length > 0)
-                            processing.Fill(0);
+                        if (processingBufferDataStart < Native.FRAME_SIZE)
+                            Array.Clear(processingBuffer, processingBufferDataStart,
+                                Native.FRAME_SIZE - processingBufferDataStart);
 
-                        for (int i = 0; i < Native.FRAME_SIZE; i++)
-                            processingBuffer[i] *= Native.SIGNAL_SCALE;
-
-                        fixed (float* processedPtr = &processedData[0])
-                            Native.rnnoise_process_frame(state, processedPtr, processingPtr);
-
-                        for (int i = 0; i < Native.FRAME_SIZE; i++)
-                            processedData[i] *= Native.SIGNAL_SCALE_INV;
-
+                        ScaleAndProcessFrame(procBufferPtr, procDataPtr);
                         processedDataRemaining = Native.FRAME_SIZE;
 
-                        var processed = processedData.AsSpan();
+                        copyLength = Math.Min(Native.FRAME_SIZE, bufferLength);
+                        Buffer.MemoryCopy(procDataPtr, bufferPtr + count,
+                            copyLength * sizeof(float), copyLength * sizeof(float));
 
-                        if (processed.Length > sourceSlice.Length)
-                            processed = processed.Slice(0, sourceSlice.Length);
-
-                        processed.CopyTo(buffer);
-
-                        count += sourceSlice.Length;
-
-                        if (finish)
-                            processedDataRemaining = 0;
-                        else
-                            processedDataRemaining -= processed.Length;
-
+                        count += copyLength;
+                        bufferLength -= copyLength;
+                        processedDataRemaining = finish ? 0 : Native.FRAME_SIZE - copyLength;
                         processingBufferDataStart = 0;
                     }
-
-                    buffer = buffer.Slice(sourceSlice.Length);
-                }
-                else
-                {
-                    for (int i = 0; i < Native.FRAME_SIZE; i++)
-                        buffer[i] *= Native.SIGNAL_SCALE;
-
-                    Native.rnnoise_process_frame(state, bufferPtr + count, bufferPtr + count);
-
-                    for (int i = 0; i < Native.FRAME_SIZE; i++)
-                        buffer[i] *= Native.SIGNAL_SCALE_INV;
-
-                    buffer = buffer.Slice(Native.FRAME_SIZE);
-
-                    count += Native.FRAME_SIZE;
                 }
             }
         }
@@ -119,21 +127,40 @@ public class DoggyDenoiser : IDisposable
         return count;
     }
 
-    public void Dispose()
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private unsafe void ProcessFullFrames(float* bufferPtr, int frameCount)
     {
-        Dispose(true);
-        GC.SuppressFinalize(this);
+        const float scale = Native.SIGNAL_SCALE;
+        const float scaleInv = Native.SIGNAL_SCALE_INV;
+
+        for (int i = 0; i < frameCount; i++)
+        {
+            float* framePtr = bufferPtr + (i * Native.FRAME_SIZE);
+            for (int j = 0; j < Native.FRAME_SIZE; j++)
+                framePtr[j] *= scale;
+
+            Native.rnnoise_process_frame(state, framePtr, framePtr);
+
+            for (int j = 0; j < Native.FRAME_SIZE; j++)
+                framePtr[j] *= scaleInv;
+        }
     }
 
-    protected virtual void Dispose(bool disposing)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private unsafe void ScaleAndProcessFrame(float* inPtr, float* outPtr)
     {
-        if (disposing)
-        {
-            if (state != nint.Zero)
-            {
-                Native.rnnoise_destroy(state);
-                state = nint.Zero;
-            }
-        }
+        for (int i = 0; i < Native.FRAME_SIZE; i++)
+            inPtr[i] *= Native.SIGNAL_SCALE;
+
+        Native.rnnoise_process_frame(state, outPtr, inPtr);
+
+        for (int i = 0; i < Native.FRAME_SIZE; i++)
+            outPtr[i] *= Native.SIGNAL_SCALE_INV;
+    }
+
+    public void Dispose()
+    {
+        if (state != nint.Zero)
+            Native.rnnoise_destroy(state);
     }
 }

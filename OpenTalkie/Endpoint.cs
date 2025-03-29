@@ -7,7 +7,6 @@ namespace OpenTalkie;
 
 public partial class Endpoint : ObservableObject, IDisposable
 {
-    public Guid Id { get; set; }
     [ObservableProperty]
     private EndpointType type;
     [ObservableProperty]
@@ -18,9 +17,13 @@ public partial class Endpoint : ObservableObject, IDisposable
     private int port;
     [ObservableProperty]
     private bool isEnabled;
+    [ObservableProperty]
+    private bool isDenoiseEnabled;
     public UdpClient UdpClient { get; private set; }
+    public Guid Id { get; set; }
+    public uint FrameCount;
 
-    public Endpoint(EndpointType type, string name, string hostname, int port)
+    public Endpoint(EndpointType type, string name, string hostname, int port, bool denoise)
     {
         Id = Guid.NewGuid();
         Type = type;
@@ -29,7 +32,19 @@ public partial class Endpoint : ObservableObject, IDisposable
         Port = port;
         UdpClient = new(Hostname, Port);
         this.PropertyChanged += DestinationChanged;
+        Connectivity.ConnectivityChanged += OnConnectivityChanged;
+        IsDenoiseEnabled = denoise;
     }
+
+    private void OnConnectivityChanged(object? sender, ConnectivityChangedEventArgs e)
+    {
+        if (e.NetworkAccess != NetworkAccess.None)
+        {
+            UdpClient?.Dispose();
+            UdpClient = new(Hostname, Port);
+        }
+    }
+
     public Endpoint(Guid id, EndpointType type, string name, string hostname, int port)
     {
         Id = id;
@@ -46,6 +61,7 @@ public partial class Endpoint : ObservableObject, IDisposable
         if (e.PropertyName != "Hostname" && e.PropertyName != "Port")
             return;
 
+        UdpClient?.Dispose();
         UdpClient = new(Hostname, Port);
     }
 

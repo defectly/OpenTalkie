@@ -6,6 +6,7 @@ using OpenTalkie.Common.Services.Interfaces;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using Microsoft.Maui.ApplicationModel;
 
 namespace OpenTalkie.Common.Services;
 
@@ -15,6 +16,7 @@ public class PlaybackBroadcastService
     private CancellationTokenSource _cancellationTokenSource;
     private readonly IPlaybackService _playbackService;
     private readonly IEndpointRepository _endpointRepository;
+    private AsyncSender? _asyncSender;
     public ObservableCollection<Endpoint> Endpoints;
     public bool BroadcastState { get; private set; }
 
@@ -78,15 +80,15 @@ public class PlaybackBroadcastService
         if (BroadcastState)
         {
             _cancellationTokenSource.Cancel();
-            _playbackService.Stop();
             BroadcastState = !BroadcastState;
+            _playbackService.Stop();
+            _asyncSender = null;
         }
         else
         {
-            _playbackService.Start();
             _cancellationTokenSource = new();
 
-            var thread = new Thread(() => StartSendingLoop(_cancellationTokenSource.Token))
+            var thread = new Thread(() => _ = StartSendingLoopAsync(_cancellationTokenSource.Token))
             {
                 IsBackground = true
             };
@@ -96,19 +98,20 @@ public class PlaybackBroadcastService
         }
     }
 
-    private void StartSendingLoop(CancellationToken cancellationToken)
+    private async Task StartSendingLoopAsync(CancellationToken cancellationToken)
     {
-        var sampleProvider = _playbackService.ToSampleProvider();
-        Sender sender = new(sampleProvider, Endpoints);
+        _playbackService.Start();
 
-        float[] vbanBuffer = new float[_playbackService.GetBufferSize() / 2];
+        _asyncSender ??= new(_playbackService, Endpoints);
+
+        byte[] vbanBuffer = new byte[_playbackService.GetBufferSize()];
 
         while (true)
         {
             if (cancellationToken.IsCancellationRequested)
                 return;
 
-            sender.Read(vbanBuffer, 0, vbanBuffer.Length);
+            await _asyncSender.ReadAsync(vbanBuffer, 0, vbanBuffer.Length);
         }
     }
 }

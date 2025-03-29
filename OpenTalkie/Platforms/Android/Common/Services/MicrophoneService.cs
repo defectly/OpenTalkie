@@ -1,8 +1,9 @@
 ﻿using Android.Media;
 using NAudio.Wave;
-using OpenTalkie.Common.Services;
+using OpenTalkie.Common.Services.Interfaces;
+using OpenTalkie.Platforms.Android.Common.ForegroundServices;
 
-namespace OpenTalkie.Platforms.Android;
+namespace OpenTalkie.Platforms.Android.Common.Services;
 
 public class MicrophoneService : IMicrophoneService
 {
@@ -12,6 +13,7 @@ public class MicrophoneService : IMicrophoneService
     private int _microphoneChannel;
     private int _microphoneSampleRate;
     private int _microphoneEncoding;
+    private WaveFormat? _waveFormat;
     public int BufferSize { get; set; }
 
     public void Start()
@@ -29,6 +31,11 @@ public class MicrophoneService : IMicrophoneService
         }
     }
 
+    public WaveFormat GetWaveFormat()
+    {
+        return _waveFormat ??= new WaveFormat(_audioRecord.SampleRate, 16, _audioRecord.ChannelCount);
+    }
+
     public void Stop()
     {
         if (_audioRecord == null)
@@ -41,6 +48,7 @@ public class MicrophoneService : IMicrophoneService
         _audioRecord.Dispose();
         _audioRecord = null;
         _foregroundService.Stop();
+        _waveFormat = null;
     }
 
     public int Read(byte[] buffer, int offset, int count)

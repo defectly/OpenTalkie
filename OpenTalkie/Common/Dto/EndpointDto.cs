@@ -11,6 +11,7 @@ public class EndpointDto
     public string Hostname { get; set; }
     public int Port { get; set; }
     public bool IsEnabled { get; set; }
+    public bool IsDenoiseEnabled { get; set; }
 }
 
 public class EndpointDtoMappingProfile : Profile
@@ -24,6 +25,7 @@ public class EndpointDtoMappingProfile : Profile
             .ForMember(dest => dest.Hostname, src => src.MapFrom(endpoint => endpoint.Hostname))
             .ForMember(dest => dest.Port, src => src.MapFrom(endpoint => endpoint.Port))
             .ForMember(dest => dest.IsEnabled, src => src.MapFrom(endpoint => endpoint.IsEnabled))
+            .ForMember(dest => dest.IsDenoiseEnabled, src => src.MapFrom(endpoint => endpoint.IsDenoiseEnabled))
         .ReverseMap();
     }
 }

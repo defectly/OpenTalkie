@@ -5,7 +5,7 @@ namespace OpenTalkie;
 
 internal class DenoisedSampleProvider : ISampleProvider
 {
-    private DoggyDenoiser _denoiser;
+    private Denoiser _denoiser;
     private ISampleProvider _sample;
 
     public WaveFormat WaveFormat => _sample.WaveFormat;

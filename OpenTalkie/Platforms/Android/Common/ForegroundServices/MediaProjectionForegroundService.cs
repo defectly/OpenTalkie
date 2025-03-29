@@ -1,29 +1,29 @@
 ﻿using Android.App;
 using Android.Content;
+using Android.Content.PM;
 using Android.OS;
 using AndroidX.Core.App;
-using OpenTalkie.Platforms.Android;
 
-namespace OpenTalkie;
+namespace OpenTalkie.Platforms.Android.Common.ForegroundServices;
 
-[Service(ForegroundServiceType = Android.Content.PM.ForegroundService.TypeMediaProjection)]
+[Service(ForegroundServiceType = ForegroundService.TypeMediaProjection)]
 public class MediaProjectionForegroundService : Service
 {
     private readonly string NOTIFICATION_CHANNEL_ID = "1001";
     private readonly int NOTIFICATION_ID = 2;
     private readonly string NOTIFICATION_CHANNEL_NAME = "system_audio_notification";
 
-    private Intent _intent = new(Android.App.Application.Context, typeof(MediaProjectionForegroundService));
+    private Intent _intent = new(Platform.AppContext, typeof(MediaProjectionForegroundService));
 
     public void Start() =>
-        Android.App.Application.Context.StartForegroundService(_intent);
+        Platform.AppContext.StartForegroundService(_intent);
 
     public void Stop() =>
-        Android.App.Application.Context.StopService(_intent);
+        Platform.AppContext.StopService(_intent);
 
     private void StartForegroundService()
     {
-        var openAppIntent = new Intent(this, typeof(MainActivity)); 
+        var openAppIntent = new Intent(this, typeof(MainActivity));
         openAppIntent.SetFlags(ActivityFlags.ClearTop | ActivityFlags.NewTask);
         var pendingIntent = PendingIntent.GetActivity(this, 0, openAppIntent, PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable);
 
@@ -41,7 +41,7 @@ public class MediaProjectionForegroundService : Service
         notification.SetContentIntent(pendingIntent);
 
         if (OperatingSystem.IsAndroidVersionAtLeast(29))
-            StartForeground(NOTIFICATION_ID, notification.Build(), Android.Content.PM.ForegroundService.TypeMediaProjection);
+            StartForeground(NOTIFICATION_ID, notification.Build(), ForegroundService.TypeMediaProjection);
         else
             StartForeground(NOTIFICATION_ID, notification.Build());
     }

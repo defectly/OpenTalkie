@@ -2,9 +2,48 @@
 <ContentPage
     x:Class="OpenTalkie.View.HomePage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
-    <StackLayout>
-        <Button Command="{Binding SwitchMicrophoneBroadcastCommand}" Text="{Binding MicrophoneBroadcastButtonText}" />
-        <Button Command="{Binding SwitchPlaybackBroadcastCommand}" Text="{Binding PlaybackBroadcastButtonText}" />
-    </StackLayout>
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Padding="16"
+    BackgroundColor="#121212">
+    <Grid
+        HorizontalOptions="Center"
+        RowDefinitions="Auto,Auto,Auto"
+        RowSpacing="16"
+        VerticalOptions="Center">
+
+        <Button
+            Grid.Row="0"
+            Padding="16,12"
+            BackgroundColor="#BB86FC"
+            Command="{Binding SwitchMicrophoneBroadcastCommand}"
+            CornerRadius="8"
+            FontAttributes="Bold"
+            FontSize="16"
+            MinimumHeightRequest="48"
+            Shadow="{StaticResource MaterialShadowDark}"
+            Text="{Binding MicrophoneBroadcastButtonText}"
+            TextColor="#FFFFFF" />
+
+        <Button
+            Grid.Row="1"
+            Padding="16,12"
+            BackgroundColor="#03DAC6"
+            Command="{Binding SwitchPlaybackBroadcastCommand}"
+            CornerRadius="8"
+            FontAttributes="Bold"
+            FontSize="16"
+            MinimumHeightRequest="48"
+            Shadow="{StaticResource MaterialShadowDark}"
+            Text="{Binding PlaybackBroadcastButtonText}"
+            TextColor="#FFFFFF" />
+    </Grid>
+
+    <ContentPage.Resources>
+        <Shadow
+            x:Key="MaterialShadowDark"
+            Brush="#80FFFFFF"
+            Opacity="0.2"
+            Radius="4"
+            Offset="0,2" />
+    </ContentPage.Resources>
 </ContentPage>

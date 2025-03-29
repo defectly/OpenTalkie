@@ -8,8 +8,12 @@ using OpenTalkie.View;
 using OpenTalkie.ViewModel;
 using System.Reflection;
 
+
+
 #if ANDROID
 using OpenTalkie.Platforms.Android;
+using OpenTalkie.Platforms.Android.Common.Repositories;
+using OpenTalkie.Platforms.Android.Common.Services;
 #endif
 
 namespace OpenTalkie;
@@ -70,6 +74,8 @@ public static class MauiProgram
         services.AddTransient<PlaybackStreamsViewModel>();
         services.AddTransient<StreamSettingsViewModel>();
         services.AddTransient<MicSettingsViewModel>();
+        services.AddTransient<PlaybackSettingsViewModel>();
+        services.AddTransient<SettingsViewModel>();
     }
     private static void RegisterViews(IServiceCollection services)
     {
@@ -78,5 +84,7 @@ public static class MauiProgram
         services.AddTransient<PlaybackStreamsPage>();
         services.AddTransient<StreamSettingsPage>();
         services.AddTransient<MicSettingsPage>();
+        services.AddTransient<PlaybackSettingsPage>();
+        services.AddTransient<SettingsPage>();
     }
 }

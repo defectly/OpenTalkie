@@ -3,21 +3,14 @@ using NAudio.Wave;
 
 namespace OpenTalkie.Platforms.Android;
 
-public class ProvideHelper : IWaveProvider, IDisposable
+public class ProvideHelper(AudioRecord audioRecord) : IWaveProvider, IDisposable
 {
-    private readonly AudioRecord _audioRecord;
-
     public WaveFormat WaveFormat =>
-        new(_audioRecord.SampleRate, MapEncoding(_audioRecord.Format.Encoding), _audioRecord.Format.ChannelCount);
-
-    public ProvideHelper(AudioRecord audioRecord)
-    {
-        _audioRecord = audioRecord;
-    }
+        new(audioRecord.SampleRate, MapEncoding(audioRecord.Format.Encoding), audioRecord.Format.ChannelCount);
 
     public int Read(byte[] buffer, int offset, int count)
     {
-        var read = _audioRecord.Read(buffer, offset, count);
+        var read = audioRecord.Read(buffer, offset, count);
         return read;
     }
 

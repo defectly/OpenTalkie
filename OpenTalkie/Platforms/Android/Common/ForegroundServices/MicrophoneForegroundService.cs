@@ -1,25 +1,25 @@
 ﻿using Android.App;
 using Android.Content;
+using Android.Content.PM;
 using Android.OS;
 using AndroidX.Core.App;
-using OpenTalkie.Platforms.Android;
 
-namespace OpenTalkie;
+namespace OpenTalkie.Platforms.Android.Common.ForegroundServices;
 
-[Service(ForegroundServiceType = Android.Content.PM.ForegroundService.TypeMicrophone)]
+[Service(ForegroundServiceType = ForegroundService.TypeMicrophone)]
 internal class MicrophoneForegroundService : Service
 {
     private readonly string NOTIFICATION_CHANNEL_ID = "1000";
     private readonly int NOTIFICATION_ID = 1;
     private readonly string NOTIFICATION_CHANNEL_NAME = "microphone_notification";
 
-    private Intent _intent = new(Android.App.Application.Context, typeof(MicrophoneForegroundService));
+    private Intent _intent = new(Platform.AppContext, typeof(MicrophoneForegroundService));
 
     public void Start() =>
-        Android.App.Application.Context.StartForegroundService(_intent);
+        Platform.AppContext.StartForegroundService(_intent);
 
     public void Stop() =>
-        Android.App.Application.Context.StopService(_intent);
+        Platform.AppContext.StopService(_intent);
 
     private void StartForegroundService()
     {
@@ -41,7 +41,7 @@ internal class MicrophoneForegroundService : Service
         notification.SetContentIntent(pendingIntent);
 
         if (OperatingSystem.IsAndroidVersionAtLeast(30))
-            StartForeground(NOTIFICATION_ID, notification.Build(), Android.Content.PM.ForegroundService.TypeMicrophone);
+            StartForeground(NOTIFICATION_ID, notification.Build(), ForegroundService.TypeMicrophone);
         else
             StartForeground(NOTIFICATION_ID, notification.Build());
     }

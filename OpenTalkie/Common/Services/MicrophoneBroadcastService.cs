@@ -5,15 +5,18 @@ using OpenTalkie.Common.Repositories.Interfaces;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using Microsoft.Maui.ApplicationModel;
+using OpenTalkie.Common.Services.Interfaces;
 
 namespace OpenTalkie.Common.Services;
 
 public class MicrophoneBroadcastService
 {
-    private IMapper _mapper;
+    private readonly IMapper _mapper;
     private CancellationTokenSource _cancellationTokenSource;
     private readonly IMicrophoneService _microphoneService;
     private readonly IEndpointRepository _endpointRepository;
+    private AsyncSender? _asyncSender;
     public ObservableCollection<Endpoint> Endpoints;
     public bool BroadcastState { get; private set; }
 
@@ -34,7 +37,7 @@ public class MicrophoneBroadcastService
     {
         if (e.Action == NotifyCollectionChangedAction.Remove)
         {
-            if(e.OldItems != null)
+            if (e.OldItems != null)
             {
                 foreach (Endpoint endpoint in e.OldItems)
                 {
@@ -74,35 +77,37 @@ public class MicrophoneBroadcastService
             _cancellationTokenSource.Cancel();
             BroadcastState = !BroadcastState;
             _microphoneService.Stop();
+            _asyncSender = null;
         }
         else
         {
             _cancellationTokenSource = new();
 
-            var thread = new Thread(() => StartSendingLoop(_cancellationTokenSource.Token))
+            var thread = new Thread(() => _ = StartSendingLoopAsync(_cancellationTokenSource.Token))
             {
                 IsBackground = true
             };
 
             thread.Start();
+
             BroadcastState = !BroadcastState;
         }
     }
 
-    private void StartSendingLoop(CancellationToken cancellationToken)
+    private async Task StartSendingLoopAsync(CancellationToken cancellationToken)
     {
         _microphoneService.Start();
-        var sampleProvider = _microphoneService.ToSampleProvider();
-        Sender sender = new(sampleProvider, Endpoints);
 
-        float[] vbanBuffer = new float[_microphoneService.BufferSize / 2];
+        _asyncSender ??= new(_microphoneService, Endpoints);
+
+        byte[] vbanBuffer = new byte[_microphoneService.BufferSize];
 
         while (true)
         {
             if (cancellationToken.IsCancellationRequested)
                 return;
 
-            sender.Read(vbanBuffer, 0, vbanBuffer.Length);
+            await _asyncSender.ReadAsync(vbanBuffer, 0, vbanBuffer.Length);
         }
     }
 }

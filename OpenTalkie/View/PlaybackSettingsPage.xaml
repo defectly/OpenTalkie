@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage
-    x:Class="OpenTalkie.View.StreamSettingsPage"
+    x:Class="OpenTalkie.View.PlaybackSettingsPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
@@ -8,8 +8,9 @@
     BackgroundColor="#121212">
     <Grid RowDefinitions="Auto,Auto,Auto,Auto,*" RowSpacing="16">
 
-        <!--  Name  -->
+        <!--  Channel Out  -->
         <Frame
+            x:Name="ChannelOutFrame"
             Grid.Row="0"
             Padding="16"
             BackgroundColor="#1E1E1E"
@@ -17,12 +18,12 @@
             CornerRadius="8"
             Shadow="{StaticResource MaterialShadowDark}">
             <Frame.GestureRecognizers>
-                <TapGestureRecognizer Command="{Binding EditNameCommand}" CommandParameter="Name" />
+                <TapGestureRecognizer Command="{Binding EditFieldCommand}" CommandParameter="ChannelOut" />
             </Frame.GestureRecognizers>
             <HorizontalStackLayout Spacing="12">
                 <Image
                     HeightRequest="24"
-                    Source="name_icon.png"
+                    Source="channel_icon.png"
                     VerticalOptions="Center"
                     WidthRequest="24" />
                 <Grid
@@ -34,18 +35,18 @@
                         Grid.Row="0"
                         FontAttributes="Bold"
                         FontSize="16"
-                        Text="Name"
+                        Text="Channel Out"
                         TextColor="#FFFFFF" />
                     <Label
                         Grid.Row="1"
                         FontSize="14"
-                        Text="{Binding Endpoint.Name}"
+                        Text="{Binding SelectedChannelOut}"
                         TextColor="#B0B0B0" />
                 </Grid>
             </HorizontalStackLayout>
         </Frame>
 
-        <!--  Hostname  -->
+        <!--  Sample Rate  -->
         <Frame
             Grid.Row="1"
             Padding="16"
@@ -54,12 +55,12 @@
             CornerRadius="8"
             Shadow="{StaticResource MaterialShadowDark}">
             <Frame.GestureRecognizers>
-                <TapGestureRecognizer Command="{Binding EditHostnameCommand}" CommandParameter="Address" />
+                <TapGestureRecognizer Command="{Binding EditFieldCommand}" CommandParameter="SampleRate" />
             </Frame.GestureRecognizers>
             <HorizontalStackLayout Spacing="12">
                 <Image
                     HeightRequest="24"
-                    Source="address_icon.png"
+                    Source="samplerate_icon.png"
                     VerticalOptions="Center"
                     WidthRequest="24" />
                 <Grid
@@ -71,18 +72,18 @@
                         Grid.Row="0"
                         FontAttributes="Bold"
                         FontSize="16"
-                        Text="Hostname"
+                        Text="Sample Rate"
                         TextColor="#FFFFFF" />
                     <Label
                         Grid.Row="1"
                         FontSize="14"
-                        Text="{Binding Endpoint.Hostname}"
+                        Text="{Binding SelectedSampleRate}"
                         TextColor="#B0B0B0" />
                 </Grid>
             </HorizontalStackLayout>
         </Frame>
 
-        <!--  Port  -->
+        <!--  Encoding  -->
         <Frame
             Grid.Row="2"
             Padding="16"
@@ -91,12 +92,12 @@
             CornerRadius="8"
             Shadow="{StaticResource MaterialShadowDark}">
             <Frame.GestureRecognizers>
-                <TapGestureRecognizer Command="{Binding EditPortCommand}" CommandParameter="Port" />
+                <TapGestureRecognizer Command="{Binding EditFieldCommand}" CommandParameter="Encoding" />
             </Frame.GestureRecognizers>
             <HorizontalStackLayout Spacing="12">
                 <Image
                     HeightRequest="24"
-                    Source="port_icon.png"
+                    Source="encoding_icon.png"
                     VerticalOptions="Center"
                     WidthRequest="24" />
                 <Grid
@@ -108,18 +109,18 @@
                         Grid.Row="0"
                         FontAttributes="Bold"
                         FontSize="16"
-                        Text="Port"
+                        Text="Encoding"
                         TextColor="#FFFFFF" />
                     <Label
                         Grid.Row="1"
                         FontSize="14"
-                        Text="{Binding Endpoint.Port}"
+                        Text="{Binding SelectedEncoding}"
                         TextColor="#B0B0B0" />
                 </Grid>
             </HorizontalStackLayout>
         </Frame>
 
-        <!--  Denoise Switch  -->
+        <!--  Buffer Size  -->
         <Frame
             Grid.Row="3"
             Padding="16"
@@ -127,33 +128,34 @@
             BorderColor="#2E2E2E"
             CornerRadius="8"
             Shadow="{StaticResource MaterialShadowDark}">
+            <Frame.GestureRecognizers>
+                <TapGestureRecognizer Command="{Binding EditBufferSizeCommand}" />
+            </Frame.GestureRecognizers>
             <HorizontalStackLayout Spacing="12">
                 <Image
                     HeightRequest="24"
-                    Source="denoise_icon.png"
+                    Source="buffer_icon.png"
                     VerticalOptions="Center"
                     WidthRequest="24" />
                 <Grid
-                    ColumnDefinitions="*,Auto"
-                    RowDefinitions="Auto"
+                    ColumnDefinitions="*"
+                    RowDefinitions="Auto,Auto"
+                    RowSpacing="4"
                     VerticalOptions="Center">
                     <Label
-                        Grid.Column="0"
+                        Grid.Row="0"
                         FontAttributes="Bold"
                         FontSize="16"
-                        Text="Denoise"
-                        TextColor="#FFFFFF"
-                        VerticalOptions="Center" />
-                    <Switch
-                        Grid.Column="1"
-                        IsToggled="{Binding Endpoint.IsDenoiseEnabled, Mode=TwoWay}"
-                        OnColor="#BB86FC"
-                        ThumbColor="#6200EE"
-                        VerticalOptions="Center" />
+                        Text="Buffer Size"
+                        TextColor="#FFFFFF" />
+                    <Label
+                        Grid.Row="1"
+                        FontSize="14"
+                        Text="{Binding SelectedBufferSize}"
+                        TextColor="#B0B0B0" />
                 </Grid>
             </HorizontalStackLayout>
         </Frame>
-
     </Grid>
 
     <ContentPage.Resources>

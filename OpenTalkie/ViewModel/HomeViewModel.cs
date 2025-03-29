@@ -1,7 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using OpenTalkie.Common.Services;
-using OpenTalkie.Common.Services.Interfaces;
 
 namespace OpenTalkie.ViewModel;
 
@@ -11,12 +10,15 @@ public partial class HomeViewModel : ObservableObject
     private string microphoneBroadcastButtonText;
     [ObservableProperty]
     private string playbackBroadcastButtonText;
+    private readonly AppShell mainPage;
+
     public MicrophoneBroadcastService MicrophoneBroadcastService { get; set; }
     public PlaybackBroadcastService PlaybackBroadcastService { get; set; }
 
-    public HomeViewModel(MicrophoneBroadcastService microphoneBroadcastService,
+    public HomeViewModel(AppShell mainPage, MicrophoneBroadcastService microphoneBroadcastService,
         PlaybackBroadcastService playbackBroadcastService)
     {
+        this.mainPage = mainPage;
         MicrophoneBroadcastService = microphoneBroadcastService;
         PlaybackBroadcastService = playbackBroadcastService;
         microphoneBroadcastButtonText = "Start service";
@@ -58,7 +60,7 @@ public partial class HomeViewModel : ObservableObject
             PlaybackBroadcastButtonText = "Start service";
     }
 
-    private static async Task<bool> CheckMicrophonePermissionAsync()
+    private async Task<bool> CheckMicrophonePermissionAsync()
     {
         var permissionStatus = await Permissions.CheckStatusAsync<Permissions.Microphone>();
         if (permissionStatus == PermissionStatus.Granted)
@@ -69,7 +71,7 @@ public partial class HomeViewModel : ObservableObject
         if (permissionStatus == PermissionStatus.Granted)
             return true;
 
-        _ = Application.Current.MainPage
+        _ = mainPage
             .DisplayAlert("Mic permission", "Please, give mic permission to let this app work", "Ok")
             .ConfigureAwait(false);
 
