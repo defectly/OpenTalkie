@@ -111,8 +111,8 @@ public class MicrophoneRepository : IMicrophoneRepository
         {
             8 => Encoding.Pcm8bit,
             16 => Encoding.Pcm16bit,
-            24 => Encoding.Pcm24bitPacked,
-            32 => Encoding.Pcm32bit,
+            24 => OperatingSystem.IsAndroidVersionAtLeast(31) ? Encoding.Pcm24bitPacked : throw new NotSupportedException($"Pcm24bitPacked supported on sdk 31 or higher"),
+            32 => OperatingSystem.IsAndroidVersionAtLeast(31) ? Encoding.Pcm32bit : throw new NotSupportedException($"Pcm32bit supported on sdk 31 or higher"),
             _ => throw new NotSupportedException($"No such encoding supported: {encoding}")
         };
     }

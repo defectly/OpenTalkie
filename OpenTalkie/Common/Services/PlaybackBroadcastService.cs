@@ -14,7 +14,7 @@ namespace OpenTalkie.Common.Services;
 public class PlaybackBroadcastService
 {
     private readonly IMapper _mapper;
-    private CancellationTokenSource _cancellationTokenSource;
+    private CancellationTokenSource? _cancellationTokenSource;
     private readonly AppShell _mainPage;
     private readonly IPlaybackService _playbackService;
     private readonly IEndpointRepository _endpointRepository;
@@ -82,7 +82,7 @@ public class PlaybackBroadcastService
     {
         if (BroadcastState)
         {
-            _cancellationTokenSource.Cancel();
+            _cancellationTokenSource?.Cancel();
             BroadcastState = !BroadcastState;
             _playbackService.Stop();
             _asyncSender = null;

@@ -13,7 +13,7 @@ internal class MicrophoneForegroundService : Service
     private readonly int NOTIFICATION_ID = 1;
     private readonly string NOTIFICATION_CHANNEL_NAME = "microphone_notification";
 
-    private Intent _intent = new(Platform.AppContext, typeof(MicrophoneForegroundService));
+    private readonly Intent _intent = new(Platform.AppContext, typeof(MicrophoneForegroundService));
 
     public void Start() =>
         Platform.AppContext.StartForegroundService(_intent);
@@ -27,10 +27,13 @@ internal class MicrophoneForegroundService : Service
         openAppIntent.SetFlags(ActivityFlags.ClearTop | ActivityFlags.NewTask);
         var pendingIntent = PendingIntent.GetActivity(this, 0, openAppIntent, PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable);
 
-        var notifcationManager = GetSystemService(NotificationService) as NotificationManager;
-
         if (OperatingSystem.IsAndroidVersionAtLeast(26))
-            CreateNotificationChannel(notifcationManager);
+        {
+            if (GetSystemService(NotificationService) is not NotificationManager notificationManager)
+                throw new NullReferenceException("Can't get notification manager");
+
+            CreateNotificationChannel(notificationManager);
+        }
 
         var notification = new NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID);
         notification.SetAutoCancel(false);
@@ -53,9 +56,9 @@ internal class MicrophoneForegroundService : Service
         notificationMnaManager.CreateNotificationChannel(channel);
     }
 
-    public override IBinder OnBind(Intent intent) => null;
+    public override IBinder OnBind(Intent? intent) => null;
 
-    public override StartCommandResult OnStartCommand(Intent intent, StartCommandFlags flags, int startId)
+    public override StartCommandResult OnStartCommand(Intent? intent, StartCommandFlags flags, int startId)
     {
         StartForegroundService();
         return StartCommandResult.NotSticky;

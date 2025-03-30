@@ -36,7 +36,7 @@ public class PlaybackRepository : IPlaybackRepository
     {
         var encoding = Preferences.Get("PlaybackBufferSize", 1920);
 
-        return 1920.ToString();
+        return encoding.ToString();
     }
     public void SetSelectedBufferSize(string bufferSize)
     {
@@ -73,7 +73,7 @@ public class PlaybackRepository : IPlaybackRepository
 
         return converted.ToString();
     }
-    private int MapFromAndroidEncoding(Encoding encoding)
+    private static int MapFromAndroidEncoding(Encoding encoding)
     {
         return encoding switch
         {
@@ -86,14 +86,14 @@ public class PlaybackRepository : IPlaybackRepository
             _ => throw new NotSupportedException($"No such encoding supported: {encoding}")
         };
     }
-    private Encoding MapToAndroidEncoding(int encoding)
+    private static Encoding MapToAndroidEncoding(int encoding)
     {
         return encoding switch
         {
             8 => Encoding.Pcm8bit,
             16 => Encoding.Pcm16bit,
-            24 => Encoding.Pcm24bitPacked,
-            32 => Encoding.Pcm32bit,
+            24 => OperatingSystem.IsAndroidVersionAtLeast(31) ? Encoding.Pcm24bitPacked : throw new NotSupportedException($"Pcm24bitPacked supported on sdk 31 or higher"),
+            32 => OperatingSystem.IsAndroidVersionAtLeast(31) ? Encoding.Pcm32bit : throw new NotSupportedException($"Pcm32bit supported on sdk 31 or higher"),
             _ => throw new NotSupportedException($"No such encoding supported: {encoding}")
         };
     }

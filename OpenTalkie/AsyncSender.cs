@@ -1,5 +1,4 @@
-﻿using NAudio.Wave;
-using OpenTalkie.Common.Services.Interfaces;
+﻿using OpenTalkie.Common.Services.Interfaces;
 using OpenTalkie.RNNoise;
 using OpenTalkie.VBAN;
 using System.Collections.ObjectModel;
@@ -117,7 +116,7 @@ public class AsyncSender : IDisposable
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void FillPacketData(ReadOnlyMemory<byte> samples, int sampleCount, byte[] packetBuffer)
+    private static void FillPacketData(ReadOnlyMemory<byte> samples, int sampleCount, byte[] packetBuffer)
     {
         packetBuffer[5] = (byte)(sampleCount - 1); 
         samples.Span.CopyTo(packetBuffer.AsSpan(28)); 

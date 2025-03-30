@@ -1,6 +1,4 @@
-﻿using NAudio.Wave;
-
-namespace OpenTalkie.Common.Services.Interfaces;
+﻿namespace OpenTalkie.Common.Services.Interfaces;
 
 public interface IInputStream
 {

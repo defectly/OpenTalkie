@@ -1,5 +1,4 @@
 ﻿using CommunityToolkit.Maui;
-using Microsoft.Extensions.Logging;
 using OpenTalkie.Common.Repositories;
 using OpenTalkie.Common.Repositories.Interfaces;
 using OpenTalkie.Common.Services;
@@ -10,8 +9,8 @@ using System.Reflection;
 
 
 
+
 #if ANDROID
-using OpenTalkie.Platforms.Android;
 using OpenTalkie.Platforms.Android.Common.Repositories;
 using OpenTalkie.Platforms.Android.Common.Services;
 #endif

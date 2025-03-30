@@ -14,11 +14,11 @@ namespace OpenTalkie.Common.Services;
 public class MicrophoneBroadcastService
 {
     private readonly IMapper _mapper;
-    private CancellationTokenSource _cancellationTokenSource;
+    private CancellationTokenSource? _cancellationTokenSource;
     private readonly IMicrophoneService _microphoneService;
     private readonly IEndpointRepository _endpointRepository;
     private AsyncSender? _asyncSender;
-    private AppShell _mainPage;
+    private readonly AppShell _mainPage;
     public ObservableCollection<Endpoint> Endpoints;
     public bool BroadcastState { get; private set; }
 
@@ -77,7 +77,7 @@ public class MicrophoneBroadcastService
     {
         if (BroadcastState)
         {
-            _cancellationTokenSource.Cancel();
+            _cancellationTokenSource?.Cancel();
             BroadcastState = !BroadcastState;
             _microphoneService.Stop();
             _asyncSender = null;

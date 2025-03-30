@@ -1,5 +1,4 @@
 ﻿using Android.Media;
-using NAudio.Wave;
 using OpenTalkie.Common.Repositories.Interfaces;
 using OpenTalkie.Common.Services.Interfaces;
 using OpenTalkie.Platforms.Android.Common.ForegroundServices;
@@ -25,7 +24,7 @@ public class MicrophoneService(IMicrophoneRepository microphoneRepository) : IMi
         LoadPreferences();
         CreateAudioRecord();
 
-        if(_audioRecord.State == State.Uninitialized)
+        if (_audioRecord == null || _audioRecord.State == State.Uninitialized)
         {
             _audioRecord = null;
             throw new Exception("Can't initialize audio record.. Selected parameters may be not supported");
@@ -40,6 +39,9 @@ public class MicrophoneService(IMicrophoneRepository microphoneRepository) : IMi
 
     public WaveFormat GetWaveFormat()
     {
+        if (_audioRecord == null)
+            throw new NullReferenceException($"Audio record is null");
+
         return _waveFormat ??= new WaveFormat(_audioRecord.SampleRate, int.Parse(microphoneRepository.GetSelectedEncoding()), _audioRecord.ChannelCount);
     }
 
@@ -60,6 +62,9 @@ public class MicrophoneService(IMicrophoneRepository microphoneRepository) : IMi
 
     public async Task<int> ReadAsync(byte[] buffer, int offset, int count)
     {
+        if (_audioRecord == null)
+            throw new NullReferenceException($"Audio record is null");
+
         return await _audioRecord.ReadAsync(buffer, offset, count);
     }
 

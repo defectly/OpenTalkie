@@ -5,6 +5,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:view="clr-namespace:OpenTalkie.View"
     Title="OpenTalkie"
+    BackgroundColor="#1E1E1E"
     Shell.FlyoutBehavior="Disabled">
 
     <TabBar>
@@ -20,7 +21,7 @@
             Icon="playback_streams.png">
             <ShellContent ContentTemplate="{DataTemplate view:PlaybackStreamsPage}" Route="PlaybackStreamsPage" />
         </Tab>
-        <Tab Title="Settings" Icon="mic.png">
+        <Tab Title="Settings">
             <ShellContent ContentTemplate="{DataTemplate view:SettingsPage}" Route="SettingsPage" />
         </Tab>
     </TabBar>

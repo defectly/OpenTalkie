@@ -1,6 +1,5 @@
 ﻿using Android.Media;
 using Android.Media.Projection;
-using NAudio.Wave;
 using OpenTalkie.Common.Repositories.Interfaces;
 using OpenTalkie.Common.Services.Interfaces;
 using Encoding = Android.Media.Encoding;
@@ -14,7 +13,7 @@ public class PlaybackService : IPlaybackService
     private ChannelOut _channelOut;
 
     private AudioRecord? _audioRecord;
-    private MediaProjectionProvider _mediaProjectionProvider;
+    private readonly MediaProjectionProvider _mediaProjectionProvider;
     private WaveFormat? _waveFormat;
     private readonly IPlaybackRepository _playbackRepository;
 
@@ -58,7 +57,7 @@ public class PlaybackService : IPlaybackService
         LoadPreferences();
         CreateAudioRecord(mediaProjection);
 
-        if (_audioRecord.State == State.Uninitialized)
+        if (_audioRecord == null || _audioRecord.State == State.Uninitialized)
         {
             _audioRecord = null;
             _mediaProjectionProvider.DisposeMediaProjection();
@@ -127,6 +126,9 @@ public class PlaybackService : IPlaybackService
 
     public WaveFormat GetWaveFormat()
     {
+        if (_audioRecord == null)
+            throw new NullReferenceException($"Audio record is null");
+
         return _waveFormat ??= new WaveFormat(_audioRecord.SampleRate, int.Parse(_playbackRepository.GetSelectedEncoding()), _audioRecord.ChannelCount);
     }
 }

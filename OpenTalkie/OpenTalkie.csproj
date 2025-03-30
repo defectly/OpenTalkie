@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-	<TargetFrameworks>net8.0-maccatalyst;net8.0-android</TargetFrameworks>
+	<TargetFrameworks>net8.0-android34.0</TargetFrameworks>
 	  <!-- Uncomment to also build the tizen app. You will need to install tizen by following this: https://github.com/Samsung/Tizen.NET -->
     <!-- <TargetFrameworks>$(TargetFrameworks);net9.0-tizen</TargetFrameworks> -->
     <!-- Note for MacCatalyst:
@@ -30,25 +30,37 @@
     <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'tizen'">6.5</SupportedOSPlatformVersion>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <PublishAot>False</PublishAot>
-    <Version>1.1.0-alpha.5</Version>
+    <Version>2.0.0-alpha</Version>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net9.0-android|AnyCPU'">
     <RunAOTCompilation>True</RunAOTCompilation>
     <PublishTrimmed>True</PublishTrimmed>
     <EnableLLVM>False</EnableLLVM>
     <AndroidLinkTool>r8</AndroidLinkTool>
-    <ApplicationDisplayVersion>1.1.0-alpha.5</ApplicationDisplayVersion>
+    <ApplicationDisplayVersion>2.0.0-alpha</ApplicationDisplayVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net9.0-android|AnyCPU'">
     <EnableLLVM>False</EnableLLVM>
-    <ApplicationDisplayVersion>1.1.0-alpha.5</ApplicationDisplayVersion>
+    <ApplicationDisplayVersion>2.0.0-alpha</ApplicationDisplayVersion>
     <EmbedAssembliesIntoApk>True</EmbedAssembliesIntoApk>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net9.0-maccatalyst|AnyCPU'">
-    <ApplicationDisplayVersion>1.1.0-alpha.5</ApplicationDisplayVersion>
+    <ApplicationDisplayVersion>2.0.0-alpha</ApplicationDisplayVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net9.0-maccatalyst|AnyCPU'">
-    <ApplicationDisplayVersion>1.1.0-alpha.5</ApplicationDisplayVersion>
+    <ApplicationDisplayVersion>2.0.0-alpha</ApplicationDisplayVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net8.0-android34.0|AnyCPU'">
+    <AndroidPackageFormat>apk</AndroidPackageFormat>
+    <AndroidLinkTool>r8</AndroidLinkTool>
+    <ApplicationDisplayVersion>2.0.0-alpha</ApplicationDisplayVersion>
+    <ApplicationVersion>2</ApplicationVersion>
+    <AndroidEnableMultiDex>True</AndroidEnableMultiDex>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net8.0-android34.0|AnyCPU'">
+    <ApplicationDisplayVersion>2.0.0-alpha</ApplicationDisplayVersion>
+    <ApplicationVersion>2</ApplicationVersion>
+    <AndroidEnableMultiDex>True</AndroidEnableMultiDex>
   </PropertyGroup>
   <ItemGroup>
     <!-- App Icon -->
@@ -80,7 +92,6 @@
     <PackageReference Include="Microsoft.Maui.Controls" Version="8.0.92" />
     <PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="8.0.92" />
     <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.3" />
-    <PackageReference Include="NAudio" Version="2.2.1" />
   </ItemGroup>
   <ItemGroup>
     <Compile Update="Common\Services\Interfaces\IMicrophoneService.cs">

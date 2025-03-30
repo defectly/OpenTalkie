@@ -26,10 +26,7 @@ public class EndpointRepository : IEndpointRepository
     {
         var endpoint = Endpoints.FirstOrDefault(e => e.Id == id);
 
-        if (endpoint == null)
-            throw new Exception($"Endpoint with id {id} not found");
-
-        return endpoint;
+        return endpoint ?? throw new Exception($"Endpoint with id {id} not found");
     }
 
     public async Task<Guid> CreateAsync(EndpointDto endpointDto)
@@ -54,10 +51,7 @@ public class EndpointRepository : IEndpointRepository
 
     public async Task RemoveAsync(Guid id)
     {
-        var endpoint = Endpoints.FirstOrDefault(e => e.Id == id);
-
-        if (endpoint == null)
-            throw new Exception($"Endpoint with id {id} not found");
+        var endpoint = Endpoints.FirstOrDefault(e => e.Id == id) ?? throw new Exception($"Endpoint with id {id} not found");
 
         Endpoints.Remove(endpoint);
 
