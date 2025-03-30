@@ -3,13 +3,34 @@
     x:Class="OpenTalkie.AppShell"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    xmlns:local="clr-namespace:OpenTalkie"
-    Shell.FlyoutBehavior="Disabled"
-    Title="vOpenTalkie">
+    xmlns:view="clr-namespace:OpenTalkie.View"
+    Title="OpenTalkie"
+    BackgroundColor="#1E1E1E"
+    Shell.FlyoutBehavior="Disabled">
 
-    <ShellContent
-        Title="Home"
-        ContentTemplate="{DataTemplate local:MainPage}"
-        Route="MainPage" />
+    <TabBar>
+        <Tab Title="Home" Icon="home.png">
+            <ShellContent ContentTemplate="{DataTemplate view:HomePage}" Route="HomePage" />
+        </Tab>
+        <Tab Title="Mic Streams" Icon="mic_streams.png">
+            <ShellContent ContentTemplate="{DataTemplate view:MicrophoneStreamsPage}" Route="MicrophoneStreamsPage" />
+        </Tab>
+        <Tab
+            x:Name="PlaybackStreams"
+            Title="Playback Streams"
+            Icon="playback_streams.png">
+            <ShellContent ContentTemplate="{DataTemplate view:PlaybackStreamsPage}" Route="PlaybackStreamsPage" />
+        </Tab>
+        <Tab Title="Settings">
+            <ShellContent ContentTemplate="{DataTemplate view:SettingsPage}" Route="SettingsPage" />
+        </Tab>
+    </TabBar>
 
+    <Shell.Resources>
+        <Style ApplyToDerivedTypes="True" TargetType="Shell">
+            <Setter Property="Shell.TabBarForegroundColor" Value="#FFFFFF" />
+            <Setter Property="Shell.TabBarUnselectedColor" Value="#B0B0B0" />
+            <Setter Property="Shell.TabBarTitleColor" Value="#FFFFFF" />
+        </Style>
+    </Shell.Resources>
 </Shell>

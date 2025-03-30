@@ -1,0 +1,10 @@
+﻿namespace OpenTalkie.VBAN;
+
+public enum VBanQuality
+{
+    VBAN_QUALITY_OPTIMAL = 512,
+    VBAN_QUALITY_FAST = 1024,
+    VBAN_QUALITY_MEDIUM = 2048,
+    VBAN_QUALITY_SLOW = 4096,
+    VBAN_QUALITY_VERYSLOW = 8192,
+}

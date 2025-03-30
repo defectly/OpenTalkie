@@ -1,12 +1,13 @@
-﻿namespace OpenTalkie
-{
-    public partial class App : Application
-    {
-        public App()
-        {
-            InitializeComponent();
+﻿using OpenTalkie.View;
 
-            MainPage = new AppShell();
-        }
+namespace OpenTalkie;
+
+public partial class App : Application
+{
+    public App(IServiceProvider serviceProvider)
+    {
+        InitializeComponent();
+
+        MainPage = serviceProvider.GetService<AppShell>();
     }
 }

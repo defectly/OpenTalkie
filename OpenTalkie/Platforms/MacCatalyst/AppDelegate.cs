@@ -1,5 +1,6 @@
 ﻿using Foundation;
 using OpenTalkie;
+using Microsoft.Maui;
 
 namespace OpenTalkie.Platforms.MacCatalyst
 {

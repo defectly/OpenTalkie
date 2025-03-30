@@ -1,6 +1,5 @@
 ﻿using Android.App;
 using Android.Runtime;
-using OpenTalkie;
 
 namespace OpenTalkie.Platforms.Android;
 

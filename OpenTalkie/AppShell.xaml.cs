@@ -1,10 +1,16 @@
-﻿namespace OpenTalkie
+﻿using OpenTalkie.View;
+
+namespace OpenTalkie;
+
+public partial class AppShell : Shell
 {
-    public partial class AppShell : Shell
+    public AppShell()
     {
-        public AppShell()
-        {
-            InitializeComponent();
-        }
+        InitializeComponent();
+
+        if (!OperatingSystem.IsAndroidVersionAtLeast(29))
+            PlaybackStreams.IsVisible = false;
+
+        Routing.RegisterRoute("StreamSettingsPage", typeof(StreamSettingsPage));
     }
 }

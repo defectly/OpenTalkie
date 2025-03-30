@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="OpenTalkie.View.StreamSettingsPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+    Title="Stream settings"
+    Padding="16"
+    BackgroundColor="#121212">
+    <ScrollView>
+        <Grid RowDefinitions="Auto,Auto,Auto,Auto,*" RowSpacing="16">
+
+            <!--  Name  -->
+            <Frame
+                Grid.Row="0"
+                Padding="16"
+                BackgroundColor="#1E1E1E"
+                BorderColor="#2E2E2E"
+                CornerRadius="8"
+                Shadow="{StaticResource MaterialShadowDark}">
+                <Frame.GestureRecognizers>
+                    <TapGestureRecognizer Command="{Binding EditNameCommand}" CommandParameter="Name" />
+                </Frame.GestureRecognizers>
+                <HorizontalStackLayout Spacing="12">
+                    <Image
+                        HeightRequest="24"
+                        Source="name_icon.png"
+                        VerticalOptions="Center"
+                        WidthRequest="24" />
+                    <Grid
+                        ColumnDefinitions="*"
+                        RowDefinitions="Auto,Auto"
+                        RowSpacing="4"
+                        VerticalOptions="Center">
+                        <Label
+                            Grid.Row="0"
+                            FontAttributes="Bold"
+                            FontSize="16"
+                            Text="Name"
+                            TextColor="#FFFFFF" />
+                        <Label
+                            Grid.Row="1"
+                            FontSize="14"
+                            Text="{Binding Endpoint.Name}"
+                            TextColor="#B0B0B0" />
+                    </Grid>
+                </HorizontalStackLayout>
+            </Frame>
+
+            <!--  Hostname  -->
+            <Frame
+                Grid.Row="1"
+                Padding="16"
+                BackgroundColor="#1E1E1E"
+                BorderColor="#2E2E2E"
+                CornerRadius="8"
+                Shadow="{StaticResource MaterialShadowDark}">
+                <Frame.GestureRecognizers>
+                    <TapGestureRecognizer Command="{Binding EditHostnameCommand}" CommandParameter="Address" />
+                </Frame.GestureRecognizers>
+                <HorizontalStackLayout Spacing="12">
+                    <Image
+                        HeightRequest="24"
+                        Source="address_icon.png"
+                        VerticalOptions="Center"
+                        WidthRequest="24" />
+                    <Grid
+                        ColumnDefinitions="*"
+                        RowDefinitions="Auto,Auto"
+                        RowSpacing="4"
+                        VerticalOptions="Center">
+                        <Label
+                            Grid.Row="0"
+                            FontAttributes="Bold"
+                            FontSize="16"
+                            Text="Hostname"
+                            TextColor="#FFFFFF" />
+                        <Label
+                            Grid.Row="1"
+                            FontSize="14"
+                            Text="{Binding Endpoint.Hostname}"
+                            TextColor="#B0B0B0" />
+                    </Grid>
+                </HorizontalStackLayout>
+            </Frame>
+
+            <!--  Port  -->
+            <Frame
+                Grid.Row="2"
+                Padding="16"
+                BackgroundColor="#1E1E1E"
+                BorderColor="#2E2E2E"
+                CornerRadius="8"
+                Shadow="{StaticResource MaterialShadowDark}">
+                <Frame.GestureRecognizers>
+                    <TapGestureRecognizer Command="{Binding EditPortCommand}" CommandParameter="Port" />
+                </Frame.GestureRecognizers>
+                <HorizontalStackLayout Spacing="12">
+                    <Image
+                        HeightRequest="24"
+                        Source="port_icon.png"
+                        VerticalOptions="Center"
+                        WidthRequest="24" />
+                    <Grid
+                        ColumnDefinitions="*"
+                        RowDefinitions="Auto,Auto"
+                        RowSpacing="4"
+                        VerticalOptions="Center">
+                        <Label
+                            Grid.Row="0"
+                            FontAttributes="Bold"
+                            FontSize="16"
+                            Text="Port"
+                            TextColor="#FFFFFF" />
+                        <Label
+                            Grid.Row="1"
+                            FontSize="14"
+                            Text="{Binding Endpoint.Port}"
+                            TextColor="#B0B0B0" />
+                    </Grid>
+                </HorizontalStackLayout>
+            </Frame>
+
+            <!--  Denoise Switch  -->
+            <Frame
+                Grid.Row="3"
+                Padding="16"
+                BackgroundColor="#1E1E1E"
+                BorderColor="#2E2E2E"
+                CornerRadius="8"
+                Shadow="{StaticResource MaterialShadowDark}">
+                <HorizontalStackLayout Spacing="12">
+                    <Image
+                        HeightRequest="24"
+                        Source="denoise_icon.png"
+                        VerticalOptions="Center"
+                        WidthRequest="24" />
+                    <Grid
+                        ColumnDefinitions="*,Auto"
+                        RowDefinitions="Auto"
+                        VerticalOptions="Center">
+                        <Label
+                            Grid.Column="0"
+                            FontAttributes="Bold"
+                            FontSize="16"
+                            Text="Denoise"
+                            TextColor="#FFFFFF"
+                            VerticalOptions="Center" />
+                        <Switch
+                            Grid.Column="1"
+                            IsToggled="{Binding Endpoint.IsDenoiseEnabled, Mode=TwoWay}"
+                            OnColor="#BB86FC"
+                            ThumbColor="#6200EE"
+                            VerticalOptions="Center" />
+                    </Grid>
+                </HorizontalStackLayout>
+            </Frame>
+
+        </Grid>
+    </ScrollView>
+
+    <ContentPage.Resources>
+        <Shadow
+            x:Key="MaterialShadowDark"
+            Brush="#80FFFFFF"
+            Opacity="0.2"
+            Radius="4"
+            Offset="0,2" />
+    </ContentPage.Resources>
+</ContentPage>

@@ -1,0 +1,32 @@
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using OpenTalkie.Common.Enums;
+using OpenTalkie.Common.Services;
+using System.Collections.ObjectModel;
+
+namespace OpenTalkie.ViewModel;
+
+public partial class MicrophoneStreamsViewModel(MicrophoneBroadcastService broadcastService) : ObservableObject
+{
+    public ObservableCollection<Endpoint> Endpoints => broadcastService.Endpoints;
+
+    [RelayCommand]
+    private static async Task OpenSettings(Endpoint endpoint)
+    {
+        await Shell.Current
+            .GoToAsync("StreamSettingsPage", new Dictionary<string, object> { { "Endpoint", endpoint } });
+    }
+
+    [RelayCommand]
+    private void DeleteStream(Endpoint endpoint)
+    {
+        Endpoints.Remove(endpoint);
+    }
+
+    [RelayCommand]
+    private void AddStream()
+    {
+        var newEndpoint = new Endpoint(EndpointType.Microphone, "New Stream", "192.168.1.1", 1234, false);
+        Endpoints.Add(newEndpoint);
+    }
+}

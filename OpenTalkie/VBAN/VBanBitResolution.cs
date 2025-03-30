@@ -1,0 +1,13 @@
+﻿namespace OpenTalkie.VBAN;
+
+public enum VBanBitResolution
+{
+    VBAN_BITFMT_8_INT = 0,
+    VBAN_BITFMT_16_INT,
+    VBAN_BITFMT_24_INT,
+    VBAN_BITFMT_32_INT,
+    VBAN_BITFMT_32_FLOAT,
+    VBAN_BITFMT_64_FLOAT,
+    VBAN_BITFMT_12_INT,
+    VBAN_BITFMT_10_INT,
+}

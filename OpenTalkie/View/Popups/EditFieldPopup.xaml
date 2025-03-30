@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<toolkit:Popup
+    x:Class="OpenTalkie.View.Popups.EditFieldPopup"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:local="clr-namespace:OpenTalkie"
+    xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+    HorizontalOptions="Fill"
+    Color="#121212">
+    <Grid
+        Padding="16"
+        RowDefinitions="Auto,Auto,Auto,Auto"
+        RowSpacing="16">
+        <Grid.Resources>
+            <Shadow
+                x:Key="MaterialShadowDark"
+                Brush="#80FFFFFF"
+                Opacity="0.2"
+                Radius="4"
+                Offset="0,2" />
+        </Grid.Resources>
+
+        <Frame
+            Grid.Row="0"
+            Padding="16"
+            BackgroundColor="#1E1E1E"
+            CornerRadius="8">
+            <Label
+                FontAttributes="Bold"
+                FontSize="18"
+                HorizontalOptions="Center"
+                Text="{Binding Title}"
+                TextColor="#FFFFFF" />
+        </Frame>
+
+        <Frame
+            x:Name="EntryFrame"
+            Grid.Row="1"
+            Padding="8"
+            BackgroundColor="#2E2E2E"
+            CornerRadius="8"
+            Shadow="{StaticResource MaterialShadowDark}">
+            <Entry
+                FontSize="16"
+                Keyboard="{Binding KeyboardType}"
+                MaxLength="{Binding MaxLength}"
+                Placeholder="{Binding Placeholder}"
+                PlaceholderColor="#B0B0B0"
+                Text="{Binding Value}"
+                TextColor="#FFFFFF" />
+        </Frame>
+
+        <Button
+            Grid.Row="2"
+            Padding="16,8"
+            BackgroundColor="#BB86FC"
+            Command="{Binding SaveCommand}"
+            CornerRadius="8"
+            FontAttributes="Bold"
+            FontSize="16"
+            MinimumHeightRequest="48"
+            Shadow="{StaticResource MaterialShadowDark}"
+            Text="Save"
+            TextColor="#FFFFFF" />
+
+        <Button
+            Grid.Row="3"
+            Padding="16,8"
+            BackgroundColor="#CF6679"
+            Command="{Binding CancelCommand}"
+            CornerRadius="8"
+            FontAttributes="Bold"
+            FontSize="16"
+            MinimumHeightRequest="48"
+            Shadow="{StaticResource MaterialShadowDark}"
+            Text="Cancel"
+            TextColor="#FFFFFF" />
+    </Grid>
+</toolkit:Popup>

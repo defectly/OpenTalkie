@@ -1,31 +1,39 @@
 ﻿using Android.App;
 using Android.Content;
+using Android.Content.PM;
 using Android.OS;
 using AndroidX.Core.App;
 
-namespace OpenTalkie;
+namespace OpenTalkie.Platforms.Android.Common.ForegroundServices;
 
-[Service(ForegroundServiceType = Android.Content.PM.ForegroundService.TypeMicrophone)]
-internal partial class ForegroundMicrophoneService : Service
+[Service(ForegroundServiceType = ForegroundService.TypeMicrophone)]
+internal class MicrophoneForegroundService : Service
 {
     private readonly string NOTIFICATION_CHANNEL_ID = "1000";
     private readonly int NOTIFICATION_ID = 1;
     private readonly string NOTIFICATION_CHANNEL_NAME = "microphone_notification";
 
-    private Intent _intent = new(Android.App.Application.Context, typeof(ForegroundMicrophoneService));
+    private readonly Intent _intent = new(Platform.AppContext, typeof(MicrophoneForegroundService));
 
     public void Start() =>
-        Android.App.Application.Context.StartForegroundService(_intent);
+        Platform.AppContext.StartForegroundService(_intent);
 
     public void Stop() =>
-        Android.App.Application.Context.StopService(_intent);
+        Platform.AppContext.StopService(_intent);
 
     private void StartForegroundService()
     {
-        var notifcationManager = GetSystemService(NotificationService) as NotificationManager;
+        var openAppIntent = new Intent(this, typeof(MainActivity));
+        openAppIntent.SetFlags(ActivityFlags.ClearTop | ActivityFlags.NewTask);
+        var pendingIntent = PendingIntent.GetActivity(this, 0, openAppIntent, PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable);
 
         if (OperatingSystem.IsAndroidVersionAtLeast(26))
-            CreateNotificationChannel(notifcationManager);
+        {
+            if (GetSystemService(NotificationService) is not NotificationManager notificationManager)
+                throw new NullReferenceException("Can't get notification manager");
+
+            CreateNotificationChannel(notificationManager);
+        }
 
         var notification = new NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID);
         notification.SetAutoCancel(false);
@@ -33,9 +41,10 @@ internal partial class ForegroundMicrophoneService : Service
         notification.SetSmallIcon(Resource.Mipmap.appicon);
         notification.SetContentTitle("Open Talkie");
         notification.SetContentText("Microphone capture service is running");
+        notification.SetContentIntent(pendingIntent);
 
         if (OperatingSystem.IsAndroidVersionAtLeast(30))
-            StartForeground(NOTIFICATION_ID, notification.Build(), Android.Content.PM.ForegroundService.TypeMicrophone);
+            StartForeground(NOTIFICATION_ID, notification.Build(), ForegroundService.TypeMicrophone);
         else
             StartForeground(NOTIFICATION_ID, notification.Build());
     }
@@ -47,9 +56,9 @@ internal partial class ForegroundMicrophoneService : Service
         notificationMnaManager.CreateNotificationChannel(channel);
     }
 
-    public override IBinder OnBind(Intent intent) => null;
+    public override IBinder OnBind(Intent? intent) => null;
 
-    public override StartCommandResult OnStartCommand(Intent intent, StartCommandFlags flags, int startId)
+    public override StartCommandResult OnStartCommand(Intent? intent, StartCommandFlags flags, int startId)
     {
         StartForegroundService();
         return StartCommandResult.NotSticky;
