@@ -26,7 +26,10 @@ public class PlaybackRepository : IPlaybackRepository
     }
     public List<string> GetEncodings()
     {
-        return ["8", "16", "24", "32"];
+        if (OperatingSystem.IsAndroidVersionAtLeast(31))
+            return ["8", "16", "24", "32"];
+        else
+            return ["8", "16"];
     }
 
     public string GetSelectedBufferSize()
