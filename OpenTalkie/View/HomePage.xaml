@@ -52,7 +52,7 @@
                     FontAttributes="Bold"
                     FontSize="20"
                     HorizontalOptions="Center"
-                    Text="Connected networks"
+                    Text="Available networks"
                     TextColor="#FFFFFF" />
 
                 <CollectionView Grid.Row="1" ItemsSource="{Binding NetworkAddresses}">
