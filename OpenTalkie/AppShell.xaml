@@ -14,7 +14,10 @@
         <Tab Title="Mic Streams" Icon="mic_streams.png">
             <ShellContent ContentTemplate="{DataTemplate view:MicrophoneStreamsPage}" Route="MicrophoneStreamsPage" />
         </Tab>
-        <Tab Title="Play Streams" Icon="playback_streams.png">
+        <Tab
+            x:Name="PlaybackStreams"
+            Title="Playback Streams"
+            Icon="playback_streams.png">
             <ShellContent ContentTemplate="{DataTemplate view:PlaybackStreamsPage}" Route="PlaybackStreamsPage" />
         </Tab>
         <Tab Title="Settings" Icon="mic.png">

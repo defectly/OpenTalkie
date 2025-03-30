@@ -36,6 +36,7 @@
                 FontAttributes="Bold"
                 FontSize="16"
                 HorizontalOptions="Center"
+                IsVisible="{Binding IsPlaybackAvailable}"
                 MinimumHeightRequest="48"
                 Shadow="{StaticResource MaterialShadowDark}"
                 Text="{Binding PlaybackBroadcastButtonText}"

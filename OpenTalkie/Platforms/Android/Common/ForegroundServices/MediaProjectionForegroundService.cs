@@ -53,9 +53,9 @@ public class MediaProjectionForegroundService : Service
         notificationMnaManager.CreateNotificationChannel(channel);
     }
 
-    public override IBinder OnBind(Intent intent) => null;
+    public override IBinder OnBind(Intent? intent) => null;
 
-    public override StartCommandResult OnStartCommand(Intent intent, StartCommandFlags flags, int startId)
+    public override StartCommandResult OnStartCommand(Intent? intent, StartCommandFlags flags, int startId)
     {
         StartForegroundService();
         return StartCommandResult.NotSticky;

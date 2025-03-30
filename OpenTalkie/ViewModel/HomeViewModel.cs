@@ -17,15 +17,22 @@ public partial class HomeViewModel : ObservableObject
 
     [ObservableProperty]
     private ObservableCollection<string> networkAddresses;
+    [ObservableProperty]
+    private bool isPlaybackAvailable;
 
-    private readonly AppShell mainPage;
+    private readonly AppShell _mainPage;
     public MicrophoneBroadcastService MicrophoneBroadcastService { get; set; }
     public PlaybackBroadcastService PlaybackBroadcastService { get; set; }
 
     public HomeViewModel(AppShell mainPage, MicrophoneBroadcastService microphoneBroadcastService,
         PlaybackBroadcastService playbackBroadcastService)
     {
-        this.mainPage = mainPage;
+        if (OperatingSystem.IsAndroidVersionAtLeast(29))
+            IsPlaybackAvailable = true;
+        else
+            IsPlaybackAvailable = false;
+
+        _mainPage = mainPage;
         MicrophoneBroadcastService = microphoneBroadcastService;
         PlaybackBroadcastService = playbackBroadcastService;
         MicrophoneBroadcastButtonText = "Start microphone service";
@@ -86,7 +93,7 @@ public partial class HomeViewModel : ObservableObject
         if (permissionStatus == PermissionStatus.Granted)
             return true;
 
-        _ = mainPage
+        _ = _mainPage
             .DisplayAlert("Mic permission", "Please, give mic permission to let this app work", "Ok")
             .ConfigureAwait(false);
 

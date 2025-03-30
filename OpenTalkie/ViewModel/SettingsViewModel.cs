@@ -25,8 +25,10 @@ public partial class SettingsViewModel : ObservableObject
         SettingsItems = new ObservableCollection<SettingsItem>
         {
             new SettingsItem { Name = "Microphone Settings", PageType = "MicSettingsPage" },
-            new SettingsItem { Name = "Playback Settings", PageType = "PlaybackSettingsPage" }
         };
+
+        if (OperatingSystem.IsAndroidVersionAtLeast(29))
+            SettingsItems.Add(new SettingsItem { Name = "Playback Settings", PageType = "PlaybackSettingsPage" });
     }
 
     [RelayCommand]
