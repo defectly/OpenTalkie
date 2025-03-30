@@ -7,8 +7,8 @@ public class EndpointDto
 {
     public Guid Id { get; set; }
     public EndpointType Type { get; set; }
-    public string Name { get; set; }
-    public string Hostname { get; set; }
+    public required string Name { get; set; }
+    public required string Hostname { get; set; }
     public int Port { get; set; }
     public bool IsEnabled { get; set; }
     public bool IsDenoiseEnabled { get; set; }

@@ -1,6 +1,9 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using OpenTalkie.Common.Services;
+using System.Collections.ObjectModel;
+using System.Net.NetworkInformation;
+using System.Net.Sockets;
 
 namespace OpenTalkie.ViewModel;
 
@@ -8,10 +11,14 @@ public partial class HomeViewModel : ObservableObject
 {
     [ObservableProperty]
     private string microphoneBroadcastButtonText;
+
     [ObservableProperty]
     private string playbackBroadcastButtonText;
-    private readonly AppShell mainPage;
 
+    [ObservableProperty]
+    private ObservableCollection<string> networkAddresses;
+
+    private readonly AppShell mainPage;
     public MicrophoneBroadcastService MicrophoneBroadcastService { get; set; }
     public PlaybackBroadcastService PlaybackBroadcastService { get; set; }
 
@@ -21,8 +28,10 @@ public partial class HomeViewModel : ObservableObject
         this.mainPage = mainPage;
         MicrophoneBroadcastService = microphoneBroadcastService;
         PlaybackBroadcastService = playbackBroadcastService;
-        microphoneBroadcastButtonText = "Start service";
-        playbackBroadcastButtonText = "Start service";
+        MicrophoneBroadcastButtonText = "Start microphone service";
+        PlaybackBroadcastButtonText = "Start playback service";
+        NetworkAddresses = new ObservableCollection<string>();
+        LoadNetworkAddresses();
     }
 
     [RelayCommand]
@@ -36,9 +45,9 @@ public partial class HomeViewModel : ObservableObject
         MicrophoneBroadcastService.Switch();
 
         if (MicrophoneBroadcastService.BroadcastState)
-            MicrophoneBroadcastButtonText = "Stop service";
+            MicrophoneBroadcastButtonText = "Stop microphone service";
         else
-            MicrophoneBroadcastButtonText = "Start service";
+            MicrophoneBroadcastButtonText = "Start microphone service";
     }
 
     [RelayCommand]
@@ -55,9 +64,15 @@ public partial class HomeViewModel : ObservableObject
         PlaybackBroadcastService.Switch();
 
         if (PlaybackBroadcastService.BroadcastState)
-            PlaybackBroadcastButtonText = "Stop service";
+            PlaybackBroadcastButtonText = "Stop playback service";
         else
-            PlaybackBroadcastButtonText = "Start service";
+            PlaybackBroadcastButtonText = "Start playback service";
+    }
+
+    [RelayCommand]
+    private void RefreshNetworkAddresses()
+    {
+        LoadNetworkAddresses();
     }
 
     private async Task<bool> CheckMicrophonePermissionAsync()
@@ -76,5 +91,39 @@ public partial class HomeViewModel : ObservableObject
             .ConfigureAwait(false);
 
         return false;
+    }
+
+    private void LoadNetworkAddresses()
+    {
+        NetworkAddresses.Clear();
+
+        try
+        {
+            NetworkInterface[] interfaces = NetworkInterface.GetAllNetworkInterfaces();
+
+            foreach (NetworkInterface ni in interfaces)
+            {
+                if (ni.OperationalStatus == OperationalStatus.Up)
+                {
+                    IPInterfaceProperties properties = ni.GetIPProperties();
+                    foreach (UnicastIPAddressInformation ip in properties.UnicastAddresses)
+                    {
+                        if (ip.Address.AddressFamily == AddressFamily.InterNetwork) // IPv4
+                        {
+                            NetworkAddresses.Add($"{ni.Name}: {ip.Address}");
+                        }
+                    }
+                }
+            }
+
+            if (NetworkAddresses.Count == 0)
+            {
+                NetworkAddresses.Add("Нет активных сетей");
+            }
+        }
+        catch (Exception ex)
+        {
+            NetworkAddresses.Add($"Ошибка: {ex.Message}");
+        }
     }
 }

@@ -50,7 +50,7 @@ public class PlaybackRepository : IPlaybackRepository
     }
     public string GetSelectedChannelOut()
     {
-        var encoding = Preferences.Get("PlaybackChannelOut", (int)ChannelOut.Default);
+        var encoding = Preferences.Get("PlaybackChannelOut", (int)ChannelOut.Stereo);
 
         return ((ChannelOut)encoding).ToString();
     }

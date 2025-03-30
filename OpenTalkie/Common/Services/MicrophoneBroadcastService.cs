@@ -1,12 +1,13 @@
 ﻿using AutoMapper;
+using CommunityToolkit.Maui.Views;
 using OpenTalkie.Common.Dto;
 using OpenTalkie.Common.Enums;
 using OpenTalkie.Common.Repositories.Interfaces;
+using OpenTalkie.Common.Services.Interfaces;
+using OpenTalkie.View.Popups;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
-using Microsoft.Maui.ApplicationModel;
-using OpenTalkie.Common.Services.Interfaces;
 
 namespace OpenTalkie.Common.Services;
 
@@ -17,11 +18,13 @@ public class MicrophoneBroadcastService
     private readonly IMicrophoneService _microphoneService;
     private readonly IEndpointRepository _endpointRepository;
     private AsyncSender? _asyncSender;
+    private AppShell _mainPage;
     public ObservableCollection<Endpoint> Endpoints;
     public bool BroadcastState { get; private set; }
 
-    public MicrophoneBroadcastService(IMicrophoneService microphoneService, IEndpointRepository endpointRepository, IMapper mapper)
+    public MicrophoneBroadcastService(IMicrophoneService microphoneService, IEndpointRepository endpointRepository, IMapper mapper, AppShell mainPage)
     {
+        _mainPage = mainPage;
         _microphoneService = microphoneService;
         _endpointRepository = endpointRepository;
         _mapper = mapper;
@@ -81,6 +84,18 @@ public class MicrophoneBroadcastService
         }
         else
         {
+            try
+            {
+
+                _microphoneService.Start();
+            }
+            catch (Exception ex)
+            {
+                var errorPopup = new ErrorPopup(ex.Message);
+                _mainPage.ShowPopupAsync(errorPopup);
+                return;
+            }
+
             _cancellationTokenSource = new();
 
             var thread = new Thread(() => _ = StartSendingLoopAsync(_cancellationTokenSource.Token))

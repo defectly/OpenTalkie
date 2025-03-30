@@ -21,6 +21,13 @@ public partial class StreamSettingsViewModel(AppShell mainPage) : ObservableObje
             currentValue,
             async (result) =>
             {
+                if (string.IsNullOrEmpty(result))
+                {
+                    var errorPopup = new ErrorPopup("Empty string");
+                    await mainPage.ShowPopupAsync(errorPopup);
+                    return;
+                }
+
                 if (result != null)
                 {
                     Endpoint.Name = result;
@@ -42,6 +49,13 @@ public partial class StreamSettingsViewModel(AppShell mainPage) : ObservableObje
             currentValue,
             async (result) =>
             {
+                if(string.IsNullOrEmpty(result))
+                {
+                    var errorPopup = new ErrorPopup("Empty string");
+                    await mainPage.ShowPopupAsync(errorPopup);
+                    return;
+                }
+
                 if (result != null)
                 {
                     Endpoint.Hostname = result;
@@ -62,6 +76,7 @@ public partial class StreamSettingsViewModel(AppShell mainPage) : ObservableObje
             "Edit Port",
             currentValue,
             Keyboard.Numeric,
+            maxLength: 5,
             async (result) =>
             {
                 if (result != null)

@@ -1,11 +1,12 @@
 ﻿using Android.Media;
 using NAudio.Wave;
+using OpenTalkie.Common.Repositories.Interfaces;
 using OpenTalkie.Common.Services.Interfaces;
 using OpenTalkie.Platforms.Android.Common.ForegroundServices;
 
 namespace OpenTalkie.Platforms.Android.Common.Services;
 
-public class MicrophoneService : IMicrophoneService
+public class MicrophoneService(IMicrophoneRepository microphoneRepository) : IMicrophoneService
 {
     private readonly MicrophoneForegroundService _foregroundService = new();
     private AudioRecord? _audioRecord;
@@ -24,6 +25,12 @@ public class MicrophoneService : IMicrophoneService
         LoadPreferences();
         CreateAudioRecord();
 
+        if(_audioRecord.State == State.Uninitialized)
+        {
+            _audioRecord = null;
+            throw new Exception("Can't initialize audio record.. Selected parameters may be not supported");
+        }
+
         if (_audioRecord.RecordingState == RecordState.Stopped)
         {
             _foregroundService.Start();
@@ -33,7 +40,7 @@ public class MicrophoneService : IMicrophoneService
 
     public WaveFormat GetWaveFormat()
     {
-        return _waveFormat ??= new WaveFormat(_audioRecord.SampleRate, 16, _audioRecord.ChannelCount);
+        return _waveFormat ??= new WaveFormat(_audioRecord.SampleRate, int.Parse(microphoneRepository.GetSelectedEncoding()), _audioRecord.ChannelCount);
     }
 
     public void Stop()
@@ -51,32 +58,15 @@ public class MicrophoneService : IMicrophoneService
         _waveFormat = null;
     }
 
-    public int Read(byte[] buffer, int offset, int count)
-    {
-        return _audioRecord.Read(buffer, offset, count);
-    }
-
     public async Task<int> ReadAsync(byte[] buffer, int offset, int count)
     {
         return await _audioRecord.ReadAsync(buffer, offset, count);
     }
 
-    public IWaveProvider ToWaveProvider()
-    {
-        var provideHelper = new ProvideHelper(_audioRecord);
-
-        return provideHelper;
-    }
-
-    public ISampleProvider ToSampleProvider()
-    {
-        return ToWaveProvider().ToSampleProvider();
-    }
-
     public void Dispose()
     {
-        _audioRecord.Stop();
-        _audioRecord.Dispose();
+        _audioRecord?.Stop();
+        _audioRecord?.Dispose();
         _foregroundService.Stop();
         GC.SuppressFinalize(this);
     }

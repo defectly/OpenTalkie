@@ -21,11 +21,24 @@ public partial class EditFieldViewModel : ObservableObject
     [ObservableProperty]
     private Keyboard _keyboardType;
 
+    [ObservableProperty]
+    private int? _maxLength;
+
     public EditFieldViewModel(string title, string initialValue, Keyboard keyboardType, Action<string> onSave, Popup popup)
     {
         Title = title;
         Value = initialValue;
         KeyboardType = keyboardType;
+        _onSave = onSave;
+        _popup = popup;
+    }
+
+    public EditFieldViewModel(string title, string initialValue, Keyboard keyboardType, int maxLength, Action<string> onSave, Popup popup)
+    {
+        Title = title;
+        Value = initialValue;
+        KeyboardType = keyboardType;
+        MaxLength = maxLength;
         _onSave = onSave;
         _popup = popup;
     }

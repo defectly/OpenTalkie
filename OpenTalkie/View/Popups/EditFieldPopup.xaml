@@ -43,6 +43,7 @@
             <Entry
                 FontSize="16"
                 Keyboard="{Binding KeyboardType}"
+                MaxLength="{Binding MaxLength}"
                 Placeholder="{Binding Placeholder}"
                 PlaceholderColor="#B0B0B0"
                 Text="{Binding Value}"

@@ -1,6 +1,7 @@
 ﻿using Android.Media;
 using Android.Media.Projection;
 using NAudio.Wave;
+using OpenTalkie.Common.Repositories.Interfaces;
 using OpenTalkie.Common.Services.Interfaces;
 using Encoding = Android.Media.Encoding;
 
@@ -15,23 +16,18 @@ public class PlaybackService : IPlaybackService
     private AudioRecord? _audioRecord;
     private MediaProjectionProvider _mediaProjectionProvider;
     private WaveFormat? _waveFormat;
+    private readonly IPlaybackRepository _playbackRepository;
 
-    public PlaybackService()
+    public PlaybackService(IPlaybackRepository playbackRepository)
     {
+        _playbackRepository = playbackRepository;
+
         var mediaProjectionProvider = ((MainActivity)Platform.CurrentActivity!).MediaProjectionProvider;
 
         if (mediaProjectionProvider == null)
             throw new NullReferenceException($"Media projection provider is null");
 
         _mediaProjectionProvider = mediaProjectionProvider;
-    }
-
-    public int Read(byte[] buffer, int offset, int count)
-    {
-        if (_audioRecord == null)
-            throw new NullReferenceException($"Audio record is not created");
-
-        return _audioRecord.Read(buffer, offset, count);
     }
 
     public async Task<int> ReadAsync(byte[] buffer, int offset, int count)
@@ -61,6 +57,13 @@ public class PlaybackService : IPlaybackService
 
         LoadPreferences();
         CreateAudioRecord(mediaProjection);
+
+        if (_audioRecord.State == State.Uninitialized)
+        {
+            _audioRecord = null;
+            _mediaProjectionProvider.DisposeMediaProjection();
+            throw new Exception("Can't initialize audio record.. Selected parameters may be not supported");
+        }
 
         if (_audioRecord == null)
             throw new NullReferenceException($"Audio record not created");
@@ -114,21 +117,6 @@ public class PlaybackService : IPlaybackService
         _waveFormat = null;
     }
 
-    public ISampleProvider ToSampleProvider()
-    {
-        return ToWaveProvider().ToSampleProvider();
-    }
-
-    public IWaveProvider ToWaveProvider()
-    {
-        if (_audioRecord == null)
-            throw new NullReferenceException($"Can't convert, audio record is null");
-
-        var provideHelper = new ProvideHelper(_audioRecord);
-
-        return provideHelper;
-    }
-
     public int GetBufferSize()
     {
         if (_audioRecord == null)
@@ -139,6 +127,6 @@ public class PlaybackService : IPlaybackService
 
     public WaveFormat GetWaveFormat()
     {
-        return _waveFormat ??= new WaveFormat(_audioRecord.SampleRate, 16, _audioRecord.ChannelCount);
+        return _waveFormat ??= new WaveFormat(_audioRecord.SampleRate, int.Parse(_playbackRepository.GetSelectedEncoding()), _audioRecord.ChannelCount);
     }
 }

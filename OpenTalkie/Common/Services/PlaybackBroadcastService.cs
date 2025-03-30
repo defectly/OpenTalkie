@@ -1,12 +1,13 @@
 ﻿using AutoMapper;
+using CommunityToolkit.Maui.Views;
 using OpenTalkie.Common.Dto;
 using OpenTalkie.Common.Enums;
 using OpenTalkie.Common.Repositories.Interfaces;
 using OpenTalkie.Common.Services.Interfaces;
+using OpenTalkie.View.Popups;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
-using Microsoft.Maui.ApplicationModel;
 
 namespace OpenTalkie.Common.Services;
 
@@ -14,14 +15,16 @@ public class PlaybackBroadcastService
 {
     private readonly IMapper _mapper;
     private CancellationTokenSource _cancellationTokenSource;
+    private readonly AppShell _mainPage;
     private readonly IPlaybackService _playbackService;
     private readonly IEndpointRepository _endpointRepository;
     private AsyncSender? _asyncSender;
     public ObservableCollection<Endpoint> Endpoints;
     public bool BroadcastState { get; private set; }
 
-    public PlaybackBroadcastService(IPlaybackService playbackService, IEndpointRepository endpointRepository, IMapper mapper)
+    public PlaybackBroadcastService(AppShell mainPage, IPlaybackService playbackService, IEndpointRepository endpointRepository, IMapper mapper)
     {
+        _mainPage = mainPage;
         _playbackService = playbackService;
         _endpointRepository = endpointRepository;
         _mapper = mapper;
@@ -86,6 +89,17 @@ public class PlaybackBroadcastService
         }
         else
         {
+            try
+            {
+                _playbackService.Start();
+            }
+            catch (Exception ex)
+            {
+                var errorPopup = new ErrorPopup(ex.Message);
+                _mainPage.ShowPopupAsync(errorPopup);
+                return;
+            }
+
             _cancellationTokenSource = new();
 
             var thread = new Thread(() => _ = StartSendingLoopAsync(_cancellationTokenSource.Token))
@@ -100,8 +114,6 @@ public class PlaybackBroadcastService
 
     private async Task StartSendingLoopAsync(CancellationToken cancellationToken)
     {
-        _playbackService.Start();
-
         _asyncSender ??= new(_playbackService, Endpoints);
 
         byte[] vbanBuffer = new byte[_playbackService.GetBufferSize()];

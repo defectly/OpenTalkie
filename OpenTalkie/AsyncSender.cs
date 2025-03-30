@@ -14,12 +14,24 @@ public class AsyncSender : IDisposable
     private readonly ObservableCollection<Endpoint> _endpoints;
     private readonly WaveFormat _waveFormat;
     private readonly Denoiser _denoiser = new();
+    private readonly VBanBitResolution _bitResolution;
+    private readonly int _bytesPerSample;
 
     public AsyncSender(IInputStream source, ObservableCollection<Endpoint> endpoints)
     {
         _source = source;
         _endpoints = endpoints;
         _waveFormat = _source.GetWaveFormat();
+
+        _bitResolution = _waveFormat.BitsPerSample switch
+        {
+            8 => VBanBitResolution.VBAN_BITFMT_8_INT,
+            16 => VBanBitResolution.VBAN_BITFMT_16_INT,
+            24 => VBanBitResolution.VBAN_BITFMT_24_INT,
+            32 => VBanBitResolution.VBAN_BITFMT_32_INT,
+            _ => throw new NotSupportedException($"Unsupported encoding: {_waveFormat.BitsPerSample}")
+        };
+        _bytesPerSample = _waveFormat.BitsPerSample / 8;
     }
 
     public void Dispose()
@@ -41,7 +53,9 @@ public class AsyncSender : IDisposable
             _denoiser.Denoise(processedBuffer, offset, readed);
         }
         else
+        {
             processedBuffer = buffer;
+        }
 
         if (readed > 0)
         {
@@ -52,12 +66,7 @@ public class AsyncSender : IDisposable
                 if (!endpoint.IsEnabled)
                     continue;
 
-                byte[] endpointBuffer;
-
-                if (endpoint.IsDenoiseEnabled)
-                    endpointBuffer = processedBuffer;
-                else
-                    endpointBuffer = buffer;
+                byte[] endpointBuffer = endpoint.IsDenoiseEnabled ? processedBuffer : buffer;
 
                 await SplitAndSendAsync(endpointBuffer.AsMemory(offset, readed), endpoint);
             }
@@ -69,8 +78,7 @@ public class AsyncSender : IDisposable
     private async Task SplitAndSendAsync(ReadOnlyMemory<byte> buffer, Endpoint endpoint)
     {
         const int samplesPerChunk = 256;
-        int bytesPerSample = 2;
-        int chunkSize = samplesPerChunk * bytesPerSample * _waveFormat.Channels;
+        int chunkSize = samplesPerChunk * _bytesPerSample * _waveFormat.Channels;
         int totalChunks = (buffer.Length + chunkSize - 1) / chunkSize;
 
         for (int i = 0; i < totalChunks; i++)
@@ -83,7 +91,7 @@ public class AsyncSender : IDisposable
 
     private async Task SendAsync(ReadOnlyMemory<byte> samples, Endpoint endpoint)
     {
-        int sampleCount = samples.Length / (_waveFormat.Channels * 2);
+        int sampleCount = samples.Length / (_waveFormat.Channels * _bytesPerSample);
         int dataLength = samples.Length;
 
         byte[] packetBuffer = new byte[28 + dataLength];
@@ -111,8 +119,8 @@ public class AsyncSender : IDisposable
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void FillPacketData(ReadOnlyMemory<byte> samples, int sampleCount, byte[] packetBuffer)
     {
-        packetBuffer[5] = (byte)(sampleCount - 1);
-        samples.Span.CopyTo(packetBuffer.AsSpan(28));
+        packetBuffer[5] = (byte)(sampleCount - 1); 
+        samples.Span.CopyTo(packetBuffer.AsSpan(28)); 
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -124,6 +132,6 @@ public class AsyncSender : IDisposable
         packetBuffer[3] = (byte)'N';
         packetBuffer[4] = (byte)((int)VBanProtocol.VBAN_PROTOCOL_AUDIO << 5 | Array.IndexOf(VBANConsts.SAMPLERATES, _waveFormat.SampleRate));
         packetBuffer[6] = (byte)(_waveFormat.Channels - 1);
-        packetBuffer[7] = (byte)((int)VBanCodec.VBAN_CODEC_PCM << 5 | (byte)VBanBitResolution.VBAN_BITFMT_16_INT);
+        packetBuffer[7] = (byte)((int)VBanCodec.VBAN_CODEC_PCM << 5 | (byte)_bitResolution);
     }
 }

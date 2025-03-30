@@ -5,38 +5,88 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     Padding="16"
     BackgroundColor="#121212">
-    <Grid
-        HorizontalOptions="Center"
-        RowDefinitions="Auto,Auto,Auto"
-        RowSpacing="16"
-        VerticalOptions="Center">
+    <ScrollView>
+        <Grid
+            RowDefinitions="Auto,Auto,Auto,*"
+            RowSpacing="16"
+            VerticalOptions="Center">
 
-        <Button
-            Grid.Row="0"
-            Padding="16,12"
-            BackgroundColor="#BB86FC"
-            Command="{Binding SwitchMicrophoneBroadcastCommand}"
-            CornerRadius="8"
-            FontAttributes="Bold"
-            FontSize="16"
-            MinimumHeightRequest="48"
-            Shadow="{StaticResource MaterialShadowDark}"
-            Text="{Binding MicrophoneBroadcastButtonText}"
-            TextColor="#FFFFFF" />
+            <!--  mic service button  -->
+            <Button
+                Grid.Row="0"
+                Padding="16,12"
+                BackgroundColor="#BB86FC"
+                Command="{Binding SwitchMicrophoneBroadcastCommand}"
+                CornerRadius="8"
+                FontAttributes="Bold"
+                FontSize="16"
+                HorizontalOptions="Center"
+                MinimumHeightRequest="48"
+                Shadow="{StaticResource MaterialShadowDark}"
+                Text="{Binding MicrophoneBroadcastButtonText}"
+                TextColor="#FFFFFF" />
 
-        <Button
-            Grid.Row="1"
-            Padding="16,12"
-            BackgroundColor="#03DAC6"
-            Command="{Binding SwitchPlaybackBroadcastCommand}"
-            CornerRadius="8"
-            FontAttributes="Bold"
-            FontSize="16"
-            MinimumHeightRequest="48"
-            Shadow="{StaticResource MaterialShadowDark}"
-            Text="{Binding PlaybackBroadcastButtonText}"
-            TextColor="#FFFFFF" />
-    </Grid>
+            <!--  playback service button  -->
+            <Button
+                Grid.Row="1"
+                Padding="16,12"
+                BackgroundColor="#03DAC6"
+                Command="{Binding SwitchPlaybackBroadcastCommand}"
+                CornerRadius="8"
+                FontAttributes="Bold"
+                FontSize="16"
+                HorizontalOptions="Center"
+                MinimumHeightRequest="48"
+                Shadow="{StaticResource MaterialShadowDark}"
+                Text="{Binding PlaybackBroadcastButtonText}"
+                TextColor="#FFFFFF" />
+
+            <!--  ip addresses  -->
+            <Grid
+                Grid.Row="3"
+                RowDefinitions="Auto,Auto,*"
+                VerticalOptions="End">
+
+                <Label
+                    Grid.Row="0"
+                    FontAttributes="Bold"
+                    FontSize="20"
+                    HorizontalOptions="Center"
+                    Text="Connected networks"
+                    TextColor="#FFFFFF" />
+
+                <CollectionView Grid.Row="1" ItemsSource="{Binding NetworkAddresses}">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Frame
+                                Margin="0,4"
+                                Padding="12"
+                                BackgroundColor="#1E1E1E"
+                                CornerRadius="8">
+                                <Label
+                                    FontSize="14"
+                                    Text="{Binding .}"
+                                    TextColor="#B0B0B0" />
+                            </Frame>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+
+                <Button
+                    Grid.Row="2"
+                    Padding="16,8"
+                    BackgroundColor="#1E90FF"
+                    Command="{Binding RefreshNetworkAddressesCommand}"
+                    CornerRadius="8"
+                    FontAttributes="Bold"
+                    FontSize="14"
+                    HorizontalOptions="Center"
+                    Text="Refresh"
+                    TextColor="#FFFFFF"
+                    VerticalOptions="End" />
+            </Grid>
+        </Grid>
+    </ScrollView>
 
     <ContentPage.Resources>
         <Shadow

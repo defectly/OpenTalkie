@@ -55,7 +55,7 @@ public class MicrophoneRepository : IMicrophoneRepository
     }
     public string GetSelectedEncoding()
     {
-        var encoding = Preferences.Get("PlaybackEncoding", (int)Encoding.Default);
+        var encoding = Preferences.Get("MicrophoneEncoding", (int)Encoding.Default);
 
         var converted = MapFromAndroidEncoding((Encoding)encoding);
 
@@ -87,7 +87,7 @@ public class MicrophoneRepository : IMicrophoneRepository
     }
     public void SetSelectedEncoding(string encoding)
     {
-        Preferences.Set("PlaybackEncoding", (int)MapToAndroidEncoding(int.Parse(encoding)));
+        Preferences.Set("MicrophoneEncoding", (int)MapToAndroidEncoding(int.Parse(encoding)));
     }
     private static int MapFromAndroidEncoding(Encoding encoding)
     {
