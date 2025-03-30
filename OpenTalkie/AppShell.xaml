@@ -24,4 +24,12 @@
             <ShellContent ContentTemplate="{DataTemplate view:SettingsPage}" Route="SettingsPage" />
         </Tab>
     </TabBar>
+
+    <Shell.Resources>
+        <Style ApplyToDerivedTypes="True" TargetType="Shell">
+            <Setter Property="Shell.TabBarForegroundColor" Value="#FFFFFF" />
+            <Setter Property="Shell.TabBarUnselectedColor" Value="#B0B0B0" />
+            <Setter Property="Shell.TabBarTitleColor" Value="#FFFFFF" />
+        </Style>
+    </Shell.Resources>
 </Shell>

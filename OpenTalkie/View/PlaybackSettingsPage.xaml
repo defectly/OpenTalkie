@@ -4,6 +4,7 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+    Title="Playback settings"
     Padding="16"
     BackgroundColor="#121212">
     <Grid RowDefinitions="Auto,Auto,Auto,Auto,*" RowSpacing="16">
