@@ -42,7 +42,7 @@ public class MicrophoneService(IMicrophoneRepository microphoneRepository) : IMi
         if (_audioRecord == null)
             throw new NullReferenceException($"Audio record is null");
 
-        return _waveFormat ??= new WaveFormat(_audioRecord.SampleRate, int.Parse(microphoneRepository.GetSelectedEncoding()), _audioRecord.ChannelCount);
+        return _waveFormat ??= new WaveFormat(int.Parse(microphoneRepository.GetSelectedEncoding()), _audioRecord.ChannelCount, _audioRecord.SampleRate);
     }
 
     public void Stop()

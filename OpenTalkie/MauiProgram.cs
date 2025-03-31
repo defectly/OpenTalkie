@@ -6,6 +6,8 @@ using OpenTalkie.Common.Services.Interfaces;
 using OpenTalkie.View;
 using OpenTalkie.ViewModel;
 using System.Reflection;
+using Microsoft.Extensions.Logging;
+
 
 
 

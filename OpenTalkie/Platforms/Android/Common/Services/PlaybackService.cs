@@ -129,6 +129,6 @@ public class PlaybackService : IPlaybackService
         if (_audioRecord == null)
             throw new NullReferenceException($"Audio record is null");
 
-        return _waveFormat ??= new WaveFormat(_audioRecord.SampleRate, int.Parse(_playbackRepository.GetSelectedEncoding()), _audioRecord.ChannelCount);
+        return _waveFormat ??= new WaveFormat(int.Parse(_playbackRepository.GetSelectedEncoding()), _audioRecord.ChannelCount, _audioRecord.SampleRate);
     }
 }
