@@ -31,35 +31,35 @@
     <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'tizen'">6.5</SupportedOSPlatformVersion>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <PublishAot>False</PublishAot>
-    <Version>2.0.0-alpha</Version>
+    <Version>2.0.0-alpha22</Version>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net9.0-android|AnyCPU'">
     <RunAOTCompilation>True</RunAOTCompilation>
     <PublishTrimmed>True</PublishTrimmed>
     <EnableLLVM>False</EnableLLVM>
     <AndroidLinkTool>r8</AndroidLinkTool>
-    <ApplicationDisplayVersion>2.0.0-alpha</ApplicationDisplayVersion>
+    <ApplicationDisplayVersion>2.0.0-alpha2</ApplicationDisplayVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net9.0-android|AnyCPU'">
     <EnableLLVM>False</EnableLLVM>
-    <ApplicationDisplayVersion>2.0.0-alpha</ApplicationDisplayVersion>
+    <ApplicationDisplayVersion>2.0.0-alpha2</ApplicationDisplayVersion>
     <EmbedAssembliesIntoApk>True</EmbedAssembliesIntoApk>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net9.0-maccatalyst|AnyCPU'">
-    <ApplicationDisplayVersion>2.0.0-alpha</ApplicationDisplayVersion>
+    <ApplicationDisplayVersion>2.0.0-alpha2</ApplicationDisplayVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net9.0-maccatalyst|AnyCPU'">
-    <ApplicationDisplayVersion>2.0.0-alpha</ApplicationDisplayVersion>
+    <ApplicationDisplayVersion>2.0.0-alpha2</ApplicationDisplayVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net8.0-android34.0|AnyCPU'">
     <AndroidPackageFormat>apk</AndroidPackageFormat>
     <AndroidLinkTool>r8</AndroidLinkTool>
-    <ApplicationDisplayVersion>2.0.0-alpha</ApplicationDisplayVersion>
+    <ApplicationDisplayVersion>2.0.0-alpha2</ApplicationDisplayVersion>
     <ApplicationVersion>2</ApplicationVersion>
     <AndroidEnableMultiDex>True</AndroidEnableMultiDex>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net8.0-android34.0|AnyCPU'">
-    <ApplicationDisplayVersion>2.0.0-alpha</ApplicationDisplayVersion>
+    <ApplicationDisplayVersion>2.0.0-alpha2</ApplicationDisplayVersion>
     <ApplicationVersion>2</ApplicationVersion>
     <AndroidEnableMultiDex>True</AndroidEnableMultiDex>
   </PropertyGroup>
