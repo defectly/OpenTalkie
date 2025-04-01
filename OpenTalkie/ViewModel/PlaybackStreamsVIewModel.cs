@@ -26,7 +26,7 @@ public partial class PlaybackStreamsViewModel(PlaybackBroadcastService broadcast
     [RelayCommand]
     private void AddStream()
     {
-        var newEndpoint = new Endpoint(EndpointType.Playback, "New Stream", "192.168.1.1", 1234, false);
+        var newEndpoint = new Endpoint(EndpointType.Playback, "Stream2", "192.168.1.1", 6980, false);
         Endpoints.Add(newEndpoint);
     }
 }
