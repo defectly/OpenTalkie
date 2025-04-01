@@ -66,7 +66,7 @@ public class MicrophoneRepository : IMicrophoneRepository
     }
     public string GetSelectedBufferSize()
     {
-        var bufferSize = Preferences.Get("MicrophoneBufferSize", 1024);
+        var bufferSize = Preferences.Get("MicrophoneBufferSize", 960);
 
         return bufferSize.ToString();
     }

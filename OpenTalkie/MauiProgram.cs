@@ -8,10 +8,6 @@ using OpenTalkie.ViewModel;
 using System.Reflection;
 using Microsoft.Extensions.Logging;
 
-
-
-
-
 #if ANDROID
 using OpenTalkie.Platforms.Android.Common.Repositories;
 using OpenTalkie.Platforms.Android.Common.Services;
@@ -31,7 +27,8 @@ public static class MauiProgram
             {
                 fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
                 fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
-            });
+            })
+            .UseScreenAudioCapturing();
 
 #if DEBUG
         builder.Logging.AddDebug();
