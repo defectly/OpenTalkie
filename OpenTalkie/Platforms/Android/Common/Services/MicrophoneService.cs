@@ -82,7 +82,7 @@ public class MicrophoneService(IMicrophoneRepository microphoneRepository) : IMi
         _microphoneChannel = Preferences.Get("MicrophoneChannel", (int)ChannelIn.Default);
         _microphoneSampleRate = Preferences.Get("MicrophoneSampleRate", 48000);
         _microphoneEncoding = Preferences.Get("MicrophoneEncoding", (int)Encoding.Default);
-        BufferSize = Preferences.Get("MicrophoneBufferSize", 1024);
+        BufferSize = Preferences.Get("MicrophoneBufferSize", 960);
     }
 
     private void CreateAudioRecord()
