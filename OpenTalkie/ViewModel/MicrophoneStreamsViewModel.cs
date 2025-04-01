@@ -26,7 +26,7 @@ public partial class MicrophoneStreamsViewModel(MicrophoneBroadcastService broad
     [RelayCommand]
     private void AddStream()
     {
-        var newEndpoint = new Endpoint(EndpointType.Microphone, "New Stream", "192.168.1.1", 1234, false);
+        var newEndpoint = new Endpoint(EndpointType.Microphone, "Stream1", "192.168.1.1", 6980, false);
         Endpoints.Add(newEndpoint);
     }
 }
