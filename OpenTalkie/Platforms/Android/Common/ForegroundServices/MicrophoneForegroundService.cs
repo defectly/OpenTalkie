@@ -56,7 +56,7 @@ internal class MicrophoneForegroundService : Service
         notificationMnaManager.CreateNotificationChannel(channel);
     }
 
-    public override IBinder OnBind(Intent? intent) => null;
+    public override IBinder? OnBind(Intent? intent) => null;
 
     public override StartCommandResult OnStartCommand(Intent? intent, StartCommandFlags flags, int startId)
     {

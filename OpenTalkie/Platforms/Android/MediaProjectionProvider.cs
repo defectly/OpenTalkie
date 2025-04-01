@@ -1,73 +1,125 @@
 ﻿using Android.App;
 using Android.Content;
 using Android.Media.Projection;
+using Android.OS;
 using OpenTalkie.Platforms.Android.Common.ForegroundServices;
 
 namespace OpenTalkie.Platforms.Android;
 
-public class MediaProjectionProvider(Activity activity)
+public partial class MediaProjectionProvider : MediaProjection.Callback, IScreenAudioCapturing
 {
-    private readonly MediaProjectionManager _mediaProjectionManager = (MediaProjectionManager)activity.GetSystemService(Context.MediaProjectionService)!
-            ?? throw new NullReferenceException($"No media projection manager provided");
+    public const int RequestMediaProjectionCode = (int)Result.FirstUser + 1;
 
-    private const int MediaProjectionRequestCode = 101;
-    private TaskCompletionSource<bool>? _permissionTaskCompletionSource;
-    private MediaProjection? _mediaProjection;
-    private readonly MediaProjectionForegroundService _foregroundService = new();
-    public async Task<bool> RequestMediaProjectionPermissionAsync()
+    private TaskCompletionSource<bool>? serviceStartAwaiter;
+    private TaskCompletionSource<bool>? recordingStartAwaiter;
+
+    private string NotificationContentTitle { get; set; } =
+        ScreenAudioCapturingOptions.defaultAndroidNotificationTitle;
+
+    private string NotificationContentText { get; set; } =
+        ScreenAudioCapturingOptions.defaultAndroidNotificationText;
+
+    private MediaProjectionManager? ProjectionManager { get; set; }
+    private MediaProjection? MediaProjection { get; set; }
+
+    public bool IsSupported => ProjectionManager is not null;
+
+    public MediaProjectionProvider()
     {
-        if (_mediaProjection != null)
-            return true;
+        ProjectionManager = (MediaProjectionManager?)Platform.AppContext.GetSystemService(Context.MediaProjectionService);
+    }
 
-        if (Platform.CurrentActivity == null)
-            return false;
+    public Task<bool> StartRecording(ScreenAudioCapturingOptions? options = null)
+    {
+        if (!IsSupported)
+            throw new NotSupportedException("Screen audio capturing not supported on this device.");
 
-        _permissionTaskCompletionSource = new TaskCompletionSource<bool>();
+        if (!string.IsNullOrWhiteSpace(options?.NotificationContentTitle))
+            NotificationContentTitle = options.NotificationContentTitle;
 
-        Intent intent;
+        if (!string.IsNullOrWhiteSpace(options?.NotificationContentText))
+            NotificationContentText = options.NotificationContentText;
 
-        _foregroundService.Start();
+        recordingStartAwaiter = new TaskCompletionSource<bool>();
 
-        intent = _mediaProjectionManager.CreateScreenCaptureIntent();
+        Setup();
 
-        Platform.CurrentActivity.StartActivityForResult(intent, MediaProjectionRequestCode);
+        return recordingStartAwaiter.Task;
+    }
 
-        return await _permissionTaskCompletionSource.Task;
+    public void StopRecording()
+    {
+        MediaProjection?.Stop();
+
+        var context = Platform.AppContext;
+        context.StopService(new Intent(context, typeof(ScreenAudioCaptureForegroundService)));
+    }
+
+    internal void OnScreenCapturePermissionDenied()
+    {
+        recordingStartAwaiter?.TrySetResult(false);
+    }
+
+    internal async void OnScreenCapturePermissionGranted(int resultCode, Intent? data)
+    {
+        serviceStartAwaiter = new TaskCompletionSource<bool>();
+
+        var context = Platform.AppContext;
+        var messenger = new Messenger(new ExternalHandler(serviceStartAwaiter));
+
+        Intent notificationSetup = new(context, typeof(ScreenAudioCaptureForegroundService));
+        notificationSetup.PutExtra(ScreenAudioCaptureForegroundService.ExtraCommandNotificationSetup, true);
+        notificationSetup.PutExtra(ScreenAudioCaptureForegroundService.ExtraExternalMessenger, messenger);
+        notificationSetup.PutExtra(ScreenAudioCaptureForegroundService.ExtraContentTitle, NotificationContentTitle);
+        notificationSetup.PutExtra(ScreenAudioCaptureForegroundService.ExtraContentText, NotificationContentText);
+
+        // Android O
+        if (OperatingSystem.IsAndroidVersionAtLeast(26))
+            context.StartForegroundService(notificationSetup);
+        else
+            context.StartService(notificationSetup);
+
+        await serviceStartAwaiter.Task;
+
+        // Prepare MediaProjection which will be later be used by the MediaProjectionForegroundService
+        // and call the BeginRecording()
+        MediaProjection = ProjectionManager?.GetMediaProjection(resultCode, data!);
+        MediaProjection?.RegisterCallback(this, null);
+
+        Intent beginRecording = new(context, typeof(ScreenAudioCaptureForegroundService));
+        beginRecording.PutExtra(ScreenAudioCaptureForegroundService.ExtraCommandBeginRecording, true);
+
+        // Android O
+        if (OperatingSystem.IsAndroidVersionAtLeast(26))
+            context.StartForegroundService(beginRecording);
+        else
+            context.StartService(beginRecording);
+
+        recordingStartAwaiter?.TrySetResult(true);
+    }
+
+    public void Setup()
+    {
+        if (ProjectionManager is not null)
+        {
+            Intent captureIntent = ProjectionManager.CreateScreenCaptureIntent();
+            Platform.CurrentActivity?.StartActivityForResult(captureIntent, RequestMediaProjectionCode);
+        }
     }
 
     public MediaProjection? GetMediaProjection()
     {
-        return _mediaProjection;
+        return MediaProjection;
     }
+}
 
-    public void DisposeMediaProjection()
+internal class ExternalHandler(TaskCompletionSource<bool> tcs) : Handler
+{
+    private readonly TaskCompletionSource<bool> _tcs = tcs;
+
+    public override void HandleMessage(Message msg)
     {
-        _mediaProjection?.Stop();
-        _mediaProjection = null;
-        _foregroundService.Stop();
-    }
-
-    public void OnActivityResult(int requestCode, Result resultCode, Intent? data)
-    {
-        if (requestCode == MediaProjectionRequestCode)
-        {
-            if (resultCode == Result.Ok && data != null)
-            {
-                _mediaProjection = _mediaProjectionManager.GetMediaProjection((int)Result.Ok, data);
-
-                if (_mediaProjection == null)
-                {
-                    _permissionTaskCompletionSource?.TrySetResult(false);
-                    return;
-                }
-
-                _permissionTaskCompletionSource?.TrySetResult(true);
-            }
-            else
-            {
-                _foregroundService.Stop();
-                _permissionTaskCompletionSource?.TrySetResult(false);
-            }
-        }
+        if (msg.What == ScreenAudioCaptureForegroundService.MsgServiceStarted)
+            _tcs.TrySetResult(true);
     }
 }

@@ -1,9 +1,11 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.Logging;
 using OpenTalkie.Common.Services;
 using System.Collections.ObjectModel;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
+using Microsoft.Maui.ApplicationModel;
 
 namespace OpenTalkie.ViewModel;
 
@@ -37,17 +39,20 @@ public partial class HomeViewModel : ObservableObject
         PlaybackBroadcastService = playbackBroadcastService;
         MicrophoneBroadcastButtonText = "Start microphone service";
         PlaybackBroadcastButtonText = "Start playback service";
-        NetworkAddresses = new ObservableCollection<string>();
+        NetworkAddresses = [];
         LoadNetworkAddresses();
     }
 
     [RelayCommand]
     private async Task SwitchMicrophoneBroadcast()
     {
-        bool isPermissionGranted = await CheckMicrophonePermissionAsync();
+        if (!PlaybackBroadcastService.BroadcastState)
+        {
+            bool isPermissionGranted = await CheckMicrophonePermissionAsync();
 
-        if (!isPermissionGranted)
-            return;
+            if (!isPermissionGranted)
+                return;
+        }
 
         MicrophoneBroadcastService.Switch();
 
@@ -60,13 +65,16 @@ public partial class HomeViewModel : ObservableObject
     [RelayCommand]
     private async Task SwitchPlaybackBroadcast()
     {
-        bool isPermissionGranted = await CheckMicrophonePermissionAsync();
+        if (!PlaybackBroadcastService.BroadcastState)
+        {
+            bool isPermissionGranted = await CheckMicrophonePermissionAsync();
 
-        if (!isPermissionGranted)
-            return;
+            if (!isPermissionGranted)
+                return;
 
-        if (!await PlaybackBroadcastService.RequestPermissionAsync())
-            return;
+            if (!await PlaybackBroadcastService.RequestPermissionAsync())
+                return;
+        }
 
         PlaybackBroadcastService.Switch();
 

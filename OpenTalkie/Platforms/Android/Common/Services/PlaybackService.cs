@@ -3,31 +3,18 @@ using Android.Media.Projection;
 using OpenTalkie.Common.Repositories.Interfaces;
 using OpenTalkie.Common.Services.Interfaces;
 using Encoding = Android.Media.Encoding;
+using Microsoft.Maui.Storage;
 
 namespace OpenTalkie.Platforms.Android.Common.Services;
 
-public class PlaybackService : IPlaybackService
+public class PlaybackService(IPlaybackRepository playbackRepository, IScreenAudioCapturing audioRecording) : IPlaybackService
 {
     private Encoding _encoding;
     private int _sampleRate;
     private ChannelOut _channelOut;
 
     private AudioRecord? _audioRecord;
-    private readonly MediaProjectionProvider _mediaProjectionProvider;
     private WaveFormat? _waveFormat;
-    private readonly IPlaybackRepository _playbackRepository;
-
-    public PlaybackService(IPlaybackRepository playbackRepository)
-    {
-        _playbackRepository = playbackRepository;
-
-        var mediaProjectionProvider = ((MainActivity)Platform.CurrentActivity!).MediaProjectionProvider;
-
-        if (mediaProjectionProvider == null)
-            throw new NullReferenceException($"Media projection provider is null");
-
-        _mediaProjectionProvider = mediaProjectionProvider;
-    }
 
     public async Task<int> ReadAsync(byte[] buffer, int offset, int count)
     {
@@ -49,7 +36,7 @@ public class PlaybackService : IPlaybackService
         if (_audioRecord != null)
             return;
 
-        var mediaProjection = _mediaProjectionProvider.GetMediaProjection();
+        var mediaProjection = audioRecording.GetMediaProjection();
 
         if (mediaProjection == null)
             throw new NullReferenceException($"Media projection not provided");
@@ -60,7 +47,7 @@ public class PlaybackService : IPlaybackService
         if (_audioRecord == null || _audioRecord.State == State.Uninitialized)
         {
             _audioRecord = null;
-            _mediaProjectionProvider.DisposeMediaProjection();
+            audioRecording.StopRecording();
             throw new Exception("Can't initialize audio record.. Selected parameters may be not supported");
         }
 
@@ -74,7 +61,7 @@ public class PlaybackService : IPlaybackService
 
     public async Task<bool> RequestPermissionAsync()
     {
-        return await _mediaProjectionProvider.RequestMediaProjectionPermissionAsync();
+        return await audioRecording.StartRecording();
     }
 
     private void CreateAudioRecord(MediaProjection mediaProjection)
@@ -112,7 +99,7 @@ public class PlaybackService : IPlaybackService
         _audioRecord.Stop();
         _audioRecord.Dispose();
         _audioRecord = null;
-        _mediaProjectionProvider.DisposeMediaProjection();
+        audioRecording.StopRecording();
         _waveFormat = null;
     }
 
@@ -129,6 +116,6 @@ public class PlaybackService : IPlaybackService
         if (_audioRecord == null)
             throw new NullReferenceException($"Audio record is null");
 
-        return _waveFormat ??= new WaveFormat(int.Parse(_playbackRepository.GetSelectedEncoding()), _audioRecord.ChannelCount, _audioRecord.SampleRate);
+        return _waveFormat ??= new WaveFormat(int.Parse(playbackRepository.GetSelectedEncoding()), _audioRecord.ChannelCount, _audioRecord.SampleRate);
     }
 }

@@ -32,11 +32,18 @@
                                     FontSize="16"
                                     Text="{Binding Name}"
                                     TextColor="#FFFFFF" />
-                                <Label
-                                    Grid.Row="1"
-                                    FontSize="14"
-                                    Text="{Binding Hostname}"
-                                    TextColor="#B0B0B0" />
+                                <Grid Grid.Row="1" ColumnDefinitions="Auto,Auto">
+                                    <Label
+                                        Grid.Column="0"
+                                        FontSize="14"
+                                        Text="{Binding Hostname}"
+                                        TextColor="#B0B0B0" />
+                                    <Label
+                                        Grid.Column="1"
+                                        FontSize="14"
+                                        Text="{Binding Port, StringFormat=':{0}'}"
+                                        TextColor="#B0B0B0" />
+                                </Grid>
                             </Grid>
                             <Switch
                                 Grid.Column="1"

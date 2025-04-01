@@ -30,6 +30,7 @@ public class AsyncSender : IDisposable
             32 => VBanBitResolution.VBAN_BITFMT_32_INT,
             _ => throw new NotSupportedException($"Unsupported encoding: {_waveFormat.BitsPerSample}")
         };
+
         _bytesPerSample = _waveFormat.BitsPerSample / 8;
     }
 

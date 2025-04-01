@@ -2,6 +2,7 @@
 using OpenTalkie.Common.Repositories.Interfaces;
 using OpenTalkie.Common.Services.Interfaces;
 using OpenTalkie.Platforms.Android.Common.ForegroundServices;
+using Microsoft.Maui.Storage;
 
 namespace OpenTalkie.Platforms.Android.Common.Services;
 
@@ -42,7 +43,8 @@ public class MicrophoneService(IMicrophoneRepository microphoneRepository) : IMi
         if (_audioRecord == null)
             throw new NullReferenceException($"Audio record is null");
 
-        return _waveFormat ??= new WaveFormat(int.Parse(microphoneRepository.GetSelectedEncoding()), _audioRecord.ChannelCount, _audioRecord.SampleRate);
+        return _waveFormat ??= 
+            new WaveFormat(int.Parse(microphoneRepository.GetSelectedEncoding()), _audioRecord.ChannelCount, _audioRecord.SampleRate);
     }
 
     public void Stop()
@@ -79,7 +81,7 @@ public class MicrophoneService(IMicrophoneRepository microphoneRepository) : IMi
     private void LoadPreferences()
     {
         _microphoneSource = Preferences.Get("MicrophoneSource", (int)AudioSource.Default);
-        _microphoneChannel = Preferences.Get("MicrophoneChannel", (int)ChannelIn.Default);
+        _microphoneChannel = Preferences.Get("MicrophoneInputChannel", (int)ChannelIn.Default);
         _microphoneSampleRate = Preferences.Get("MicrophoneSampleRate", 48000);
         _microphoneEncoding = Preferences.Get("MicrophoneEncoding", (int)Encoding.Default);
         BufferSize = Preferences.Get("MicrophoneBufferSize", 960);

@@ -28,7 +28,7 @@
 
     <Shell.Resources>
         <Style ApplyToDerivedTypes="True" TargetType="Shell">
-            <Setter Property="Shell.TabBarForegroundColor" Value="#FFFFFF" />
+            <Setter Property="Shell.TabBarForegroundColor" Value="#1E1E1E" />
             <Setter Property="Shell.TabBarUnselectedColor" Value="#B0B0B0" />
             <Setter Property="Shell.TabBarTitleColor" Value="#FFFFFF" />
         </Style>

@@ -1,14 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-	<TargetFrameworks>net8.0-android</TargetFrameworks>
-	  <!-- Uncomment to also build the tizen app. You will need to install tizen by following this: https://github.com/Samsung/Tizen.NET -->
+    <TargetFrameworks>net9.0-android</TargetFrameworks>
+    <!-- Uncomment to also build the tizen app. You will need to install tizen by following this: https://github.com/Samsung/Tizen.NET -->
     <!-- <TargetFrameworks>$(TargetFrameworks);net9.0-tizen</TargetFrameworks> -->
     <!-- Note for MacCatalyst:
 		The default runtime is maccatalyst-x64, except in Release config, in which case the default is maccatalyst-x64;maccatalyst-arm64.
 		When specifying both architectures, use the plural <RuntimeIdentifiers> instead of the singular <RuntimeIdentifier>.
 		The Mac App Store will NOT accept apps with ONLY maccatalyst-arm64 indicated;
 		either BOTH runtimes must be indicated or ONLY macatalyst-x64. -->
-
     <!-- For example: <RuntimeIdentifiers>maccatalyst-x64;maccatalyst-arm64</RuntimeIdentifiers> -->
     <OutputType>Exe</OutputType>
     <RootNamespace>OpenTalkie</RootNamespace>
@@ -31,35 +30,36 @@
     <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'tizen'">6.5</SupportedOSPlatformVersion>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <PublishAot>False</PublishAot>
-    <Version>2.0.0-alpha2</Version>
+    <Version>2.0.0-alpha3</Version>
+    <PublishTrimmed>True</PublishTrimmed>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net9.0-android|AnyCPU'">
     <RunAOTCompilation>True</RunAOTCompilation>
     <PublishTrimmed>True</PublishTrimmed>
     <EnableLLVM>False</EnableLLVM>
     <AndroidLinkTool>r8</AndroidLinkTool>
-    <ApplicationDisplayVersion>2.0.0-alpha2</ApplicationDisplayVersion>
+    <ApplicationDisplayVersion>2.0.0-alpha3</ApplicationDisplayVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net9.0-android|AnyCPU'">
     <EnableLLVM>False</EnableLLVM>
-    <ApplicationDisplayVersion>2.0.0-alpha2</ApplicationDisplayVersion>
+    <ApplicationDisplayVersion>2.0.0-alpha3</ApplicationDisplayVersion>
     <EmbedAssembliesIntoApk>True</EmbedAssembliesIntoApk>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net9.0-maccatalyst|AnyCPU'">
-    <ApplicationDisplayVersion>2.0.0-alpha2</ApplicationDisplayVersion>
+    <ApplicationDisplayVersion>2.0.0-alpha3</ApplicationDisplayVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net9.0-maccatalyst|AnyCPU'">
-    <ApplicationDisplayVersion>2.0.0-alpha2</ApplicationDisplayVersion>
+    <ApplicationDisplayVersion>2.0.0-alpha3</ApplicationDisplayVersion>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net8.0-android|AnyCPU'">
+  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net9.0-android|AnyCPU'">
     <AndroidPackageFormat>apk</AndroidPackageFormat>
     <AndroidLinkTool>r8</AndroidLinkTool>
-    <ApplicationDisplayVersion>2.0.0-alpha2</ApplicationDisplayVersion>
+    <ApplicationDisplayVersion>2.0.0-alpha3</ApplicationDisplayVersion>
     <ApplicationVersion>2</ApplicationVersion>
     <AndroidEnableMultiDex>True</AndroidEnableMultiDex>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net8.0-android34.0|AnyCPU'">
-    <ApplicationDisplayVersion>2.0.0-alpha2</ApplicationDisplayVersion>
+  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net9.0-android|AnyCPU'">
+    <ApplicationDisplayVersion>2.0.0-alpha3</ApplicationDisplayVersion>
     <ApplicationVersion>2</ApplicationVersion>
     <AndroidEnableMultiDex>True</AndroidEnableMultiDex>
   </PropertyGroup>
