@@ -5,7 +5,7 @@ using System.Net.Sockets;
 
 namespace OpenTalkie;
 
-public partial class Endpoint : ObservableObject, IDisposable
+public partial class Endpoint : ObservableObject
 {
     [ObservableProperty]
     private EndpointType type;
@@ -19,7 +19,6 @@ public partial class Endpoint : ObservableObject, IDisposable
     private bool isEnabled;
     [ObservableProperty]
     private bool isDenoiseEnabled;
-    public UdpClient UdpClient { get; private set; }
     public Guid Id { get; set; }
     public uint FrameCount;
 
@@ -30,40 +29,10 @@ public partial class Endpoint : ObservableObject, IDisposable
         Name = name.Length > 16 ? name.Substring(0, 16) : name;
         Hostname = hostname;
         Port = port;
-        UdpClient = new(Hostname, Port);
-        this.PropertyChanged += DestinationChanged;
-        Connectivity.ConnectivityChanged += OnConnectivityChanged;
         IsDenoiseEnabled = denoise;
     }
 
     public Endpoint()
     {
-        this.PropertyChanged += DestinationChanged;
-        Connectivity.ConnectivityChanged += OnConnectivityChanged;
-    }
-
-    private void OnConnectivityChanged(object? sender, ConnectivityChangedEventArgs e)
-    {
-        if (e.NetworkAccess != NetworkAccess.None)
-        {
-            UdpClient?.Dispose();
-            UdpClient = new(Hostname, Port);
-        }
-    }
-
-    public void DestinationChanged(object? sender, PropertyChangedEventArgs e)
-    {
-        if (e.PropertyName != "Hostname" && e.PropertyName != "Port")
-            return;
-
-        UdpClient?.Dispose();
-        UdpClient = new(Hostname, Port);
-    }
-
-    public void Dispose()
-    {
-        UdpClient.Dispose();
-
-        GC.SuppressFinalize(this);
     }
 }

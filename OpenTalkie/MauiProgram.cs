@@ -7,6 +7,8 @@ using OpenTalkie.View;
 using OpenTalkie.ViewModel;
 using System.Reflection;
 using Microsoft.Extensions.Logging;
+using AutoMapper;
+
 
 #if ANDROID
 using OpenTalkie.Platforms.Android.Common.Repositories;
@@ -43,7 +45,18 @@ public static class MauiProgram
         RegisterViewModels(builder.Services);
         RegisterViews(builder.Services);
 
-        return builder.Build();
+        var app = builder.Build();
+        ValidateMapper(app);
+
+        return app;
+    }
+
+    private static void ValidateMapper(MauiApp app)
+    {
+        var scope = app.Services.CreateScope();
+
+        var mapper = scope.ServiceProvider.GetRequiredService<IMapper>();
+        mapper.ConfigurationProvider.AssertConfigurationIsValid();
     }
 
     public static void RegisterRepositories(IServiceCollection services)

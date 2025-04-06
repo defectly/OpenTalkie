@@ -15,6 +15,7 @@ public class AsyncSender : IDisposable
     private readonly Denoiser _denoiser = new();
     private readonly VBanBitResolution _bitResolution;
     private readonly int _bytesPerSample;
+    private readonly UdpClient _udpClient = new();
 
     public AsyncSender(IInputStream source, ObservableCollection<Endpoint> endpoints)
     {
@@ -107,7 +108,7 @@ public class AsyncSender : IDisposable
 
         try
         {
-            await endpoint.UdpClient.SendAsync(packetBuffer, 28 + dataLength);
+            await _udpClient.SendAsync(packetBuffer, 28 + dataLength, endpoint.Hostname, endpoint.Port);
         }
         catch
         {
