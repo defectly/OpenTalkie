@@ -2,7 +2,6 @@
 using OpenTalkie.Common.Enums;
 using System.ComponentModel;
 using System.Net.Sockets;
-using Microsoft.Maui.Networking;
 
 namespace OpenTalkie;
 
@@ -37,6 +36,12 @@ public partial class Endpoint : ObservableObject, IDisposable
         IsDenoiseEnabled = denoise;
     }
 
+    public Endpoint()
+    {
+        this.PropertyChanged += DestinationChanged;
+        Connectivity.ConnectivityChanged += OnConnectivityChanged;
+    }
+
     private void OnConnectivityChanged(object? sender, ConnectivityChangedEventArgs e)
     {
         if (e.NetworkAccess != NetworkAccess.None)
@@ -44,17 +49,6 @@ public partial class Endpoint : ObservableObject, IDisposable
             UdpClient?.Dispose();
             UdpClient = new(Hostname, Port);
         }
-    }
-
-    public Endpoint(Guid id, EndpointType type, string name, string hostname, int port)
-    {
-        Id = id;
-        Type = type;
-        Name = name.Length > 16 ? name.Substring(0, 16) : name;
-        Hostname = hostname;
-        Port = port;
-        UdpClient = new(Hostname, Port);
-        this.PropertyChanged += DestinationChanged;
     }
 
     public void DestinationChanged(object? sender, PropertyChangedEventArgs e)

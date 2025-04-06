@@ -109,7 +109,7 @@ public class AsyncSender : IDisposable
         {
             await endpoint.UdpClient.SendAsync(packetBuffer, 28 + dataLength);
         }
-        catch (SocketException)
+        catch
         {
         }
 
