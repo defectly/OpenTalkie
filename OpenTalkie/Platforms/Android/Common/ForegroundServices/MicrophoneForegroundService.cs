@@ -15,8 +15,13 @@ internal class MicrophoneForegroundService : Service
 
     private readonly Intent _intent = new(Platform.AppContext, typeof(MicrophoneForegroundService));
 
-    public void Start() =>
-        Platform.AppContext.StartForegroundService(_intent);
+    public void Start()
+    {
+        if (OperatingSystem.IsAndroidVersionAtLeast(26))
+            Platform.AppContext.StartForegroundService(_intent);
+        else
+            Platform.AppContext.StartService(_intent);
+    }
 
     public void Stop() =>
         Platform.AppContext.StopService(_intent);
