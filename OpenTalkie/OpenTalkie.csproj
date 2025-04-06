@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>net9.0-android</TargetFrameworks>
     <!-- Uncomment to also build the tizen app. You will need to install tizen by following this: https://github.com/Samsung/Tizen.NET -->
@@ -39,6 +39,7 @@
     <EnableLLVM>False</EnableLLVM>
     <AndroidLinkTool>r8</AndroidLinkTool>
     <ApplicationDisplayVersion>2.0.0-alpha4</ApplicationDisplayVersion>
+	<RuntimeIdentifiers>android-arm;android-arm64;android-x86;android-x64</RuntimeIdentifiers>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net9.0-android|AnyCPU'">
     <EnableLLVM>False</EnableLLVM>
@@ -57,11 +58,13 @@
     <ApplicationDisplayVersion>2.0.0-alpha4</ApplicationDisplayVersion>
     <ApplicationVersion>2</ApplicationVersion>
     <AndroidEnableMultiDex>True</AndroidEnableMultiDex>
+    <Debugger>Xamarin</Debugger>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net9.0-android|AnyCPU'">
     <ApplicationDisplayVersion>2.0.0-alpha4</ApplicationDisplayVersion>
     <ApplicationVersion>2</ApplicationVersion>
     <AndroidEnableMultiDex>True</AndroidEnableMultiDex>
+    <Debugger>Xamarin</Debugger>
   </PropertyGroup>
   <ItemGroup>
     <!-- App Icon -->
