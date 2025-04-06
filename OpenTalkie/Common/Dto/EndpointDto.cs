@@ -19,7 +19,13 @@ public class EndpointDtoMappingProfile : Profile
     public EndpointDtoMappingProfile()
     {
         CreateMap<EndpointDto, Endpoint>()
-            .ForMember(dest => dest.FrameCount, src => src.Ignore())
+            .ForMember(dest => dest.Id, src => src.MapFrom(endpoint => endpoint.Id))
+            .ForMember(dest => dest.Type, src => src.MapFrom(endpoint => endpoint.Type))
+            .ForMember(dest => dest.Name, src => src.MapFrom(endpoint => endpoint.Name))
+            .ForMember(dest => dest.Hostname, src => src.MapFrom(endpoint => endpoint.Hostname))
+            .ForMember(dest => dest.Port, src => src.MapFrom(endpoint => endpoint.Port))
+            .ForMember(dest => dest.IsEnabled, src => src.MapFrom(endpoint => endpoint.IsEnabled))
+            .ForMember(dest => dest.IsDenoiseEnabled, src => src.MapFrom(endpoint => endpoint.IsDenoiseEnabled))
         .ReverseMap();
     }
 }
