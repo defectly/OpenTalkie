@@ -2,6 +2,7 @@
 using OpenTalkie.Common.Repositories.Interfaces;
 using OpenTalkie.Common.Services.Interfaces;
 using OpenTalkie.Platforms.Android.Common.ForegroundServices;
+using Microsoft.Maui.Storage;
 
 namespace OpenTalkie.Platforms.Android.Common.Services;
 
@@ -42,7 +43,7 @@ public class MicrophoneService(IMicrophoneRepository microphoneRepository) : IMi
         if (_audioRecord == null)
             throw new NullReferenceException($"Audio record is null");
 
-        return _waveFormat ??=
+        return _waveFormat ??= 
             new WaveFormat(int.Parse(microphoneRepository.GetSelectedEncoding()), _audioRecord.ChannelCount, _audioRecord.SampleRate);
     }
 
