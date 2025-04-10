@@ -12,20 +12,43 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      # Set up JDK for Android development
+      - name: Setup Java JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'  # .NET MAUI typically requires JDK 11 or 17
+
+      # Set up Android SDK
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      # Set up .NET
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 9.0.x
+
+      # Install .NET MAUI workload with additional components
       - name: Install .NET MAUI
-        run: dotnet workload install maui
+        run: |
+          dotnet workload install maui --source https://api.nuget.org/v3/index.json
+          dotnet workload install android --source https://api.nuget.org/v3/index.json
+
+      # Restore dependencies
       - name: Restore dependencies
         run: dotnet restore
+
+      # Restore KeyStore
       - name: Restore KeyStore
         env:
           KEYSTORE: ${{ secrets.AndroidSigningKeyStore }}
         shell: bash
         run: |
           echo "$KEYSTORE" | base64 -d > OpenTalkie.keystore
+
+      # Build with KeyStore
       - name: Build with KeyStore
         env:
           KEYSTORE_ALIAS: ${{ secrets.AndroidSigningKeyAlias }}
@@ -38,11 +61,15 @@ jobs:
           -p:AndroidSigningKeyPass="env:KEYSTORE_PASS" \
           -p:AndroidSigningKeyStore="${{ github.workspace }}/OpenTalkie.keystore" \
           -p:AndroidSigningStorePass="env:KEYSTORE_PASS"
+
+      # Upload the APK artifact
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v4
         with:
           name: OpenTalkie.apk
           path: OpenTalkie/bin/Release/net9.0-android/io.github.defectly.opentalkie-Signed.apk
+
+      # Upload other artifacts
       - name: Upload Other Stuff
         uses: actions/upload-artifact@v4
         with:
