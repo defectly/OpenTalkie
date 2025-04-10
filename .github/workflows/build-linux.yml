@@ -1,7 +1,7 @@
-# This workflow will build a .NET project with .NET 9 on Linux using the Android workload
+# This workflow will build a .NET project with .NET 9 on Windows
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
 
-name: Build
+name: Build for android on linux
 
 on:
   push:
@@ -9,20 +9,9 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-
-      # Set up JDK for Android development
-      - name: Setup Java JDK
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'zulu'
-          java-version: '17'
-
-      # Set up Android SDK
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
 
       # Set up .NET
       - name: Setup .NET
@@ -30,18 +19,18 @@ jobs:
         with:
           dotnet-version: 9.0.x
 
-      # Install the Android workload (skip MAUI)
-      - name: Install .NET Android Workload
+      # Install .NET MAUI workload
+      - name: Install .NET MAUI
         run: |
-          dotnet workload install android --source https://api.nuget.org/v3/index.json
+          dotnet workload install maui --source https://api.nuget.org/v3/index.json
 
-      # Restore workloads specified in the project
-      - name: Restore Workloads
-        run: dotnet workload restore
-
-      # Restore dependencies
+      # Restore dependencies with runtime identifiers
       - name: Restore dependencies
-        run: dotnet restore
+        run: |
+          dotnet restore OpenTalkie/OpenTalkie.csproj --runtime android-arm
+          dotnet restore OpenTalkie/OpenTalkie.csproj --runtime android-arm64
+          dotnet restore OpenTalkie/OpenTalkie.csproj --runtime android-x86
+          dotnet restore OpenTalkie/OpenTalkie.csproj --runtime android-x64
 
       # Restore KeyStore
       - name: Restore KeyStore
@@ -49,7 +38,7 @@ jobs:
           KEYSTORE: ${{ secrets.AndroidSigningKeyStore }}
         shell: bash
         run: |
-          echo "$KEYSTORE" | base64 -d > OpenTalkie.keystore
+          echo $KEYSTORE | base64 -d > OpenTalkie.keystore
 
       # Build with KeyStore
       - name: Build with KeyStore
@@ -57,13 +46,12 @@ jobs:
           KEYSTORE_ALIAS: ${{ secrets.AndroidSigningKeyAlias }}
           KEYSTORE_PASS: ${{ secrets.AndroidSigningKeyPassword }}
         run: |
-          dotnet build OpenTalkie/OpenTalkie.csproj -c Release -f net9.0-android --no-restore \
-          -p:AndroidPackageFormats=apk \
-          -p:AndroidKeyStore=true \
-          -p:AndroidSigningKeyAlias="${{ env.KEYSTORE_ALIAS }}" \
-          -p:AndroidSigningKeyPass="env:KEYSTORE_PASS" \
-          -p:AndroidSigningKeyStore="${{ github.workspace }}/OpenTalkie.keystore" \
-          -p:AndroidSigningStorePass="env:KEYSTORE_PASS"
+          dotnet build OpenTalkie/OpenTalkie.csproj -c Release -f net9.0-android --no-restore -p:AndroidPackageFormats=apk `
+          -p:AndroidKeyStore=true `
+          -p:AndroidSigningKeyAlias=${{ env.KEYSTORE_ALIAS }} `
+          -p:AndroidSigningKeyPass=env:KEYSTORE_PASS `
+          -p:AndroidSigningKeyStore=${{ github.workspace }}\OpenTalkie.keystore `
+          -p:AndroidSigningStorePass=env:KEYSTORE_PASS
 
       # Upload the APK artifact
       - name: Upload a Build Artifact
