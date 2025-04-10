@@ -1,0 +1,52 @@
+# This workflow will build a .NET project with .NET 9 on Linux
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
+
+name: Build
+
+on:
+  push:
+    branches: "master"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+      - name: Install .NET MAUI
+        run: dotnet workload install maui
+      - name: Restore dependencies
+        run: dotnet restore
+      - name: Restore KeyStore
+        env:
+          KEYSTORE: ${{ secrets.AndroidSigningKeyStore }}
+        shell: bash
+        run: |
+          echo "$KEYSTORE" | base64 -d > OpenTalkie.keystore
+      - name: Build with KeyStore
+        env:
+          KEYSTORE_ALIAS: ${{ secrets.AndroidSigningKeyAlias }}
+          KEYSTORE_PASS: ${{ secrets.AndroidSigningKeyPassword }}
+        run: |
+          dotnet build OpenTalkie/OpenTalkie.csproj -c Release -f net9.0-android --no-restore \
+          -p:AndroidPackageFormats=apk \
+          -p:AndroidKeyStore=true \
+          -p:AndroidSigningKeyAlias="${{ env.KEYSTORE_ALIAS }}" \
+          -p:AndroidSigningKeyPass="env:KEYSTORE_PASS" \
+          -p:AndroidSigningKeyStore="${{ github.workspace }}/OpenTalkie.keystore" \
+          -p:AndroidSigningStorePass="env:KEYSTORE_PASS"
+      - name: Upload a Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: OpenTalkie.apk
+          path: OpenTalkie/bin/Release/net9.0-android/io.github.defectly.opentalkie-Signed.apk
+      - name: Upload Other Stuff
+        uses: actions/upload-artifact@v4
+        with:
+          name: Other Stuff
+          path: |
+            OpenTalkie/bin/Release/net9.0-android/
+            !OpenTalkie/bin/Release/net9.0-android/io.github.defectly.opentalkie-Signed.apk
