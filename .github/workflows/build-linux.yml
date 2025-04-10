@@ -1,4 +1,4 @@
-# This workflow will build a .NET project with .NET 9 on Linux
+# This workflow will build a .NET project with .NET 9 on Linux using the Android workload
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
 
 name: Build for android on linux
@@ -18,7 +18,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: '17'  # .NET MAUI typically requires JDK 11 or 17
+          java-version: '17'
 
       # Set up Android SDK
       - name: Setup Android SDK
@@ -30,10 +30,9 @@ jobs:
         with:
           dotnet-version: 9.0.x
 
-      # Install .NET MAUI workload with additional components
-      - name: Install .NET MAUI
+      # Install the Android workload (skip MAUI)
+      - name: Install .NET Android Workload
         run: |
-          dotnet workload install maui --source https://api.nuget.org/v3/index.json
           dotnet workload install android --source https://api.nuget.org/v3/index.json
 
       # Restore dependencies
