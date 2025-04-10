@@ -70,9 +70,9 @@ jobs:
           -p:AndroidPackageFormats=apk \
           -p:AndroidKeyStore=true \
           -p:AndroidSigningKeyAlias="${{ env.KEYSTORE_ALIAS }}" \
-          -p:AndroidSigningKeyPass="env:KEYSTORE_PASS" \
+          -p:AndroidSigningKeyPass="${{ env.KEYSTORE_PASS }}" \
           -p:AndroidSigningKeyStore="${{ github.workspace }}/OpenTalkie.keystore" \
-          -p:AndroidSigningStorePass="env:KEYSTORE_PASS" \
+          -p:AndroidSigningStorePass="${{ env.KEYSTORE_PASS }}" \
           -p:AndroidSupportedAbis="armeabi-v7a;arm64-v8a"
 
       # Upload the APK artifact
