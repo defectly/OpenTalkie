@@ -1,13 +1,14 @@
-﻿using Android.App;
+﻿using Android;
+using Android.App;
 using Android.Content;
 using Android.Content.PM;
 using Android.OS;
 using Android.Util;
 
-namespace OpenTalkie.Platforms.Android.Common.ForegroundServices;
+namespace OpenTalkie.Platforms.Android.Common.Services.Playback;
 
-[Service(ForegroundServiceType = ForegroundService.TypeMediaProjection)]
-internal class ScreenAudioCaptureForegroundService : Service
+[Service(ForegroundServiceType = ForegroundService.TypeMediaProjection, Permission = Manifest.Permission.ForegroundServiceMediaProjection)]
+internal class MediaProjectionForegroundService : Service
 {
     public const int NotificationId = 1337;
     public const string ChannelId = "ScreenAudioCapturingService";
@@ -82,9 +83,9 @@ internal class ScreenAudioCaptureForegroundService : Service
         if (!OperatingSystem.IsAndroidVersionAtLeast(26))
             return;
 
-        var channel = new NotificationChannel(ChannelId, "Screen Recording Service", NotificationImportance.Default)
+        var channel = new NotificationChannel(ChannelId, "Screen capturing service", NotificationImportance.Default)
         {
-            Description = "Notification Channel for Screen Recording Service"
+            Description = "Notification Channel for screen recording service"
         };
 
         var notificationManager = (NotificationManager?)GetSystemService(NotificationService);
@@ -97,7 +98,7 @@ internal class ScreenAudioCaptureForegroundService : Service
         {
             return new Notification.Builder(this)
                 .SetContentTitle("Screen audio capturing")
-                .SetContentText("Audio capturing is running.")
+                .SetContentText("Screen audio capturing is running.")
                 .SetSmallIcon(global::Android.Resource.Drawable.PresenceAudioOnline)
                 .Build();
         }

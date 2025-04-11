@@ -54,7 +54,7 @@ public partial class HomeViewModel : ObservableObject
                 return;
         }
 
-        MicrophoneBroadcastService.Switch();
+        await MicrophoneBroadcastService.Switch();
 
         if (MicrophoneBroadcastService.BroadcastState)
             MicrophoneBroadcastButtonText = "Stop microphone service";

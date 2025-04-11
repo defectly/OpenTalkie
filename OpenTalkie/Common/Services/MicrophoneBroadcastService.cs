@@ -15,14 +15,15 @@ public class MicrophoneBroadcastService
 {
     private readonly IMapper _mapper;
     private CancellationTokenSource? _cancellationTokenSource;
-    private readonly IMicrophoneService _microphoneService;
+    private readonly IMicrophoneCapturingService _microphoneService;
     private readonly IEndpointRepository _endpointRepository;
     private AsyncSender? _asyncSender;
     private readonly AppShell _mainPage;
     public ObservableCollection<Endpoint> Endpoints;
     public bool BroadcastState { get; private set; }
 
-    public MicrophoneBroadcastService(IMicrophoneService microphoneService, IEndpointRepository endpointRepository, IMapper mapper, AppShell mainPage)
+    public MicrophoneBroadcastService(IMicrophoneCapturingService microphoneService, IEndpointRepository endpointRepository, 
+        IMapper mapper, AppShell mainPage)
     {
         _mainPage = mainPage;
         _microphoneService = microphoneService;
@@ -73,7 +74,7 @@ public class MicrophoneBroadcastService
         _endpointRepository.UpdateAsync(endpointDto);
     }
 
-    public void Switch()
+    public async Task<bool> Switch()
     {
         if (BroadcastState)
         {
@@ -81,20 +82,26 @@ public class MicrophoneBroadcastService
             BroadcastState = !BroadcastState;
             _microphoneService.Stop();
             _asyncSender = null;
+            return true;
         }
         else
         {
-            try
-            {
+            bool isPermissionGranted = await _microphoneService.StartAsync();
 
-                _microphoneService.Start();
-            }
-            catch (Exception ex)
-            {
-                var errorPopup = new ErrorPopup(ex.Message);
-                _mainPage.ShowPopupAsync(errorPopup);
-                return;
-            }
+            if (!isPermissionGranted)
+                return false;
+
+            //try
+            //{
+
+            //    _microphoneService.Start();
+            //}
+            //catch (Exception ex)
+            //{
+            //    var errorPopup = new ErrorPopup(ex.Message);
+            //    _mainPage.ShowPopupAsync(errorPopup);
+            //    return;
+            //}
 
             _cancellationTokenSource = new();
 
@@ -106,16 +113,16 @@ public class MicrophoneBroadcastService
             thread.Start();
 
             BroadcastState = !BroadcastState;
+
+            return true;
         }
     }
 
     private async Task StartSendingLoopAsync(CancellationToken cancellationToken)
     {
-        _microphoneService.Start();
-
         _asyncSender ??= new(_microphoneService, Endpoints);
 
-        byte[] vbanBuffer = new byte[_microphoneService.BufferSize];
+        byte[] vbanBuffer = new byte[_microphoneService.GetBufferSize()];
 
         while (true)
         {

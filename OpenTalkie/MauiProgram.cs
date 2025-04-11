@@ -7,10 +7,14 @@ using OpenTalkie.View;
 using OpenTalkie.ViewModel;
 using System.Reflection;
 using Microsoft.Extensions.Logging;
+using OpenTalkie.Platforms.Android.Common.Services.Microphone;
+using OpenTalkie.Platforms.Android.Common.Services.Playback;
+
+
+
 
 #if ANDROID
 using OpenTalkie.Platforms.Android.Common.Repositories;
-using OpenTalkie.Platforms.Android.Common.Services;
 #endif
 
 namespace OpenTalkie;
@@ -59,7 +63,7 @@ public static class MauiProgram
     {
 
 #if ANDROID
-        services.AddSingleton<IMicrophoneService, MicrophoneService>();
+        services.AddSingleton<IMicrophoneCapturingService, MicrophoneCapturingService>();
         services.AddSingleton<IPlaybackService, PlaybackService>();
 #endif
         services.AddSingleton<MicrophoneBroadcastService>();

@@ -2,7 +2,7 @@
 using Android.Content;
 using Android.Media.Projection;
 using Android.OS;
-using OpenTalkie.Platforms.Android.Common.ForegroundServices;
+using OpenTalkie.Platforms.Android.Common.Services.Playback;
 
 namespace OpenTalkie.Platforms.Android;
 
@@ -52,7 +52,7 @@ public partial class MediaProjectionProvider : MediaProjection.Callback, IScreen
         MediaProjection?.Stop();
 
         var context = Platform.AppContext;
-        context.StopService(new Intent(context, typeof(ScreenAudioCaptureForegroundService)));
+        context.StopService(new Intent(context, typeof(MediaProjectionForegroundService)));
     }
 
     internal void OnScreenCapturePermissionDenied()
@@ -67,11 +67,11 @@ public partial class MediaProjectionProvider : MediaProjection.Callback, IScreen
         var context = Platform.AppContext;
         var messenger = new Messenger(new ExternalHandler(serviceStartAwaiter));
 
-        Intent notificationSetup = new(context, typeof(ScreenAudioCaptureForegroundService));
-        notificationSetup.PutExtra(ScreenAudioCaptureForegroundService.ExtraCommandNotificationSetup, true);
-        notificationSetup.PutExtra(ScreenAudioCaptureForegroundService.ExtraExternalMessenger, messenger);
-        notificationSetup.PutExtra(ScreenAudioCaptureForegroundService.ExtraContentTitle, NotificationContentTitle);
-        notificationSetup.PutExtra(ScreenAudioCaptureForegroundService.ExtraContentText, NotificationContentText);
+        Intent notificationSetup = new(context, typeof(MediaProjectionForegroundService));
+        notificationSetup.PutExtra(MediaProjectionForegroundService.ExtraCommandNotificationSetup, true);
+        notificationSetup.PutExtra(MediaProjectionForegroundService.ExtraExternalMessenger, messenger);
+        notificationSetup.PutExtra(MediaProjectionForegroundService.ExtraContentTitle, NotificationContentTitle);
+        notificationSetup.PutExtra(MediaProjectionForegroundService.ExtraContentText, NotificationContentText);
 
         // Android O
         if (OperatingSystem.IsAndroidVersionAtLeast(26))
@@ -86,8 +86,8 @@ public partial class MediaProjectionProvider : MediaProjection.Callback, IScreen
         MediaProjection = ProjectionManager?.GetMediaProjection(resultCode, data!);
         MediaProjection?.RegisterCallback(this, null);
 
-        Intent beginRecording = new(context, typeof(ScreenAudioCaptureForegroundService));
-        beginRecording.PutExtra(ScreenAudioCaptureForegroundService.ExtraCommandBeginRecording, true);
+        Intent beginRecording = new(context, typeof(MediaProjectionForegroundService));
+        beginRecording.PutExtra(MediaProjectionForegroundService.ExtraCommandBeginRecording, true);
 
         // Android O
         if (OperatingSystem.IsAndroidVersionAtLeast(26))
@@ -112,14 +112,13 @@ public partial class MediaProjectionProvider : MediaProjection.Callback, IScreen
         return MediaProjection;
     }
 }
-
 internal class ExternalHandler(TaskCompletionSource<bool> tcs) : Handler
 {
     private readonly TaskCompletionSource<bool> _tcs = tcs;
 
     public override void HandleMessage(Message msg)
     {
-        if (msg.What == ScreenAudioCaptureForegroundService.MsgServiceStarted)
+        if (msg.What == MediaProjectionForegroundService.MsgServiceStarted)
             _tcs.TrySetResult(true);
     }
 }

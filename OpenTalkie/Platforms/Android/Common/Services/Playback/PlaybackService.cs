@@ -3,9 +3,8 @@ using Android.Media.Projection;
 using OpenTalkie.Common.Repositories.Interfaces;
 using OpenTalkie.Common.Services.Interfaces;
 using Encoding = Android.Media.Encoding;
-using Microsoft.Maui.Storage;
 
-namespace OpenTalkie.Platforms.Android.Common.Services;
+namespace OpenTalkie.Platforms.Android.Common.Services.Playback;
 
 public class PlaybackService(IPlaybackRepository playbackRepository, IScreenAudioCapturing audioRecording) : IPlaybackService
 {
