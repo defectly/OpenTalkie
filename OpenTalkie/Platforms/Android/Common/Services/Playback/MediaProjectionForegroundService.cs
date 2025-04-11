@@ -34,7 +34,6 @@ internal class MediaProjectionForegroundService : Service
 
     private static void NotifyHandler(Intent? intent)
     {
-        // Notify the external observer that the service has started.
         if (GetParcelableExtra<Messenger>(intent, ExtraExternalMessenger) is Messenger messenger)
         {
             try
@@ -51,6 +50,28 @@ internal class MediaProjectionForegroundService : Service
 
     private void SetupForegroundNotification(Intent? intent)
     {
+        Intent? notificationIntent;
+        if (string.IsNullOrEmpty(PackageName) || PackageManager == null)
+        {
+            Log.Error(ChannelId, "PackageName or PackageManager is null, cannot create launch intent.");
+            return;
+        }
+
+        notificationIntent = PackageManager.GetLaunchIntentForPackage(PackageName);
+        if (notificationIntent == null)
+        {
+            Log.Error(ChannelId, "Failed to get launch intent for package: " + PackageName);
+            return;
+        }
+
+        notificationIntent.SetFlags(ActivityFlags.SingleTop | ActivityFlags.ClearTop);
+
+        PendingIntentFlags pendingIntentFlags = PendingIntentFlags.UpdateCurrent;
+        if (OperatingSystem.IsAndroidVersionAtLeast(31)) // Android 12+
+            pendingIntentFlags |= PendingIntentFlags.Mutable;
+
+        PendingIntent pendingIntent = PendingIntent.GetActivity(this, 0, notificationIntent, pendingIntentFlags);
+
         // Android O
         if (OperatingSystem.IsAndroidVersionAtLeast(26))
         {
@@ -62,7 +83,9 @@ internal class MediaProjectionForegroundService : Service
             var notification = new Notification.Builder(this, ChannelId)
                 .SetContentTitle(contentTitle)
                 .SetContentText(contentText)
-                .SetSmallIcon(global::Android.Resource.Drawable.PresenceVideoOnline)
+                .SetSmallIcon(global::Android.Resource.Drawable.PresenceOnline)
+                .SetContentIntent(pendingIntent)
+                .SetAutoCancel(false)
                 .Build();
 
             // Android Q
@@ -74,7 +97,7 @@ internal class MediaProjectionForegroundService : Service
         else
         {
             // Pre-Android O
-            StartForeground(NotificationId, CreateFallbackNotification());
+            StartForeground(NotificationId, CreateFallbackNotification(pendingIntent));
         }
     }
 
@@ -85,22 +108,29 @@ internal class MediaProjectionForegroundService : Service
 
         var channel = new NotificationChannel(ChannelId, "Screen capturing service", NotificationImportance.Default)
         {
-            Description = "Notification Channel for screen recording service"
+            Description = "Notification channel for screen recording service"
         };
 
-        var notificationManager = (NotificationManager?)GetSystemService(NotificationService);
+        var notificationManager = GetSystemService(NotificationService) as NotificationManager;
         notificationManager?.CreateNotificationChannel(channel);
     }
 
-    private Notification CreateFallbackNotification()
+    private Notification CreateFallbackNotification(PendingIntent? pendingIntent = null)
     {
         if (!OperatingSystem.IsAndroidVersionAtLeast(26))
         {
-            return new Notification.Builder(this)
+            var builder = new Notification.Builder(this)
                 .SetContentTitle("Screen audio capturing")
                 .SetContentText("Screen audio capturing is running.")
-                .SetSmallIcon(global::Android.Resource.Drawable.PresenceAudioOnline)
-                .Build();
+                .SetSmallIcon(global::Android.Resource.Drawable.PresenceOnline);
+
+            if (pendingIntent != null)
+            {
+                builder.SetContentIntent(pendingIntent);
+                builder.SetAutoCancel(false);
+            }
+
+            return builder.Build();
         }
 
         return new Notification();

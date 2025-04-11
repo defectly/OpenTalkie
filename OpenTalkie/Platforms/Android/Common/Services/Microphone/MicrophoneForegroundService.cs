@@ -34,7 +34,6 @@ internal class MicrophoneForegroundService : Service
 
     private static void NotifyHandler(Intent? intent)
     {
-        // Notify the external observer that the service has started.
         if (GetParcelableExtra<Messenger>(intent, ExtraExternalMessenger) is Messenger messenger)
         {
             try
@@ -51,6 +50,28 @@ internal class MicrophoneForegroundService : Service
 
     private void SetupForegroundNotification(Intent? intent)
     {
+        Intent? notificationIntent;
+        if (string.IsNullOrEmpty(PackageName) || PackageManager == null)
+        {
+            Log.Error(ChannelId, "PackageName or PackageManager is null, cannot create launch intent.");
+            return;
+        }
+
+        notificationIntent = PackageManager.GetLaunchIntentForPackage(PackageName);
+        if (notificationIntent == null)
+        {
+            Log.Error(ChannelId, "Failed to get launch intent for package: " + PackageName);
+            return;
+        }
+
+        notificationIntent.SetFlags(ActivityFlags.SingleTop | ActivityFlags.ClearTop);
+
+        PendingIntentFlags pendingIntentFlags = PendingIntentFlags.UpdateCurrent;
+        if (OperatingSystem.IsAndroidVersionAtLeast(31)) // Android 12+
+            pendingIntentFlags |= PendingIntentFlags.Mutable;
+
+        PendingIntent pendingIntent = PendingIntent.GetActivity(this, 0, notificationIntent, pendingIntentFlags);
+
         // Android O
         if (OperatingSystem.IsAndroidVersionAtLeast(26))
         {
@@ -63,6 +84,8 @@ internal class MicrophoneForegroundService : Service
                 .SetContentTitle(contentTitle)
                 .SetContentText(contentText)
                 .SetSmallIcon(global::Android.Resource.Drawable.PresenceVideoOnline)
+                .SetContentIntent(pendingIntent) // Attach the PendingIntent
+                .SetAutoCancel(false) // Prevent notification from being dismissed on click
                 .Build();
 
             // Android R
@@ -74,7 +97,7 @@ internal class MicrophoneForegroundService : Service
         else
         {
             // Pre-Android O
-            StartForeground(NotificationId, CreateFallbackNotification());
+            StartForeground(NotificationId, CreateFallbackNotification(pendingIntent));
         }
     }
 
@@ -85,22 +108,29 @@ internal class MicrophoneForegroundService : Service
 
         var channel = new NotificationChannel(ChannelId, "Microphone capturing service", NotificationImportance.Default)
         {
-            Description = "Notification Channel for microphone capturing service"
+            Description = "Notification channel for microphone capturing service"
         };
 
-        var notificationManager = (NotificationManager?)GetSystemService(NotificationService);
+        var notificationManager = GetSystemService(NotificationService) as NotificationManager;
         notificationManager?.CreateNotificationChannel(channel);
     }
 
-    private Notification CreateFallbackNotification()
+    private Notification CreateFallbackNotification(PendingIntent? pendingIntent = null)
     {
         if (!OperatingSystem.IsAndroidVersionAtLeast(26))
         {
-            return new Notification.Builder(this)
+            var builder = new Notification.Builder(this)
                 .SetContentTitle("Microphone capturing")
                 .SetContentText("Microphone capturing is running.")
-                .SetSmallIcon(global::Android.Resource.Drawable.PresenceAudioOnline)
-                .Build();
+                .SetSmallIcon(global::Android.Resource.Drawable.PresenceAudioOnline);
+
+            if (pendingIntent != null)
+            {
+                builder.SetContentIntent(pendingIntent);
+                builder.SetAutoCancel(false); // Prevent notification from being dismissed on click
+            }
+
+            return builder.Build();
         }
 
         return new Notification();

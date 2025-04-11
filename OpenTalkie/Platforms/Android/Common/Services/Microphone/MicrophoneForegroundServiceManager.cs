@@ -9,7 +9,7 @@ internal static class MicrophoneForegroundServiceManager
 
     private static string NotificationContentTitle { get; set; } = "Microphone capturing in progress...";
 
-    private static string NotificationContentText { get; set; } = "A Microphone capturing is currently in progress, be careful with any sensitive information.";
+    private static string NotificationContentText { get; set; } = "A Microphone capturing is currently in progress";
 
     public static async Task StartForegroundServiceAsync(ScreenAudioCapturingOptions? options = null)
     {

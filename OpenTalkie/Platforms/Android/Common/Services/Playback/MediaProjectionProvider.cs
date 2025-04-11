@@ -2,9 +2,8 @@
 using Android.Content;
 using Android.Media.Projection;
 using Android.OS;
-using OpenTalkie.Platforms.Android.Common.Services.Playback;
 
-namespace OpenTalkie.Platforms.Android;
+namespace OpenTalkie.Platforms.Android.Common.Services.Playback;
 
 public partial class MediaProjectionProvider : MediaProjection.Callback, IScreenAudioCapturing
 {
