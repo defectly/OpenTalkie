@@ -1,10 +1,11 @@
 ﻿using Android;
 using Android.App;
+using Android.Content;
+using Android.Content.PM;
 using Android.Graphics.Drawables;
 using Android.Service.QuickSettings;
 using Android.Widget;
 using OpenTalkie.Common.Services;
-using OpenTalkie.Common.Services.Interfaces;
 
 namespace OpenTalkie.Platforms.Android.Common.Services.Microphone;
 
@@ -13,15 +14,21 @@ namespace OpenTalkie.Platforms.Android.Common.Services.Microphone;
 [IntentFilter([ActionQsTile])]
 public class MicrophoneTileService : TileService
 {
-    private bool _isTileActive;
+    private MicrophoneBroadcastService _broadcastService;
 
     public MicrophoneTileService()
     {
-        var microphoneCapturingService = IPlatformApplication.Current?.Services.GetService<IMicrophoneCapturingService>();
-        if (microphoneCapturingService == null)
-            throw new NullReferenceException("Microphone service is not provided");
+        if (OperatingSystem.IsAndroidVersionAtLeast(31))
+        {
+            var pm = Platform.AppContext.PackageManager;
+            var component = new ComponentName(Platform.AppContext, Java.Lang.Class.FromType(typeof(MicrophoneTileService)));
+            pm.SetComponentEnabledSetting(component, ComponentEnabledState.Disabled, ComponentEnableOption.DontKillApp);
+            return;
+        }
 
-        microphoneCapturingService.OnServiceStateChange += OnMicrophoneServiceSwitch;
+        var broadcastService = IPlatformApplication.Current?.Services.GetService<MicrophoneBroadcastService>();
+        _broadcastService = broadcastService ?? throw new NullReferenceException("Microphone service is not provided");
+        _broadcastService.BroadcastStateChanged += (isActive) => UpdateTile();
     }
 
     public override void OnStartListening()
@@ -35,14 +42,14 @@ public class MicrophoneTileService : TileService
     {
         base.OnClick();
 
-        await PerformActionAsync(_isTileActive);
+        await CallBroadcastServiceStartAsync();
     }
 
     private void UpdateTile()
     {
         if (QsTile == null) return;
 
-        if (_isTileActive)
+        if (_broadcastService.BroadcastState)
         {
             QsTile.State = TileState.Active;
             QsTile.Icon = Icon.CreateWithResource(this, global::Android.Resource.Drawable.PresenceAudioOnline);
@@ -56,15 +63,11 @@ public class MicrophoneTileService : TileService
         QsTile.UpdateTile();
     }
 
-    private async Task PerformActionAsync(bool isActive)
+    private async Task CallBroadcastServiceStartAsync()
     {
         if (QsTile == null) return;
 
-        var broadcastService = IPlatformApplication.Current?.Services.GetService<MicrophoneBroadcastService>();
-        if (broadcastService == null)
-            throw new NullReferenceException("Microphone service is not provided");
-
-        bool isSwitchSuccess = await broadcastService.Switch();
+        bool isSwitchSuccess = await _broadcastService.Switch();
 
         if (!isSwitchSuccess)
         {
@@ -76,11 +79,5 @@ public class MicrophoneTileService : TileService
                 return;
             }
         }
-    }
-
-    private void OnMicrophoneServiceSwitch(bool isActive)
-    {
-        _isTileActive = isActive;
-        UpdateTile();
     }
 }

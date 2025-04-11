@@ -1,11 +1,9 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Microsoft.Extensions.Logging;
 using OpenTalkie.Common.Services;
 using System.Collections.ObjectModel;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
-using Microsoft.Maui.ApplicationModel;
 
 namespace OpenTalkie.ViewModel;
 
@@ -37,30 +35,24 @@ public partial class HomeViewModel : ObservableObject
         _mainPage = mainPage;
         MicrophoneBroadcastService = microphoneBroadcastService;
         PlaybackBroadcastService = playbackBroadcastService;
-        MicrophoneBroadcastButtonText = "Start microphone service";
+        OnMicrophoneServiceStateChange(microphoneBroadcastService.BroadcastState);
         PlaybackBroadcastButtonText = "Start playback service";
         NetworkAddresses = [];
         LoadNetworkAddresses();
+
+        microphoneBroadcastService.BroadcastStateChanged += OnMicrophoneServiceStateChange;
     }
 
-    [RelayCommand]
-    private async Task SwitchMicrophoneBroadcast()
+    private void OnMicrophoneServiceStateChange(bool isActive)
     {
-        if (!PlaybackBroadcastService.BroadcastState)
-        {
-            bool isPermissionGranted = await CheckMicrophonePermissionAsync();
-
-            if (!isPermissionGranted)
-                return;
-        }
-
-        await MicrophoneBroadcastService.Switch();
-
-        if (MicrophoneBroadcastService.BroadcastState)
+        if (isActive)
             MicrophoneBroadcastButtonText = "Stop microphone service";
         else
             MicrophoneBroadcastButtonText = "Start microphone service";
     }
+
+    [RelayCommand]
+    private async Task SwitchMicrophoneBroadcast() => await MicrophoneBroadcastService.Switch();
 
     [RelayCommand]
     private async Task SwitchPlaybackBroadcast()
@@ -133,12 +125,12 @@ public partial class HomeViewModel : ObservableObject
 
             if (NetworkAddresses.Count == 0)
             {
-                NetworkAddresses.Add("Нет активных сетей");
+                NetworkAddresses.Add("No networks available");
             }
         }
         catch (Exception ex)
         {
-            NetworkAddresses.Add($"Ошибка: {ex.Message}");
+            NetworkAddresses.Add($"Error: {ex.Message}");
         }
     }
 }

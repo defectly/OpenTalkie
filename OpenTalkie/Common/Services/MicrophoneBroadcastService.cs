@@ -21,6 +21,7 @@ public class MicrophoneBroadcastService
     private readonly AppShell _mainPage;
     public ObservableCollection<Endpoint> Endpoints;
     public bool BroadcastState { get; private set; }
+    public Action<bool>? BroadcastStateChanged;
 
     public MicrophoneBroadcastService(IMicrophoneCapturingService microphoneService, IEndpointRepository endpointRepository, 
         IMapper mapper, AppShell mainPage)
@@ -35,7 +36,66 @@ public class MicrophoneBroadcastService
 
         foreach (var endpoint in Endpoints)
             endpoint.PropertyChanged += EndpointPropertyChanged;
+
+        BroadcastStateChanged += OnBroadcastStateChange;
     }
+
+    public async Task<bool> Switch()
+    {
+        if (BroadcastState)
+        {
+            _cancellationTokenSource?.Cancel();
+            BroadcastStateChanged?.Invoke(!BroadcastState);
+            _microphoneService.Stop();
+            _asyncSender = null;
+            return true;
+        }
+        else
+        {
+            try
+            {
+                bool isPermissionGranted = await _microphoneService.StartAsync();
+
+                if (!isPermissionGranted)
+                    return false;
+            }
+            catch (Exception ex)
+            {
+                var errorPopup = new ErrorPopup(ex.Message);
+                _ = _mainPage.ShowPopupAsync(errorPopup);
+                return false;
+            }
+
+            _cancellationTokenSource = new();
+
+            var thread = new Thread(() => _ = StartSendingLoopAsync(_cancellationTokenSource.Token))
+            {
+                IsBackground = true
+            };
+
+            thread.Start();
+
+            BroadcastStateChanged?.Invoke(!BroadcastState);
+
+            return true;
+        }
+    }
+
+    private async Task StartSendingLoopAsync(CancellationToken cancellationToken)
+    {
+        _asyncSender ??= new(_microphoneService, Endpoints);
+
+        byte[] vbanBuffer = new byte[_microphoneService.GetBufferSize()];
+
+        while (true)
+        {
+            if (cancellationToken.IsCancellationRequested)
+                return;
+
+            await _asyncSender.ReadAsync(vbanBuffer, 0, vbanBuffer.Length);
+        }
+    }
+    private void OnBroadcastStateChange(bool isActive) => BroadcastState = isActive;
 
     private void EndpointsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
@@ -72,64 +132,5 @@ public class MicrophoneBroadcastService
 
         var endpointDto = _mapper.Map<EndpointDto>(endpoint);
         _endpointRepository.UpdateAsync(endpointDto);
-    }
-
-    public async Task<bool> Switch()
-    {
-        if (BroadcastState)
-        {
-            _cancellationTokenSource?.Cancel();
-            BroadcastState = !BroadcastState;
-            _microphoneService.Stop();
-            _asyncSender = null;
-            return true;
-        }
-        else
-        {
-            bool isPermissionGranted = await _microphoneService.StartAsync();
-
-            if (!isPermissionGranted)
-                return false;
-
-            //try
-            //{
-
-            //    _microphoneService.Start();
-            //}
-            //catch (Exception ex)
-            //{
-            //    var errorPopup = new ErrorPopup(ex.Message);
-            //    _mainPage.ShowPopupAsync(errorPopup);
-            //    return;
-            //}
-
-            _cancellationTokenSource = new();
-
-            var thread = new Thread(() => _ = StartSendingLoopAsync(_cancellationTokenSource.Token))
-            {
-                IsBackground = true
-            };
-
-            thread.Start();
-
-            BroadcastState = !BroadcastState;
-
-            return true;
-        }
-    }
-
-    private async Task StartSendingLoopAsync(CancellationToken cancellationToken)
-    {
-        _asyncSender ??= new(_microphoneService, Endpoints);
-
-        byte[] vbanBuffer = new byte[_microphoneService.GetBufferSize()];
-
-        while (true)
-        {
-            if (cancellationToken.IsCancellationRequested)
-                return;
-
-            await _asyncSender.ReadAsync(vbanBuffer, 0, vbanBuffer.Length);
-        }
     }
 }
