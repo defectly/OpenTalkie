@@ -1,5 +1,5 @@
 ﻿using Microsoft.Maui.LifecycleEvents;
-using OpenTalkie.Platforms.Android;
+using OpenTalkie.Platforms.Android.Common.Services.Playback;
 
 namespace OpenTalkie;
 

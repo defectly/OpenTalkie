@@ -1,28 +1,28 @@
 ﻿using Android.Media;
 using OpenTalkie.Common.Repositories.Interfaces;
-using OpenTalkie.Common.Services.Interfaces;
-using OpenTalkie.Platforms.Android.Common.ForegroundServices;
-using Microsoft.Maui.Storage;
 
-namespace OpenTalkie.Platforms.Android.Common.Services;
+namespace OpenTalkie.Platforms.Android.Common.Services.Microphone;
 
-public class MicrophoneService(IMicrophoneRepository microphoneRepository) : IMicrophoneService
+public static class MicrophoneAudioRecord
 {
-    private readonly MicrophoneForegroundService _foregroundService = new();
-    private AudioRecord? _audioRecord;
-    private int _microphoneSource;
-    private int _microphoneChannel;
-    private int _microphoneSampleRate;
-    private int _microphoneEncoding;
-    private WaveFormat? _waveFormat;
-    public int BufferSize { get; set; }
+    private static AudioRecord? _audioRecord;
+    private static int _microphoneSource;
+    private static int _microphoneChannel;
+    private static int _microphoneSampleRate;
+    private static int _microphoneEncoding;
+    private static WaveFormat? _waveFormat;
+    private static readonly IMicrophoneRepository microphoneRepository = 
+        IPlatformApplication.Current?.Services.GetService<IMicrophoneRepository>() 
+        ?? throw new NullReferenceException("Microphone repository not provided");
+    public static int BufferSize { get; set; }
 
-    public void Start()
+    public static void Start()
     {
         if (_audioRecord != null)
             return;
 
         LoadPreferences();
+
         CreateAudioRecord();
 
         if (_audioRecord == null || _audioRecord.State == State.Uninitialized)
@@ -31,23 +31,19 @@ public class MicrophoneService(IMicrophoneRepository microphoneRepository) : IMi
             throw new Exception("Can't initialize audio record.. Selected parameters may be not supported");
         }
 
-        if (_audioRecord.RecordingState == RecordState.Stopped)
-        {
-            _foregroundService.Start();
-            _audioRecord.StartRecording();
-        }
+        _audioRecord.StartRecording();
     }
 
-    public WaveFormat GetWaveFormat()
+    public static WaveFormat GetWaveFormat()
     {
         if (_audioRecord == null)
             throw new NullReferenceException($"Audio record is null");
 
-        return _waveFormat ??= 
+        return _waveFormat ??=
             new WaveFormat(int.Parse(microphoneRepository.GetSelectedEncoding()), _audioRecord.ChannelCount, _audioRecord.SampleRate);
     }
 
-    public void Stop()
+    public static void Stop()
     {
         if (_audioRecord == null)
             return;
@@ -56,13 +52,13 @@ public class MicrophoneService(IMicrophoneRepository microphoneRepository) : IMi
             return;
 
         _audioRecord.Stop();
+        _audioRecord.Release();
         _audioRecord.Dispose();
         _audioRecord = null;
-        _foregroundService.Stop();
         _waveFormat = null;
     }
 
-    public async Task<int> ReadAsync(byte[] buffer, int offset, int count)
+    public static async Task<int> ReadAsync(byte[] buffer, int offset, int count)
     {
         if (_audioRecord == null)
             throw new NullReferenceException($"Audio record is null");
@@ -70,15 +66,7 @@ public class MicrophoneService(IMicrophoneRepository microphoneRepository) : IMi
         return await _audioRecord.ReadAsync(buffer, offset, count);
     }
 
-    public void Dispose()
-    {
-        _audioRecord?.Stop();
-        _audioRecord?.Dispose();
-        _foregroundService.Stop();
-        GC.SuppressFinalize(this);
-    }
-
-    private void LoadPreferences()
+    private static void LoadPreferences()
     {
         _microphoneSource = Preferences.Get("MicrophoneSource", (int)AudioSource.Default);
         _microphoneChannel = Preferences.Get("MicrophoneInputChannel", (int)ChannelIn.Default);
@@ -87,7 +75,7 @@ public class MicrophoneService(IMicrophoneRepository microphoneRepository) : IMi
         BufferSize = Preferences.Get("MicrophoneBufferSize", 960);
     }
 
-    private void CreateAudioRecord()
+    private static void CreateAudioRecord()
     {
         CreateAudioRecord
             (
@@ -99,7 +87,7 @@ public class MicrophoneService(IMicrophoneRepository microphoneRepository) : IMi
             );
     }
 
-    private void CreateAudioRecord(AudioSource audioSource,
+    private static void CreateAudioRecord(AudioSource audioSource,
         int sampleRate, ChannelIn channel, Encoding encoding, int bufferSize)
     {
         _audioRecord = new(audioSource, sampleRate, channel, encoding, bufferSize);

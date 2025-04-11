@@ -15,14 +15,16 @@ public class MicrophoneBroadcastService
 {
     private readonly IMapper _mapper;
     private CancellationTokenSource? _cancellationTokenSource;
-    private readonly IMicrophoneService _microphoneService;
+    private readonly IMicrophoneCapturingService _microphoneService;
     private readonly IEndpointRepository _endpointRepository;
     private AsyncSender? _asyncSender;
     private readonly AppShell _mainPage;
     public ObservableCollection<Endpoint> Endpoints;
     public bool BroadcastState { get; private set; }
+    public Action<bool>? BroadcastStateChanged;
 
-    public MicrophoneBroadcastService(IMicrophoneService microphoneService, IEndpointRepository endpointRepository, IMapper mapper, AppShell mainPage)
+    public MicrophoneBroadcastService(IMicrophoneCapturingService microphoneService, IEndpointRepository endpointRepository, 
+        IMapper mapper, AppShell mainPage)
     {
         _mainPage = mainPage;
         _microphoneService = microphoneService;
@@ -34,7 +36,66 @@ public class MicrophoneBroadcastService
 
         foreach (var endpoint in Endpoints)
             endpoint.PropertyChanged += EndpointPropertyChanged;
+
+        BroadcastStateChanged += OnBroadcastStateChange;
     }
+
+    public async Task<bool> Switch()
+    {
+        if (BroadcastState)
+        {
+            _cancellationTokenSource?.Cancel();
+            BroadcastStateChanged?.Invoke(!BroadcastState);
+            _microphoneService.Stop();
+            _asyncSender = null;
+            return true;
+        }
+        else
+        {
+            try
+            {
+                bool isPermissionGranted = await _microphoneService.StartAsync();
+
+                if (!isPermissionGranted)
+                    return false;
+            }
+            catch (Exception ex)
+            {
+                var errorPopup = new ErrorPopup(ex.Message);
+                _ = _mainPage.ShowPopupAsync(errorPopup);
+                return false;
+            }
+
+            _cancellationTokenSource = new();
+
+            var thread = new Thread(() => _ = StartSendingLoopAsync(_cancellationTokenSource.Token))
+            {
+                IsBackground = true
+            };
+
+            thread.Start();
+
+            BroadcastStateChanged?.Invoke(!BroadcastState);
+
+            return true;
+        }
+    }
+
+    private async Task StartSendingLoopAsync(CancellationToken cancellationToken)
+    {
+        _asyncSender ??= new(_microphoneService, Endpoints);
+
+        byte[] vbanBuffer = new byte[_microphoneService.GetBufferSize()];
+
+        while (true)
+        {
+            if (cancellationToken.IsCancellationRequested)
+                return;
+
+            await _asyncSender.ReadAsync(vbanBuffer, 0, vbanBuffer.Length);
+        }
+    }
+    private void OnBroadcastStateChange(bool isActive) => BroadcastState = isActive;
 
     private void EndpointsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
@@ -71,58 +132,5 @@ public class MicrophoneBroadcastService
 
         var endpointDto = _mapper.Map<EndpointDto>(endpoint);
         _endpointRepository.UpdateAsync(endpointDto);
-    }
-
-    public void Switch()
-    {
-        if (BroadcastState)
-        {
-            _cancellationTokenSource?.Cancel();
-            BroadcastState = !BroadcastState;
-            _microphoneService.Stop();
-            _asyncSender = null;
-        }
-        else
-        {
-            try
-            {
-
-                _microphoneService.Start();
-            }
-            catch (Exception ex)
-            {
-                var errorPopup = new ErrorPopup(ex.Message);
-                _mainPage.ShowPopupAsync(errorPopup);
-                return;
-            }
-
-            _cancellationTokenSource = new();
-
-            var thread = new Thread(() => _ = StartSendingLoopAsync(_cancellationTokenSource.Token))
-            {
-                IsBackground = true
-            };
-
-            thread.Start();
-
-            BroadcastState = !BroadcastState;
-        }
-    }
-
-    private async Task StartSendingLoopAsync(CancellationToken cancellationToken)
-    {
-        _microphoneService.Start();
-
-        _asyncSender ??= new(_microphoneService, Endpoints);
-
-        byte[] vbanBuffer = new byte[_microphoneService.BufferSize];
-
-        while (true)
-        {
-            if (cancellationToken.IsCancellationRequested)
-                return;
-
-            await _asyncSender.ReadAsync(vbanBuffer, 0, vbanBuffer.Length);
-        }
     }
 }

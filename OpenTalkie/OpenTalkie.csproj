@@ -98,7 +98,7 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.3" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Update="Common\Services\Interfaces\IMicrophoneService.cs">
+    <Compile Update="Common\Services\Interfaces\IMicrophoneCapturingService.cs">
       <ExcludeFromCurrentConfiguration>false</ExcludeFromCurrentConfiguration>
     </Compile>
     <Compile Update="View\HomePage.xaml.cs">

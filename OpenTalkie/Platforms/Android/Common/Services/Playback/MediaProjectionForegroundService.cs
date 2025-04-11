@@ -1,13 +1,14 @@
-﻿using Android.App;
+﻿using Android;
+using Android.App;
 using Android.Content;
 using Android.Content.PM;
 using Android.OS;
 using Android.Util;
 
-namespace OpenTalkie.Platforms.Android.Common.ForegroundServices;
+namespace OpenTalkie.Platforms.Android.Common.Services.Playback;
 
-[Service(ForegroundServiceType = ForegroundService.TypeMediaProjection)]
-internal class ScreenAudioCaptureForegroundService : Service
+[Service(ForegroundServiceType = ForegroundService.TypeMediaProjection, Permission = Manifest.Permission.ForegroundServiceMediaProjection)]
+internal class MediaProjectionForegroundService : Service
 {
     public const int NotificationId = 1337;
     public const string ChannelId = "ScreenAudioCapturingService";
@@ -33,7 +34,6 @@ internal class ScreenAudioCaptureForegroundService : Service
 
     private static void NotifyHandler(Intent? intent)
     {
-        // Notify the external observer that the service has started.
         if (GetParcelableExtra<Messenger>(intent, ExtraExternalMessenger) is Messenger messenger)
         {
             try
@@ -50,6 +50,28 @@ internal class ScreenAudioCaptureForegroundService : Service
 
     private void SetupForegroundNotification(Intent? intent)
     {
+        Intent? notificationIntent;
+        if (string.IsNullOrEmpty(PackageName) || PackageManager == null)
+        {
+            Log.Error(ChannelId, "PackageName or PackageManager is null, cannot create launch intent.");
+            return;
+        }
+
+        notificationIntent = PackageManager.GetLaunchIntentForPackage(PackageName);
+        if (notificationIntent == null)
+        {
+            Log.Error(ChannelId, "Failed to get launch intent for package: " + PackageName);
+            return;
+        }
+
+        notificationIntent.SetFlags(ActivityFlags.SingleTop | ActivityFlags.ClearTop);
+
+        PendingIntentFlags pendingIntentFlags = PendingIntentFlags.UpdateCurrent;
+        if (OperatingSystem.IsAndroidVersionAtLeast(31)) // Android 12+
+            pendingIntentFlags |= PendingIntentFlags.Mutable;
+
+        PendingIntent pendingIntent = PendingIntent.GetActivity(this, 0, notificationIntent, pendingIntentFlags);
+
         // Android O
         if (OperatingSystem.IsAndroidVersionAtLeast(26))
         {
@@ -61,7 +83,9 @@ internal class ScreenAudioCaptureForegroundService : Service
             var notification = new Notification.Builder(this, ChannelId)
                 .SetContentTitle(contentTitle)
                 .SetContentText(contentText)
-                .SetSmallIcon(global::Android.Resource.Drawable.PresenceVideoOnline)
+                .SetSmallIcon(global::Android.Resource.Drawable.PresenceOnline)
+                .SetContentIntent(pendingIntent)
+                .SetAutoCancel(false)
                 .Build();
 
             // Android Q
@@ -73,7 +97,7 @@ internal class ScreenAudioCaptureForegroundService : Service
         else
         {
             // Pre-Android O
-            StartForeground(NotificationId, CreateFallbackNotification());
+            StartForeground(NotificationId, CreateFallbackNotification(pendingIntent));
         }
     }
 
@@ -82,24 +106,31 @@ internal class ScreenAudioCaptureForegroundService : Service
         if (!OperatingSystem.IsAndroidVersionAtLeast(26))
             return;
 
-        var channel = new NotificationChannel(ChannelId, "Screen Recording Service", NotificationImportance.Default)
+        var channel = new NotificationChannel(ChannelId, "Screen capturing service", NotificationImportance.Default)
         {
-            Description = "Notification Channel for Screen Recording Service"
+            Description = "Notification channel for screen recording service"
         };
 
-        var notificationManager = (NotificationManager?)GetSystemService(NotificationService);
+        var notificationManager = GetSystemService(NotificationService) as NotificationManager;
         notificationManager?.CreateNotificationChannel(channel);
     }
 
-    private Notification CreateFallbackNotification()
+    private Notification CreateFallbackNotification(PendingIntent? pendingIntent = null)
     {
         if (!OperatingSystem.IsAndroidVersionAtLeast(26))
         {
-            return new Notification.Builder(this)
+            var builder = new Notification.Builder(this)
                 .SetContentTitle("Screen audio capturing")
-                .SetContentText("Audio capturing is running.")
-                .SetSmallIcon(global::Android.Resource.Drawable.PresenceAudioOnline)
-                .Build();
+                .SetContentText("Screen audio capturing is running.")
+                .SetSmallIcon(global::Android.Resource.Drawable.PresenceOnline);
+
+            if (pendingIntent != null)
+            {
+                builder.SetContentIntent(pendingIntent);
+                builder.SetAutoCancel(false);
+            }
+
+            return builder.Build();
         }
 
         return new Notification();
