@@ -6,6 +6,7 @@ namespace OpenTalkie.Platforms.Android.Common.Services.Microphone;
 public static class MicrophoneAudioRecord
 {
     private static AudioRecord? _audioRecord;
+    private static float _volume;
     private static int _microphoneSource;
     private static int _microphoneChannel;
     private static int _microphoneSampleRate;
@@ -63,7 +64,31 @@ public static class MicrophoneAudioRecord
         if (_audioRecord == null)
             throw new NullReferenceException($"Audio record is null");
 
-        return await _audioRecord.ReadAsync(buffer, offset, count);
+        int read = await _audioRecord.ReadAsync(buffer, offset, count);
+
+        ChangeVolume(buffer, _volume);
+
+        return read;
+    }
+
+    public static unsafe void ChangeVolume(byte[] audioBytes, float gain)
+    {
+        if (audioBytes == null || audioBytes.Length % 2 != 0)
+            throw new ArgumentException("Incorrect audio data format");
+
+        fixed (byte* ptr = audioBytes)
+        {
+            short* samples = (short*)ptr;
+            int sampleCount = audioBytes.Length / 2;
+
+            for (int i = 0; i < sampleCount; i++)
+            {
+                float amplified = samples[i] * gain;
+                samples[i] = amplified > short.MaxValue ? short.MaxValue :
+                             amplified < short.MinValue ? short.MinValue :
+                             (short)amplified;
+            }
+        }
     }
 
     private static void LoadPreferences()
@@ -73,6 +98,7 @@ public static class MicrophoneAudioRecord
         _microphoneSampleRate = Preferences.Get("MicrophoneSampleRate", 48000);
         _microphoneEncoding = Preferences.Get("MicrophoneEncoding", (int)Encoding.Default);
         BufferSize = Preferences.Get("MicrophoneBufferSize", 960);
+        _volume = Preferences.Get("MicrophoneVolume", 1f);
     }
 
     private static void CreateAudioRecord()

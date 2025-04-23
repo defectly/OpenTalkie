@@ -9,6 +9,7 @@ namespace OpenTalkie.Platforms.Android.Common.Services.Playback;
 public class PlaybackService(IPlaybackRepository playbackRepository, IScreenAudioCapturing audioRecording) : IPlaybackService
 {
     private Encoding _encoding;
+    private static float _volume;
     private int _sampleRate;
     private ChannelOut _channelOut;
 
@@ -20,7 +21,31 @@ public class PlaybackService(IPlaybackRepository playbackRepository, IScreenAudi
         if (_audioRecord == null)
             throw new NullReferenceException($"Audio record is not created");
 
-        return await _audioRecord.ReadAsync(buffer, offset, count);
+        int read = await _audioRecord.ReadAsync(buffer, offset, count);
+
+        ChangeVolume(buffer, _volume);
+
+        return read;
+    }
+
+    public static unsafe void ChangeVolume(byte[] audioBytes, float gain)
+    {
+        if (audioBytes == null || audioBytes.Length % 2 != 0)
+            throw new ArgumentException("Incorrect audio data format");
+
+        fixed (byte* ptr = audioBytes)
+        {
+            short* samples = (short*)ptr;
+            int sampleCount = audioBytes.Length / 2;
+
+            for (int i = 0; i < sampleCount; i++)
+            {
+                float amplified = samples[i] * gain;
+                samples[i] = amplified > short.MaxValue ? short.MaxValue :
+                             amplified < short.MinValue ? short.MinValue :
+                             (short)amplified;
+            }
+        }
     }
 
     private void LoadPreferences()
@@ -28,6 +53,7 @@ public class PlaybackService(IPlaybackRepository playbackRepository, IScreenAudi
         _encoding = (Encoding)Preferences.Get("PlaybackEncoding", (int)Encoding.Default);
         _sampleRate = Preferences.Get("PlaybackSampleRate", 48000);
         _channelOut = (ChannelOut)Preferences.Get("PlaybackChannelOut", (int)ChannelOut.Stereo);
+        _volume = Preferences.Get("PlaybackVolume", 1f);
     }
 
     public void Start()

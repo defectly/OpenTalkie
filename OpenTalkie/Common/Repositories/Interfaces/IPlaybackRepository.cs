@@ -13,4 +13,6 @@ public interface IPlaybackRepository
     void SetSelectedEncoding(string encoding);
     void SetSelectedSampleRate(string sampleRate);
     void SetSelectedBufferSize(string bufferSize);
+    float GetSelectedVolume();
+    void SetSelectedVolume(float gain);
 }

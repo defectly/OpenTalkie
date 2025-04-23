@@ -2,7 +2,6 @@
 using OpenTalkie.RNNoise;
 using OpenTalkie.VBAN;
 using System.Collections.ObjectModel;
-using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 
 namespace OpenTalkie;
@@ -119,8 +118,8 @@ public class AsyncSender : IDisposable
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void FillPacketData(ReadOnlyMemory<byte> samples, int sampleCount, byte[] packetBuffer)
     {
-        packetBuffer[5] = (byte)(sampleCount - 1); 
-        samples.Span.CopyTo(packetBuffer.AsSpan(28)); 
+        packetBuffer[5] = (byte)(sampleCount - 1);
+        samples.Span.CopyTo(packetBuffer.AsSpan(28));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

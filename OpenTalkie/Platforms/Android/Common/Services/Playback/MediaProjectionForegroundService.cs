@@ -83,7 +83,7 @@ internal class MediaProjectionForegroundService : Service
             var notification = new Notification.Builder(this, ChannelId)
                 .SetContentTitle(contentTitle)
                 .SetContentText(contentText)
-                .SetSmallIcon(global::Android.Resource.Drawable.PresenceOnline)
+                .SetSmallIcon(global::Android.Resource.Drawable.IcMediaPlay)
                 .SetContentIntent(pendingIntent)
                 .SetAutoCancel(false)
                 .Build();
@@ -122,7 +122,7 @@ internal class MediaProjectionForegroundService : Service
             var builder = new Notification.Builder(this)
                 .SetContentTitle("Screen audio capturing")
                 .SetContentText("Screen audio capturing is running.")
-                .SetSmallIcon(global::Android.Resource.Drawable.PresenceOnline);
+                .SetSmallIcon(global::Android.Resource.Drawable.IcMediaPlay);
 
             if (pendingIntent != null)
             {

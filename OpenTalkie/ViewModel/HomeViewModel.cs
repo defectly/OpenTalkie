@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using OpenTalkie.Common.Services;
+using OpenTalkie.Platforms.Android.Common;
 using System.Collections.ObjectModel;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
@@ -41,6 +42,7 @@ public partial class HomeViewModel : ObservableObject
         LoadNetworkAddresses();
 
         microphoneBroadcastService.BroadcastStateChanged += OnMicrophoneServiceStateChange;
+        playbackBroadcastService.BroadcastStateChanged += OnPlaybackServiceStateChange;
     }
 
     private void OnMicrophoneServiceStateChange(bool isActive)
@@ -49,6 +51,14 @@ public partial class HomeViewModel : ObservableObject
             MicrophoneBroadcastButtonText = "Stop microphone service";
         else
             MicrophoneBroadcastButtonText = "Start microphone service";
+    }
+
+    private void OnPlaybackServiceStateChange(bool isActive)
+    {
+        if (isActive)
+            PlaybackBroadcastButtonText = "Stop playback service";
+        else
+            PlaybackBroadcastButtonText = "Start playback service";
     }
 
     [RelayCommand]
@@ -69,11 +79,6 @@ public partial class HomeViewModel : ObservableObject
         }
 
         PlaybackBroadcastService.Switch();
-
-        if (PlaybackBroadcastService.BroadcastState)
-            PlaybackBroadcastButtonText = "Stop playback service";
-        else
-            PlaybackBroadcastButtonText = "Start playback service";
     }
 
     [RelayCommand]
@@ -84,13 +89,9 @@ public partial class HomeViewModel : ObservableObject
 
     private async Task<bool> CheckMicrophonePermissionAsync()
     {
-        var permissionStatus = await Permissions.CheckStatusAsync<Permissions.Microphone>();
-        if (permissionStatus == PermissionStatus.Granted)
-            return true;
+        bool permissionStatus = await PermissionManager.RequestMicrophonePermissionAsync();
 
-        permissionStatus = await Permissions.RequestAsync<Permissions.Microphone>();
-
-        if (permissionStatus == PermissionStatus.Granted)
+        if (permissionStatus)
             return true;
 
         _ = _mainPage

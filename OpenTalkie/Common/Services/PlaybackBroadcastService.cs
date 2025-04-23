@@ -21,6 +21,7 @@ public class PlaybackBroadcastService
     private AsyncSender? _asyncSender;
     public ObservableCollection<Endpoint> Endpoints;
     public bool BroadcastState { get; private set; }
+    public Action<bool> BroadcastStateChanged;
 
     public PlaybackBroadcastService(AppShell mainPage, IPlaybackService playbackService, IEndpointRepository endpointRepository, IMapper mapper)
     {
@@ -34,6 +35,8 @@ public class PlaybackBroadcastService
 
         foreach (var endpoint in Endpoints)
             endpoint.PropertyChanged += EndpointPropertyChanged;
+
+        BroadcastStateChanged += OnBroadcastStateChange;
     }
 
     private void EndpointsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -78,14 +81,15 @@ public class PlaybackBroadcastService
         return await _playbackService.RequestPermissionAsync();
     }
 
-    public void Switch()
+    public bool Switch()
     {
         if (BroadcastState)
         {
             _cancellationTokenSource?.Cancel();
-            BroadcastState = !BroadcastState;
+            BroadcastStateChanged?.Invoke(!BroadcastState);
             _playbackService.Stop();
             _asyncSender = null;
+            return true;
         }
         else
         {
@@ -97,7 +101,7 @@ public class PlaybackBroadcastService
             {
                 var errorPopup = new ErrorPopup(ex.Message);
                 _mainPage.ShowPopupAsync(errorPopup);
-                return;
+                return false;
             }
 
             _cancellationTokenSource = new();
@@ -108,7 +112,8 @@ public class PlaybackBroadcastService
             };
 
             thread.Start();
-            BroadcastState = !BroadcastState;
+            BroadcastStateChanged?.Invoke(!BroadcastState);
+            return true;
         }
     }
 
@@ -126,4 +131,5 @@ public class PlaybackBroadcastService
             await _asyncSender.ReadAsync(vbanBuffer, 0, vbanBuffer.Length);
         }
     }
+    private void OnBroadcastStateChange(bool isActive) => BroadcastState = isActive;
 }
