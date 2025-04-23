@@ -8,7 +8,7 @@
     Padding="16"
     BackgroundColor="#121212">
     <ScrollView>
-        <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,*" RowSpacing="16">
+        <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,*" RowSpacing="16">
 
             <!--  Audio Source  -->
             <Frame
@@ -22,7 +22,7 @@
                 <Frame.GestureRecognizers>
                     <TapGestureRecognizer Command="{Binding EditFieldCommand}" CommandParameter="Source" />
                 </Frame.GestureRecognizers>
-                <HorizontalStackLayout Spacing="12">
+                <Grid Padding="5">
                     <Image
                         HeightRequest="24"
                         Source="mic_icon.png"
@@ -45,7 +45,7 @@
                             Text="{Binding SelectedSource}"
                             TextColor="#B0B0B0" />
                     </Grid>
-                </HorizontalStackLayout>
+                </Grid>
             </Frame>
 
             <!--  Input Channel  -->
@@ -59,7 +59,7 @@
                 <Frame.GestureRecognizers>
                     <TapGestureRecognizer Command="{Binding EditFieldCommand}" CommandParameter="InputChannel" />
                 </Frame.GestureRecognizers>
-                <HorizontalStackLayout Spacing="12">
+                <Grid Padding="5">
                     <Image
                         HeightRequest="24"
                         Source="channel_icon.png"
@@ -82,7 +82,7 @@
                             Text="{Binding SelectedInputChannel}"
                             TextColor="#B0B0B0" />
                     </Grid>
-                </HorizontalStackLayout>
+                </Grid>
             </Frame>
 
             <!--  Sample Rate  -->
@@ -96,7 +96,7 @@
                 <Frame.GestureRecognizers>
                     <TapGestureRecognizer Command="{Binding EditFieldCommand}" CommandParameter="SampleRate" />
                 </Frame.GestureRecognizers>
-                <HorizontalStackLayout Spacing="12">
+                <Grid Padding="5">
                     <Image
                         HeightRequest="24"
                         Source="samplerate_icon.png"
@@ -119,7 +119,7 @@
                             Text="{Binding SelectedSampleRate}"
                             TextColor="#B0B0B0" />
                     </Grid>
-                </HorizontalStackLayout>
+                </Grid>
             </Frame>
 
             <!--  Encoding  -->
@@ -133,7 +133,7 @@
                 <Frame.GestureRecognizers>
                     <TapGestureRecognizer Command="{Binding EditFieldCommand}" CommandParameter="Encoding" />
                 </Frame.GestureRecognizers>
-                <HorizontalStackLayout Spacing="12">
+                <Grid Padding="5">
                     <Image
                         HeightRequest="24"
                         Source="encoding_icon.png"
@@ -156,7 +156,7 @@
                             Text="{Binding SelectedEncoding}"
                             TextColor="#B0B0B0" />
                     </Grid>
-                </HorizontalStackLayout>
+                </Grid>
             </Frame>
 
             <!--  Buffer Size  -->
@@ -170,7 +170,7 @@
                 <Frame.GestureRecognizers>
                     <TapGestureRecognizer Command="{Binding EditBufferSizeCommand}" CommandParameter="BufferSize" />
                 </Frame.GestureRecognizers>
-                <HorizontalStackLayout Spacing="12">
+                <Grid Padding="5">
                     <Image
                         HeightRequest="24"
                         Source="buffer_icon.png"
@@ -193,7 +193,63 @@
                             Text="{Binding SelectedBufferSize}"
                             TextColor="#B0B0B0" />
                     </Grid>
-                </HorizontalStackLayout>
+                </Grid>
+            </Frame>
+
+            <!--  Volume Slider  -->
+            <Frame
+                Grid.Row="5"
+                Padding="16"
+                BackgroundColor="#1E1E1E"
+                BorderColor="#2E2E2E"
+                CornerRadius="8"
+                Shadow="{StaticResource MaterialShadowDark}">
+                <VerticalStackLayout Spacing="12">
+                    <Grid Padding="5">
+                        <Image
+                            HeightRequest="24"
+                            Source="volume_icon.png"
+                            VerticalOptions="Center"
+                            WidthRequest="24" />
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Grid
+                                Grid.Column="0"
+                                ColumnDefinitions="*,Auto"
+                                RowDefinitions="Auto,Auto"
+                                RowSpacing="4">
+                                <Label
+                                    Grid.Row="0"
+                                    Grid.Column="0"
+                                    FontAttributes="Bold"
+                                    FontSize="16"
+                                    Text="Volume"
+                                    TextColor="#FFFFFF" />
+                                <Label
+                                    Grid.Row="1"
+                                    Grid.Column="0"
+                                    FontSize="14"
+                                    Text="{Binding Volume, StringFormat='{0:F0}%'}"
+                                    TextColor="#B0B0B0" />
+                            </Grid>
+                            <Button
+                                Grid.Column="1"
+                                Padding="8"
+                                BackgroundColor="#2E2E2E"
+                                Command="{Binding ResetVolumeCommand}"
+                                CornerRadius="4"
+                                FontSize="14"
+                                Text="Reset"
+                                TextColor="#FFFFFF" />
+                        </Grid>
+                    </Grid>
+                    <Slider
+                        Maximum="400"
+                        MaximumTrackColor="#B0B0B0"
+                        Minimum="0"
+                        MinimumTrackColor="#4CAF50"
+                        ThumbColor="#FFFFFF"
+                        Value="{Binding Volume}" />
+                </VerticalStackLayout>
             </Frame>
         </Grid>
     </ScrollView>

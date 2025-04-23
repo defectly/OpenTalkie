@@ -15,13 +15,16 @@ public partial class PlaybackSettingsViewModel : ObservableObject
     private string selectedChannelOut;
 
     [ObservableProperty]
-    private string selectedEncoding;
-
-    [ObservableProperty]
     private string selectedSampleRate;
 
     [ObservableProperty]
+    private string selectedEncoding;
+
+    [ObservableProperty]
     private string selectedBufferSize;
+
+    [ObservableProperty]
+    private float volume;
 
     public PlaybackSettingsViewModel(AppShell mainPage, IPlaybackRepository playbackRepository)
     {
@@ -29,9 +32,15 @@ public partial class PlaybackSettingsViewModel : ObservableObject
         _playbackRepository = playbackRepository;
 
         SelectedChannelOut = _playbackRepository.GetSelectedChannelOut();
-        SelectedEncoding = _playbackRepository.GetSelectedEncoding();
         SelectedSampleRate = _playbackRepository.GetSelectedSampleRate();
+        SelectedEncoding = _playbackRepository.GetSelectedEncoding();
         SelectedBufferSize = _playbackRepository.GetSelectedBufferSize();
+        Volume = _playbackRepository.GetSelectedVolume() * 100;
+    }
+
+    partial void OnVolumeChanged(float value)
+    {
+        _playbackRepository.SetSelectedVolume(value / 100.0f);
     }
 
     [RelayCommand]
@@ -39,9 +48,9 @@ public partial class PlaybackSettingsViewModel : ObservableObject
     {
         string[] options = fieldName switch
         {
-            "ChannelOut" => _playbackRepository.GetOutputChannels().ToArray(),
-            "SampleRate" => _playbackRepository.GetSampleRates().ToArray(),
-            "Encoding" => _playbackRepository.GetEncodings().ToArray(),
+            "ChannelOut" => [.. _playbackRepository.GetOutputChannels()],
+            "SampleRate" => [.. _playbackRepository.GetSampleRates()],
+            "Encoding" => [.. _playbackRepository.GetEncodings()],
             _ => []
         };
 
@@ -105,5 +114,11 @@ public partial class PlaybackSettingsViewModel : ObservableObject
             });
 
         await _mainPage.ShowPopupAsync(popup);
+    }
+
+    [RelayCommand]
+    private void ResetVolume()
+    {
+        Volume = 100.0f;
     }
 }

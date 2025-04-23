@@ -116,4 +116,14 @@ public class MicrophoneRepository : IMicrophoneRepository
             _ => throw new NotSupportedException($"No such encoding supported: {encoding}")
         };
     }
+
+    public float GetSelectedVolume()
+    {
+        return Preferences.Get("MicrophoneVolume", 1f);
+    }
+
+    public void SetSelectedVolume(float gain)
+    {
+        Preferences.Set("MicrophoneVolume", gain);
+    }
 }

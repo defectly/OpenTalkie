@@ -83,7 +83,7 @@ internal class MicrophoneForegroundService : Service
             var notification = new Notification.Builder(this, ChannelId)
                 .SetContentTitle(contentTitle)
                 .SetContentText(contentText)
-                .SetSmallIcon(global::Android.Resource.Drawable.PresenceVideoOnline)
+                .SetSmallIcon(global::Android.Resource.Drawable.PresenceAudioOnline)
                 .SetContentIntent(pendingIntent) // Attach the PendingIntent
                 .SetAutoCancel(false) // Prevent notification from being dismissed on click
                 .Build();

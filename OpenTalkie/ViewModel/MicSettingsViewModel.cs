@@ -1,7 +1,6 @@
 ﻿using CommunityToolkit.Maui.Views;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Microsoft.Maui.Controls;
 using OpenTalkie.Common.Repositories.Interfaces;
 using OpenTalkie.View.Popups;
 
@@ -27,6 +26,9 @@ public partial class MicSettingsViewModel : ObservableObject
     [ObservableProperty]
     private string selectedBufferSize;
 
+    [ObservableProperty]
+    private float volume;
+
     public MicSettingsViewModel(AppShell mainPage, IMicrophoneRepository microphoneRepository)
     {
         _mainPage = mainPage;
@@ -37,6 +39,12 @@ public partial class MicSettingsViewModel : ObservableObject
         SelectedSampleRate = _microphoneRepository.GetSelectedSampleRate();
         SelectedEncoding = _microphoneRepository.GetSelectedEncoding();
         SelectedBufferSize = _microphoneRepository.GetSelectedBufferSize();
+        Volume = _microphoneRepository.GetSelectedVolume() * 100;
+    }
+
+    partial void OnVolumeChanged(float value)
+    {
+        _microphoneRepository.SetSelectedVolume(value / 100.0f);
     }
 
     [RelayCommand]
@@ -116,5 +124,11 @@ public partial class MicSettingsViewModel : ObservableObject
             });
 
         await _mainPage.ShowPopupAsync(popup);
+    }
+
+    [RelayCommand]
+    private void ResetVolume()
+    {
+        Volume = 100.0f;
     }
 }

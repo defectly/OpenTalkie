@@ -95,6 +95,7 @@ public class MicrophoneBroadcastService
             await _asyncSender.ReadAsync(vbanBuffer, 0, vbanBuffer.Length);
         }
     }
+
     private void OnBroadcastStateChange(bool isActive) => BroadcastState = isActive;
 
     private void EndpointsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)

@@ -11,9 +11,11 @@ public interface IMicrophoneRepository
     string GetSelectedSampleRate();
     string GetSelectedEncoding();
     string GetSelectedBufferSize();
+    float GetSelectedVolume();
     void SetSelectedBufferSize(string bufferSize);
     void SetSelectedSource(string source);
     void SetSelectedInputChannel(string inputChannel);
     void SetSelectedSampleRate(string sampleRate);
     void SetSelectedEncoding(string encoding);
+    void SetSelectedVolume(float gain);
 }

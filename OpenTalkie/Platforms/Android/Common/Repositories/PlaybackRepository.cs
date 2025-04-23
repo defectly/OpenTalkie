@@ -97,4 +97,14 @@ public class PlaybackRepository : IPlaybackRepository
             _ => throw new NotSupportedException($"No such encoding supported: {encoding}")
         };
     }
+
+    public float GetSelectedVolume()
+    {
+        return Preferences.Get("PlaybackVolume", 1f);
+    }
+
+    public void SetSelectedVolume(float gain)
+    {
+        Preferences.Set("PlaybackVolume", gain);
+    }
 }
