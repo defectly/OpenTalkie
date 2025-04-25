@@ -42,9 +42,10 @@ public partial class MicSettingsViewModel : ObservableObject
         Volume = _microphoneRepository.GetSelectedVolume() * 100;
     }
 
-    partial void OnVolumeChanged(float value)
+    [RelayCommand]
+    public void VolumeChanged()
     {
-        _microphoneRepository.SetSelectedVolume(value / 100.0f);
+        _microphoneRepository.SetSelectedVolume(Volume / 100.0f);
     }
 
     [RelayCommand]

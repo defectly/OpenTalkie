@@ -2,6 +2,7 @@
 
 public interface IMicrophoneRepository
 {
+    Action<float> VolumeChanged { get; set; }
     List<string> GetAudioSources();
     List<string> GetInputChannels();
     List<string> GetSampleRates();

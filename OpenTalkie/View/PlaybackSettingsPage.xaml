@@ -206,6 +206,7 @@
                         </Grid>
                     </Grid>
                     <Slider
+                        DragCompletedCommand="{Binding VolumeChangedCommand}"
                         Maximum="400"
                         MaximumTrackColor="#B0B0B0"
                         Minimum="0"

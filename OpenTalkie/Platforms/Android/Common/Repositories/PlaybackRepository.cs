@@ -6,6 +6,8 @@ namespace OpenTalkie.Platforms.Android.Common.Repositories;
 
 public class PlaybackRepository : IPlaybackRepository
 {
+    public Action<float> VolumeChanged { get; set; }
+
     public List<string> GetSampleRates()
     {
         List<string> sampleRates = [];
@@ -106,5 +108,6 @@ public class PlaybackRepository : IPlaybackRepository
     public void SetSelectedVolume(float gain)
     {
         Preferences.Set("PlaybackVolume", gain);
+        VolumeChanged?.Invoke(gain);
     }
 }

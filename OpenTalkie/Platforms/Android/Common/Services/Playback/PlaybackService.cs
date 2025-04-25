@@ -6,7 +6,7 @@ using Encoding = Android.Media.Encoding;
 
 namespace OpenTalkie.Platforms.Android.Common.Services.Playback;
 
-public class PlaybackService(IPlaybackRepository playbackRepository, IScreenAudioCapturing audioRecording) : IPlaybackService
+public class PlaybackService : IPlaybackService
 {
     private Encoding _encoding;
     private static float _volume;
@@ -15,6 +15,16 @@ public class PlaybackService(IPlaybackRepository playbackRepository, IScreenAudi
 
     private AudioRecord? _audioRecord;
     private WaveFormat? _waveFormat;
+    private IPlaybackRepository playbackRepository;
+    private IScreenAudioCapturing audioRecording;
+
+    public PlaybackService(IPlaybackRepository playbackRepository, IScreenAudioCapturing audioRecording)
+    {
+        this.playbackRepository = playbackRepository;
+        this.audioRecording = audioRecording;
+
+        playbackRepository.VolumeChanged += OnVolumeChange;
+    }
 
     public async Task<int> ReadAsync(byte[] buffer, int offset, int count)
     {
@@ -142,5 +152,10 @@ public class PlaybackService(IPlaybackRepository playbackRepository, IScreenAudi
             throw new NullReferenceException($"Audio record is null");
 
         return _waveFormat ??= new WaveFormat(int.Parse(playbackRepository.GetSelectedEncoding()), _audioRecord.ChannelCount, _audioRecord.SampleRate);
+    }
+
+    private static void OnVolumeChange(float gain)
+    {
+        _volume = gain;
     }
 }

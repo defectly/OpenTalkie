@@ -2,6 +2,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using OpenTalkie.Common.Repositories.Interfaces;
+using OpenTalkie.Platforms.Android.Common.Repositories;
 using OpenTalkie.View.Popups;
 
 namespace OpenTalkie.ViewModel;
@@ -38,9 +39,10 @@ public partial class PlaybackSettingsViewModel : ObservableObject
         Volume = _playbackRepository.GetSelectedVolume() * 100;
     }
 
-    partial void OnVolumeChanged(float value)
+    [RelayCommand]
+    public void VolumeChanged()
     {
-        _playbackRepository.SetSelectedVolume(value / 100.0f);
+        _playbackRepository.SetSelectedVolume(Volume / 100.0f);
     }
 
     [RelayCommand]

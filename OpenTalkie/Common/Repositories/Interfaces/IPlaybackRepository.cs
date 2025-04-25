@@ -2,6 +2,7 @@
 
 public interface IPlaybackRepository
 {
+    Action<float> VolumeChanged { get; set; }
     List<string> GetSampleRates();
     List<string> GetOutputChannels();
     List<string> GetEncodings();

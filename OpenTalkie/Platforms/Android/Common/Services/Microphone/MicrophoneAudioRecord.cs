@@ -5,17 +5,22 @@ namespace OpenTalkie.Platforms.Android.Common.Services.Microphone;
 
 public static class MicrophoneAudioRecord
 {
-    private static AudioRecord? _audioRecord;
     private static float _volume;
+    private static AudioRecord? _audioRecord;
     private static int _microphoneSource;
     private static int _microphoneChannel;
     private static int _microphoneSampleRate;
     private static int _microphoneEncoding;
     private static WaveFormat? _waveFormat;
-    private static readonly IMicrophoneRepository microphoneRepository = 
-        IPlatformApplication.Current?.Services.GetService<IMicrophoneRepository>() 
+    private static readonly IMicrophoneRepository microphoneRepository =
+        IPlatformApplication.Current?.Services.GetService<IMicrophoneRepository>()
         ?? throw new NullReferenceException("Microphone repository not provided");
     public static int BufferSize { get; set; }
+
+    static MicrophoneAudioRecord()
+    {
+        microphoneRepository.VolumeChanged += OnVolumeChange;
+    }
 
     public static void Start()
     {
@@ -117,5 +122,10 @@ public static class MicrophoneAudioRecord
         int sampleRate, ChannelIn channel, Encoding encoding, int bufferSize)
     {
         _audioRecord = new(audioSource, sampleRate, channel, encoding, bufferSize);
+    }
+
+    private static void OnVolumeChange(float gain)
+    {
+        _volume = gain;
     }
 }
