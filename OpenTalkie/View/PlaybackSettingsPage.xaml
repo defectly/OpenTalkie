@@ -34,11 +34,14 @@
                         RowSpacing="4"
                         VerticalOptions="Center">
                         <Label
-                            Grid.Row="0"
-                            FontAttributes="Bold"
-                            FontSize="16"
-                            Text="Channel Out"
-                            TextColor="#FFFFFF" />
+                            Grid.Row="0">
+                            <Label.FormattedText>
+                                <FormattedString>
+                                    <Span Text="Channel Out " TextColor="#FFFFFF" FontAttributes="Bold" FontSize="16" />
+                                    <Span Text="(requires restart)" TextColor="#B0B0B0" FontSize="14" />
+                                </FormattedString>
+                            </Label.FormattedText>
+                        </Label>
                         <Label
                             Grid.Row="1"
                             FontSize="14"
@@ -71,11 +74,14 @@
                         RowSpacing="4"
                         VerticalOptions="Center">
                         <Label
-                            Grid.Row="0"
-                            FontAttributes="Bold"
-                            FontSize="16"
-                            Text="Sample Rate"
-                            TextColor="#FFFFFF" />
+                            Grid.Row="0">
+                            <Label.FormattedText>
+                                <FormattedString>
+                                    <Span Text="Sample Rate " TextColor="#FFFFFF" FontAttributes="Bold" FontSize="16" />
+                                    <Span Text="(requires restart)" TextColor="#B0B0B0" FontSize="14" />
+                                </FormattedString>
+                            </Label.FormattedText>
+                        </Label>
                         <Label
                             Grid.Row="1"
                             FontSize="14"
@@ -108,11 +114,14 @@
                         RowSpacing="4"
                         VerticalOptions="Center">
                         <Label
-                            Grid.Row="0"
-                            FontAttributes="Bold"
-                            FontSize="16"
-                            Text="Encoding"
-                            TextColor="#FFFFFF" />
+                            Grid.Row="0">
+                            <Label.FormattedText>
+                                <FormattedString>
+                                    <Span Text="Encoding " TextColor="#FFFFFF" FontAttributes="Bold" FontSize="16" />
+                                    <Span Text="(requires restart)" TextColor="#B0B0B0" FontSize="14" />
+                                </FormattedString>
+                            </Label.FormattedText>
+                        </Label>
                         <Label
                             Grid.Row="1"
                             FontSize="14"
@@ -145,11 +154,14 @@
                         RowSpacing="4"
                         VerticalOptions="Center">
                         <Label
-                            Grid.Row="0"
-                            FontAttributes="Bold"
-                            FontSize="16"
-                            Text="Buffer Size"
-                            TextColor="#FFFFFF" />
+                            Grid.Row="0">
+                            <Label.FormattedText>
+                                <FormattedString>
+                                    <Span Text="Buffer Size " TextColor="#FFFFFF" FontAttributes="Bold" FontSize="16" />
+                                    <Span Text="(requires restart)" TextColor="#B0B0B0" FontSize="14" />
+                                </FormattedString>
+                            </Label.FormattedText>
+                        </Label>
                         <Label
                             Grid.Row="1"
                             FontSize="14"
