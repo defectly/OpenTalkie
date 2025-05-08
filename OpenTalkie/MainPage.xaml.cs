@@ -1,7 +1,4 @@
-﻿using System.Net;
-using System.Net.Sockets;
-
-namespace OpenTalkie;
+﻿namespace OpenTalkie;
 
 public partial class MainPage : ContentPage
 {

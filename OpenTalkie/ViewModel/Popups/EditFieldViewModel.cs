@@ -4,10 +4,12 @@ using CommunityToolkit.Mvvm.Input;
 
 namespace OpenTalkie.View.Popups;
 
+using System.Threading.Tasks; // Added for Task
+
 public partial class EditFieldViewModel : ObservableObject
 {
     private readonly Popup _popup;
-    private readonly Action<string> _onSave;
+    private readonly Func<string, Task> _onSave; // Changed Action<string> to Func<string, Task>
 
     [ObservableProperty]
     private string _title;
@@ -24,7 +26,7 @@ public partial class EditFieldViewModel : ObservableObject
     [ObservableProperty]
     private int? _maxLength;
 
-    public EditFieldViewModel(string title, string initialValue, Keyboard keyboardType, Action<string> onSave, Popup popup)
+    public EditFieldViewModel(string title, string initialValue, Keyboard keyboardType, Func<string, Task> onSave, Popup popup)
     {
         Title = title;
         Value = initialValue;
@@ -33,7 +35,7 @@ public partial class EditFieldViewModel : ObservableObject
         _popup = popup;
     }
 
-    public EditFieldViewModel(string title, string initialValue, Keyboard keyboardType, int maxLength, Action<string> onSave, Popup popup)
+    public EditFieldViewModel(string title, string initialValue, Keyboard keyboardType, int maxLength, Func<string, Task> onSave, Popup popup)
     {
         Title = title;
         Value = initialValue;
@@ -44,9 +46,12 @@ public partial class EditFieldViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void Save()
+    private async Task Save()
     {
-        _onSave?.Invoke(Value);
+        if (_onSave != null)
+        {
+            await _onSave.Invoke(Value); // Await the callback before closing
+        }
         _popup.Close();
     }
 

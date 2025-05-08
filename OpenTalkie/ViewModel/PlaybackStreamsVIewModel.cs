@@ -6,9 +6,22 @@ using System.Collections.ObjectModel;
 
 namespace OpenTalkie.ViewModel;
 
-public partial class PlaybackStreamsViewModel(PlaybackBroadcastService broadcastService) : ObservableObject
+public partial class PlaybackStreamsViewModel(PlaybackBroadcastService broadcastService) : ObservableObject, IQueryAttributable
 {
     public ObservableCollection<Endpoint> Endpoints => broadcastService.Endpoints;
+
+    // Receives the "NewEndpoint" parameter from AddStreamPage navigation result
+    public void ApplyQueryAttributes(IDictionary<string, object> query)
+    {
+        if (query.TryGetValue("NewEndpoint", out var newEndpointObj) && newEndpointObj is Endpoint newEndpoint)
+        {
+            // Ensure not to add duplicates if navigated back multiple times, etc.
+            if (newEndpoint != null && !Endpoints.Any(e => e.Id == newEndpoint.Id))
+            {
+                Endpoints.Add(newEndpoint);
+            }
+        }
+    }
 
     [RelayCommand]
     private static async Task OpenSettings(Endpoint endpoint)
@@ -20,13 +33,16 @@ public partial class PlaybackStreamsViewModel(PlaybackBroadcastService broadcast
     [RelayCommand]
     private void DeleteStream(Endpoint endpoint)
     {
-        Endpoints.Remove(endpoint);
+        Endpoints.Remove(endpoint); // Assuming service handles persistence on collection change
     }
 
     [RelayCommand]
-    private void AddStream()
+    private async Task AddStream()
     {
-        var newEndpoint = new Endpoint(EndpointType.Playback, "Stream2", "192.168.1.1", 6980, false);
-        Endpoints.Add(newEndpoint);
+        var navigationParameters = new Dictionary<string, object>
+        {
+            { "StreamType", EndpointType.Playback } // Pass stream type to AddStreamPage
+        };
+        await Shell.Current.GoToAsync("AddStreamPage", navigationParameters);
     }
 }

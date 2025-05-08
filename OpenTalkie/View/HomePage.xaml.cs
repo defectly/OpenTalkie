@@ -4,9 +4,9 @@ namespace OpenTalkie.View;
 
 public partial class HomePage : ContentPage
 {
-	public HomePage(HomeViewModel vm)
+    public HomePage(HomeViewModel vm)
     {
-		InitializeComponent();
+        InitializeComponent();
         BindingContext = vm;
     }
 }

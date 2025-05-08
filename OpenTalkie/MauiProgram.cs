@@ -78,6 +78,7 @@ public static class MauiProgram
         services.AddTransient<MicSettingsViewModel>();
         services.AddTransient<PlaybackSettingsViewModel>();
         services.AddTransient<SettingsViewModel>();
+        services.AddTransient<AddStreamViewModel>();
     }
     private static void RegisterViews(IServiceCollection services)
     {
@@ -88,5 +89,6 @@ public static class MauiProgram
         services.AddTransient<MicSettingsPage>();
         services.AddTransient<PlaybackSettingsPage>();
         services.AddTransient<SettingsPage>();
+        services.AddTransient<AddStreamPage>();
     }
 }

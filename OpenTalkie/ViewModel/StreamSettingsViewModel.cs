@@ -49,7 +49,7 @@ public partial class StreamSettingsViewModel(AppShell mainPage) : ObservableObje
             currentValue,
             async (result) =>
             {
-                if(string.IsNullOrEmpty(result))
+                if (string.IsNullOrEmpty(result))
                 {
                     var errorPopup = new ErrorPopup("Empty string");
                     await mainPage.ShowPopupAsync(errorPopup);

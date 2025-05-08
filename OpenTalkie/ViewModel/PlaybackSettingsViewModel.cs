@@ -2,7 +2,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using OpenTalkie.Common.Repositories.Interfaces;
-using OpenTalkie.Platforms.Android.Common.Repositories;
 using OpenTalkie.View.Popups;
 
 namespace OpenTalkie.ViewModel;

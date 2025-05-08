@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewmodel="clr-namespace:OpenTalkie.ViewModel"
+             x:Class="OpenTalkie.View.AddStreamPage"
+             Title="Add New Stream"
+             Padding="16"
+             BackgroundColor="#121212"
+             x:DataType="viewmodel:AddStreamViewModel">
+
+    <ContentPage.Resources>
+        <Shadow
+            x:Key="MaterialShadowDark"
+            Brush="#80FFFFFF"
+            Opacity="0.2"
+            Radius="4"
+            Offset="0,2" />
+
+        <Style TargetType="Frame">
+            <Setter Property="Padding" Value="16"/>
+            <Setter Property="BackgroundColor" Value="#1E1E1E"/>
+            <Setter Property="BorderColor" Value="#2E2E2E"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Shadow" Value="{StaticResource MaterialShadowDark}"/>
+            <Setter Property="Margin" Value="0,0,0,10"/> <!-- Added margin between frames -->
+        </Style>
+        <Style x:Key="InputLabelStyle" TargetType="Label">
+            <Setter Property="TextColor" Value="#B0B0B0" /> <!-- Lighter text for input field labels -->
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Margin" Value="0,0,0,4" />
+        </Style>
+        <Style x:Key="SectionLabelStyle" TargetType="Label"> <!-- For Denoise/Enable labels -->
+            <Setter Property="TextColor" Value="#FFFFFF" />
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="FontAttributes" Value="Bold"/>
+            <Setter Property="VerticalOptions" Value="Center"/>
+        </Style>
+        <Style TargetType="Entry">
+            <Setter Property="TextColor" Value="#FFFFFF" />
+            <Setter Property="PlaceholderColor" Value="#A0A0A0" />
+            <Setter Property="BackgroundColor" Value="#282828" /> <!-- Slightly different from Frame BG for contrast -->
+            <Setter Property="HeightRequest" Value="44"/>
+            <Setter Property="FontSize" Value="16"/>
+        </Style>
+        <Style TargetType="Switch">
+            <Setter Property="OnColor" Value="#BB86FC"/>
+            <Setter Property="ThumbColor" Value="#6200EE"/>
+            <Setter Property="VerticalOptions" Value="Center"/>
+        </Style>
+        <Style TargetType="Button">
+            <Setter Property="BackgroundColor" Value="#BB86FC"/>
+            <Setter Property="TextColor" Value="#FFFFFF"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="FontAttributes" Value="Bold"/>
+            <Setter Property="Padding" Value="12,8"/>
+            <Setter Property="Margin" Value="0,10,0,0"/> <!-- Adjusted margin for buttons -->
+        </Style>
+    </ContentPage.Resources>
+
+    <ScrollView>
+        <VerticalStackLayout Spacing="0"> <!-- Reduced global spacing, frames will handle it -->
+            
+            <!-- Name -->
+            <Frame>
+                <!-- TapGestureRecognizer moved to the Grid below -->
+                <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" RowSpacing="2">
+                    <Grid.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding EditNameCommand}"/>
+                    </Grid.GestureRecognizers>
+                    <Label Grid.Row="0" Grid.Column="0" Text="Stream Name" Style="{StaticResource SectionLabelStyle}"/>
+                    <Label Grid.Row="1" Grid.Column="0" Text="{Binding DisplayName}" Style="{StaticResource InputLabelStyle}"/>
+                    <Image Grid.Row="0" Grid.RowSpan="2" Grid.Column="1" Source="edit_icon.png" HeightRequest="20" WidthRequest="20" VerticalOptions="Center" Opacity="0.7"/>
+                </Grid>
+            </Frame>
+
+            <!-- Hostname -->
+            <Frame>
+                <!-- TapGestureRecognizer moved to the Grid below -->
+                <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" RowSpacing="2">
+                    <Grid.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding EditHostnameCommand}"/>
+                    </Grid.GestureRecognizers>
+                    <Label Grid.Row="0" Grid.Column="0" Text="Hostname or IP Address" Style="{StaticResource SectionLabelStyle}"/>
+                    <Label Grid.Row="1" Grid.Column="0" Text="{Binding DisplayHostname}" Style="{StaticResource InputLabelStyle}"/>
+                    <Image Grid.Row="0" Grid.RowSpan="2" Grid.Column="1" Source="edit_icon.png" HeightRequest="20" WidthRequest="20" VerticalOptions="Center" Opacity="0.7"/>
+                </Grid>
+            </Frame>
+
+            <!-- Port -->
+            <Frame>
+                <!-- TapGestureRecognizer moved to the Grid below -->
+                <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" RowSpacing="2">
+                    <Grid.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding EditPortCommand}"/>
+                    </Grid.GestureRecognizers>
+                    <Label Grid.Row="0" Grid.Column="0" Text="Port" Style="{StaticResource SectionLabelStyle}"/>
+                    <Label Grid.Row="1" Grid.Column="0" Text="{Binding DisplayPort}" Style="{StaticResource InputLabelStyle}"/>
+                    <Image Grid.Row="0" Grid.RowSpan="2" Grid.Column="1" Source="edit_icon.png" HeightRequest="20" WidthRequest="20" VerticalOptions="Center" Opacity="0.7"/>
+                </Grid>
+            </Frame>
+
+            <Frame>
+                <Grid ColumnDefinitions="*,Auto">
+                    <Label Grid.Column="0" Text="Enable Denoise" Style="{StaticResource SectionLabelStyle}"/>
+                    <Switch Grid.Column="1" IsToggled="{Binding IsDenoiseEnabled}"/>
+                </Grid>
+            </Frame>
+
+            <Frame>
+                <Grid ColumnDefinitions="*,Auto">
+                    <Label Grid.Column="0" Text="Enable Stream" Style="{StaticResource SectionLabelStyle}"/>
+                    <Switch Grid.Column="1" IsToggled="{Binding IsEnabled}"/>
+                </Grid>
+            </Frame>
+
+            <HorizontalStackLayout Spacing="10" HorizontalOptions="FillAndExpand" Margin="0,20,0,0">
+                <Button Text="Save" Command="{Binding SaveCommand}" HorizontalOptions="FillAndExpand"/>
+                <Button Text="Cancel" Command="{Binding CancelCommand}" BackgroundColor="#444444" HorizontalOptions="FillAndExpand"/>
+            </HorizontalStackLayout>
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

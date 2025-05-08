@@ -2,9 +2,9 @@ using OpenTalkie.ViewModel;
 
 namespace OpenTalkie.View;
 
-public partial class SettingsPage : ContentPage
+public partial class AddStreamPage : ContentPage
 {
-    public SettingsPage(SettingsViewModel vm)
+    public AddStreamPage(AddStreamViewModel vm)
     {
         InitializeComponent();
         BindingContext = vm;

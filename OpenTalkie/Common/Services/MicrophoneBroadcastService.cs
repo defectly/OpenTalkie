@@ -23,7 +23,7 @@ public class MicrophoneBroadcastService
     public bool BroadcastState { get; private set; }
     public Action<bool>? BroadcastStateChanged;
 
-    public MicrophoneBroadcastService(IMicrophoneCapturingService microphoneService, IEndpointRepository endpointRepository, 
+    public MicrophoneBroadcastService(IMicrophoneCapturingService microphoneService, IEndpointRepository endpointRepository,
         IMapper mapper, AppShell mainPage)
     {
         _mainPage = mainPage;

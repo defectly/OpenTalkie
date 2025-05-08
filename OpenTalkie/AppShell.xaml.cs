@@ -12,5 +12,6 @@ public partial class AppShell : Shell
             PlaybackStreams.IsVisible = false;
 
         Routing.RegisterRoute("StreamSettingsPage", typeof(StreamSettingsPage));
+        Routing.RegisterRoute("AddStreamPage", typeof(AddStreamPage));
     }
 }
