@@ -121,5 +121,6 @@ public partial class PlaybackSettingsViewModel : ObservableObject
     private void ResetVolume()
     {
         Volume = 100.0f;
+        _playbackRepository.SetSelectedVolume(Volume / 100.0f);
     }
 }

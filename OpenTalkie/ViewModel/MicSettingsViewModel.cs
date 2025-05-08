@@ -131,5 +131,6 @@ public partial class MicSettingsViewModel : ObservableObject
     private void ResetVolume()
     {
         Volume = 100.0f;
+        _microphoneRepository.SetSelectedVolume(Volume / 100.0f);
     }
 }
