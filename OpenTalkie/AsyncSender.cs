@@ -15,8 +15,10 @@ public class AsyncSender : IDisposable
     private readonly VBanBitResolution _bitResolution;
     private readonly int _bytesPerSample;
     private byte[]? _denoiseBuffer;
-    private byte[]? _denoisePending;
+    private byte[]? _denoisePending; // mono 16-bit 48k pending bytes
     private int _denoiseCount;
+    private byte[]? _dnWorkMonoBuffer; // temp downmix buffer per read (mono 16-bit)
+    private byte[]? _replicateBuffer;  // temp replicate back to original channels
     private byte[]? _volumeBuffer;
     private byte[]? _packetBuffer;
     private int _packetCapacity;
@@ -65,20 +67,33 @@ public class AsyncSender : IDisposable
         if (anyDenoise)
         {
             // RNNoise supports only 48kHz, mono, 16-bit.
-            if (_waveFormat.SampleRate == 48000 && _waveFormat.BitsPerSample == 16 && _waveFormat.Channels == 1)
+            if (_waveFormat.SampleRate == 48000 && _waveFormat.BitsPerSample == 16)
             {
-                // Append to pending
-                EnsureCapacity(ref _denoisePending, _denoiseCount + readed);
-                Buffer.BlockCopy(buffer, offset, _denoisePending!, _denoiseCount, readed);
-                _denoiseCount += readed;
+                // Prepare mono 16-bit input for RNNoise
+                if (_waveFormat.Channels == 1)
+                {
+                    EnsureCapacity(ref _denoisePending, _denoiseCount + readed);
+                    Buffer.BlockCopy(buffer, offset, _denoisePending!, _denoiseCount, readed);
+                    _denoiseCount += readed;
+                }
+                else
+                {
+                    // Downmix current read to mono 16-bit and append to pending
+                    int frames = readed / (_waveFormat.Channels * 2);
+                    int monoBytes = frames * 2;
+                    EnsureCapacity(ref _dnWorkMonoBuffer, monoBytes);
+                    DownmixToMono16(buffer.AsSpan(offset, readed), _dnWorkMonoBuffer.AsSpan(0, monoBytes), _waveFormat.Channels);
+                    EnsureCapacity(ref _denoisePending, _denoiseCount + monoBytes);
+                    Buffer.BlockCopy(_dnWorkMonoBuffer!, 0, _denoisePending!, _denoiseCount, monoBytes);
+                    _denoiseCount += monoBytes;
+                }
 
                 int frameBytes = 480 * 2;
                 int framesReady = _denoiseCount / frameBytes;
                 if (framesReady > 0)
                 {
-                    int outLen = framesReady * frameBytes;
+                    int outLen = framesReady * frameBytes; // mono bytes
                     EnsureCapacity(ref _denoiseBuffer, outLen);
-                    // Process in place in pending, output to _denoiseBuffer
                     for (int i = 0; i < framesReady; i++)
                     {
                         int off = i * frameBytes;
@@ -90,14 +105,25 @@ public class AsyncSender : IDisposable
                     if (remain > 0)
                         Buffer.BlockCopy(_denoisePending!, outLen, _denoisePending!, 0, remain);
                     _denoiseCount = remain;
-                    denoisedOut = _denoiseBuffer.AsMemory(0, outLen);
+
+                    if (_waveFormat.Channels == 1)
+                    {
+                        denoisedOut = _denoiseBuffer.AsMemory(0, outLen);
+                    }
+                    else
+                    {
+                        int replicateLen = outLen * _waveFormat.Channels;
+                        EnsureCapacity(ref _replicateBuffer, replicateLen);
+                        ReplicateMonoToChannels16(_denoiseBuffer.AsSpan(0, outLen), _replicateBuffer.AsSpan(0, replicateLen), _waveFormat.Channels);
+                        denoisedOut = _replicateBuffer.AsMemory(0, replicateLen);
+                    }
                 }
                 else
                 {
-                    denoisedOut = ReadOnlyMemory<byte>.Empty; // no output yet
+                    denoisedOut = ReadOnlyMemory<byte>.Empty;
                 }
             }
-            // else: not compatible; skip adaptation as requested to avoid lag
+            // else: not compatible; skip adaptation to avoid lag
         }
 
         for (int i = 0; i < _endpoints.Count; i++)
@@ -274,6 +300,44 @@ public class AsyncSender : IDisposable
             _packetCapacity = Math.Max(size, _packetCapacity * 2);
             if (_packetCapacity == 0) _packetCapacity = size;
             _packetBuffer = new byte[_packetCapacity];
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void DownmixToMono16(ReadOnlySpan<byte> src, Span<byte> dstMono, int channels)
+    {
+        int frames = src.Length / (channels * 2);
+        for (int i = 0; i < frames; i++)
+        {
+            int inBase = i * channels * 2;
+            int sum = 0;
+            for (int ch = 0; ch < channels; ch++)
+            {
+                short s = (short)(src[inBase + ch * 2] | (src[inBase + ch * 2 + 1] << 8));
+                sum += s;
+            }
+            short m = (short)(sum / channels);
+            int outOff = i * 2;
+            dstMono[outOff] = (byte)(m & 0xFF);
+            dstMono[outOff + 1] = (byte)((m >> 8) & 0xFF);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void ReplicateMonoToChannels16(ReadOnlySpan<byte> mono, Span<byte> dst, int channels)
+    {
+        int frames = mono.Length / 2;
+        for (int i = 0; i < frames; i++)
+        {
+            byte lo = mono[i * 2];
+            byte hi = mono[i * 2 + 1];
+            int baseOff = i * channels * 2;
+            for (int ch = 0; ch < channels; ch++)
+            {
+                int off = baseOff + ch * 2;
+                dst[off] = lo;
+                dst[off + 1] = hi;
+            }
         }
     }
 }
