@@ -22,6 +22,7 @@ public class AsyncSender : IDisposable
     private byte[]? _volumeBuffer;
     private byte[]? _packetBuffer;
     private int _packetCapacity;
+    private readonly AdaptCtx _adapt = new();
 
     public AsyncSender(IInputStream source, ObservableCollection<Endpoint> endpoints)
     {
@@ -66,64 +67,63 @@ public class AsyncSender : IDisposable
         }
         if (anyDenoise)
         {
-            // RNNoise supports only 48kHz, mono, 16-bit.
-            if (_waveFormat.SampleRate == 48000 && _waveFormat.BitsPerSample == 16)
+            // Prepare mono 16-bit stream for RNNoise at 48k
+            if (_waveFormat.BitsPerSample == 16 && _waveFormat.SampleRate == 48000 && _waveFormat.Channels == 1)
             {
-                // Prepare mono 16-bit input for RNNoise
-                if (_waveFormat.Channels == 1)
+                // Fast path: already mono/48k/16
+                EnsureCapacity(ref _denoisePending, _denoiseCount + readed);
+                Buffer.BlockCopy(buffer, offset, _denoisePending!, _denoiseCount, readed);
+                _denoiseCount += readed;
+            }
+            else
+            {
+                // Convert arbitrary input to mono 16-bit at input rate
+                short[] monoShorts = Array.Empty<short>();
+                ConvertToMono16(buffer, offset, readed, _waveFormat.BitsPerSample, _waveFormat.Channels, ref monoShorts, out int inFrames);
+                // Resample to 48k if needed
+                byte[] mono48Bytes;
+                if (_waveFormat.SampleRate == 48000)
                 {
-                    EnsureCapacity(ref _denoisePending, _denoiseCount + readed);
-                    Buffer.BlockCopy(buffer, offset, _denoisePending!, _denoiseCount, readed);
-                    _denoiseCount += readed;
+                    mono48Bytes = new byte[inFrames * 2];
+                    Buffer.BlockCopy(monoShorts, 0, mono48Bytes, 0, mono48Bytes.Length);
                 }
                 else
                 {
-                    // Downmix current read to mono 16-bit and append to pending
-                    int frames = readed / (_waveFormat.Channels * 2);
-                    int monoBytes = frames * 2;
-                    EnsureCapacity(ref _dnWorkMonoBuffer, monoBytes);
-                    DownmixToMono16(buffer.AsSpan(offset, readed), _dnWorkMonoBuffer.AsSpan(0, monoBytes), _waveFormat.Channels);
-                    EnsureCapacity(ref _denoisePending, _denoiseCount + monoBytes);
-                    Buffer.BlockCopy(_dnWorkMonoBuffer!, 0, _denoisePending!, _denoiseCount, monoBytes);
-                    _denoiseCount += monoBytes;
+                    mono48Bytes = ResampleTo48k(monoShorts, inFrames, _waveFormat.SampleRate, _adapt);
                 }
-
-                int frameBytes = 480 * 2;
-                int framesReady = _denoiseCount / frameBytes;
-                if (framesReady > 0)
+                if (mono48Bytes.Length > 0)
                 {
-                    int outLen = framesReady * frameBytes; // mono bytes
-                    EnsureCapacity(ref _denoiseBuffer, outLen);
-                    for (int i = 0; i < framesReady; i++)
-                    {
-                        int off = i * frameBytes;
-                        _denoiser.Denoise(_denoisePending!, off, frameBytes, false);
-                        Buffer.BlockCopy(_denoisePending!, off, _denoiseBuffer!, off, frameBytes);
-                    }
-                    // shift remainder
-                    int remain = _denoiseCount - outLen;
-                    if (remain > 0)
-                        Buffer.BlockCopy(_denoisePending!, outLen, _denoisePending!, 0, remain);
-                    _denoiseCount = remain;
-
-                    if (_waveFormat.Channels == 1)
-                    {
-                        denoisedOut = _denoiseBuffer.AsMemory(0, outLen);
-                    }
-                    else
-                    {
-                        int replicateLen = outLen * _waveFormat.Channels;
-                        EnsureCapacity(ref _replicateBuffer, replicateLen);
-                        ReplicateMonoToChannels16(_denoiseBuffer.AsSpan(0, outLen), _replicateBuffer.AsSpan(0, replicateLen), _waveFormat.Channels);
-                        denoisedOut = _replicateBuffer.AsMemory(0, replicateLen);
-                    }
-                }
-                else
-                {
-                    denoisedOut = ReadOnlyMemory<byte>.Empty;
+                    EnsureCapacity(ref _denoisePending, _denoiseCount + mono48Bytes.Length);
+                    Buffer.BlockCopy(mono48Bytes, 0, _denoisePending!, _denoiseCount, mono48Bytes.Length);
+                    _denoiseCount += mono48Bytes.Length;
                 }
             }
-            // else: not compatible; skip adaptation to avoid lag
+
+            // Denoise full frames (480 samples = 960 bytes)
+            int frameBytes = 480 * 2;
+            int framesReady = _denoiseCount / frameBytes;
+            if (framesReady > 0)
+            {
+                int outLen48 = framesReady * frameBytes; // mono 16-bit 48k
+                EnsureCapacity(ref _denoiseBuffer, outLen48);
+                for (int i = 0; i < framesReady; i++)
+                {
+                    int off = i * frameBytes;
+                    _denoiser.Denoise(_denoisePending!, off, frameBytes, false);
+                    Buffer.BlockCopy(_denoisePending!, off, _denoiseBuffer!, off, frameBytes);
+                }
+                int remain = _denoiseCount - outLen48;
+                if (remain > 0)
+                    Buffer.BlockCopy(_denoisePending!, outLen48, _denoisePending!, 0, remain);
+                _denoiseCount = remain;
+
+                // After denoise, DO NOT adapt back. Send as-is: 48k / 16-bit / mono
+                denoisedOut = _denoiseBuffer.AsMemory(0, outLen48);
+            }
+            else
+            {
+                denoisedOut = ReadOnlyMemory<byte>.Empty;
+            }
         }
 
         for (int i = 0; i < _endpoints.Count; i++)
@@ -135,7 +135,17 @@ public class AsyncSender : IDisposable
             ReadOnlyMemory<byte> sendMemory;
             if (endpoint.IsDenoiseEnabled && denoisedOut.Length > 0)
             {
+                // Force VBAN header and chunking for RNNoise output
                 sendMemory = denoisedOut;
+                if (endpoint.Volume != 1f)
+                {
+                    int len = sendMemory.Length;
+                    EnsureCapacity(ref _volumeBuffer, len);
+                    ApplyVolume(sendMemory.Span, _volumeBuffer!.AsSpan(0, len), endpoint.Volume);
+                    sendMemory = _volumeBuffer.AsMemory(0, len);
+                }
+                await SplitAndSendAsync(sendMemory, endpoint, 1, 2, 48000, VBanBitResolution.VBAN_BITFMT_16_INT, 256);
+                continue;
             }
             else
             {
@@ -147,9 +157,10 @@ public class AsyncSender : IDisposable
 
             if (endpoint.Volume != 1f)
             {
-                EnsureCapacity(ref _volumeBuffer, readed);
-                ApplyVolume(sendMemory.Span, _volumeBuffer!.AsSpan(0, readed), endpoint.Volume);
-                sendMemory = _volumeBuffer.AsMemory(0, readed);
+                int len = sendMemory.Length;
+                EnsureCapacity(ref _volumeBuffer, len);
+                ApplyVolume(sendMemory.Span, _volumeBuffer!.AsSpan(0, len), endpoint.Volume);
+                sendMemory = _volumeBuffer.AsMemory(0, len);
             }
 
             await SplitAndSendAsync(sendMemory, endpoint);
@@ -172,6 +183,21 @@ public class AsyncSender : IDisposable
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private async Task SplitAndSendAsync(ReadOnlyMemory<byte> buffer, Endpoint endpoint, int channels, int bytesPerSample, int sampleRate, VBanBitResolution bitRes, int samplesPerChunk)
+    {
+        int chunkSize = samplesPerChunk * bytesPerSample * channels;
+        if (chunkSize <= 0) return;
+        int totalChunks = (buffer.Length + chunkSize - 1) / chunkSize;
+
+        for (int i = 0; i < totalChunks; i++)
+        {
+            int start = i * chunkSize;
+            int length = Math.Min(chunkSize, buffer.Length - start);
+            await SendAsync(buffer.Slice(start, length), endpoint, channels, bytesPerSample, sampleRate, bitRes);
+        }
+    }
+
     private async Task SendAsync(ReadOnlyMemory<byte> samples, Endpoint endpoint)
     {
         int sampleCount = samples.Length / (_waveFormat.Channels * _bytesPerSample);
@@ -181,6 +207,34 @@ public class AsyncSender : IDisposable
         var packetBuffer = _packetBuffer!;
 
         InitializePacketHeader(packetBuffer);
+        FillPacketData(samples, sampleCount, packetBuffer);
+
+        string name = endpoint.Name;
+        for (int j = 0; j < name.Length && j < 16; j++)
+            packetBuffer[j + 8] = (byte)name[j];
+
+        BitConverter.TryWriteBytes(packetBuffer.AsSpan(24, 4), endpoint.FrameCount);
+
+        try
+        {
+            await endpoint.UdpClient.SendAsync(packetBuffer, 28 + dataLength);
+        }
+        catch
+        {
+        }
+
+        endpoint.FrameCount++;
+    }
+
+    private async Task SendAsync(ReadOnlyMemory<byte> samples, Endpoint endpoint, int channels, int bytesPerSample, int sampleRate, VBanBitResolution bitRes)
+    {
+        int sampleCount = samples.Length / (channels * bytesPerSample);
+        int dataLength = samples.Length;
+
+        EnsurePacketCapacity(28 + dataLength);
+        var packetBuffer = _packetBuffer!;
+
+        InitializePacketHeader(packetBuffer, sampleRate, channels, bitRes);
         FillPacketData(samples, sampleCount, packetBuffer);
 
         string name = endpoint.Name;
@@ -284,6 +338,16 @@ public class AsyncSender : IDisposable
         packetBuffer[6] = (byte)(_waveFormat.Channels - 1);
         packetBuffer[7] = (byte)((int)VBanCodec.VBAN_CODEC_PCM << 5 | (byte)_bitResolution);
     }
+    private void InitializePacketHeader(byte[] packetBuffer, int sampleRate, int channels, VBanBitResolution bitRes)
+    {
+        packetBuffer[0] = (byte)'V';
+        packetBuffer[1] = (byte)'B';
+        packetBuffer[2] = (byte)'A';
+        packetBuffer[3] = (byte)'N';
+        packetBuffer[4] = (byte)((int)VBanProtocol.VBAN_PROTOCOL_AUDIO << 5 | Array.IndexOf(VBANConsts.SAMPLERATES, sampleRate));
+        packetBuffer[6] = (byte)(channels - 1);
+        packetBuffer[7] = (byte)((int)VBanCodec.VBAN_CODEC_PCM << 5 | (byte)bitRes);
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void EnsureCapacity(ref byte[]? buffer, int size)
@@ -301,6 +365,218 @@ public class AsyncSender : IDisposable
             if (_packetCapacity == 0) _packetCapacity = size;
             _packetBuffer = new byte[_packetCapacity];
         }
+    }
+
+    private sealed class AdaptCtx
+    {
+        public short[] ResIn = Array.Empty<short>();
+        public int ResInCount;
+        public double ResInPos;
+        public int LastInRate = -1;
+        public short[] ResOutIn = Array.Empty<short>();
+        public int ResOutInCount;
+        public double ResOutPos;
+        public int LastOutRate = -1;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static int ReadSampleAsInt(byte[] buffer, int offset, int bits)
+    {
+        return bits switch
+        {
+            8 => (sbyte)buffer[offset],
+            16 => BitConverter.ToInt16(buffer, offset),
+            24 => ((buffer[offset] | (buffer[offset + 1] << 8) | (buffer[offset + 2] << 16)) | ((buffer[offset + 2] & 0x80) != 0 ? unchecked((int)0xFF000000) : 0)),
+            32 => BitConverter.ToInt32(buffer, offset),
+            _ => 0
+        };
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static short ToInt16(int sample, int inBits)
+    {
+        return inBits switch
+        {
+            8 => (short)(sample << 8),
+            16 => (short)sample,
+            24 => (short)(sample >> 8),
+            32 => (short)(sample >> 16),
+            _ => 0
+        };
+    }
+
+    private static void ConvertToMono16(byte[] src, int offset, int length, int inBits, int channels, ref short[] dst, out int frames)
+    {
+        int bps = inBits / 8;
+        frames = length / (bps * channels);
+        if (frames <= 0) { dst = Array.Empty<short>(); return; }
+        if (dst == null || dst.Length < frames) dst = new short[frames];
+        for (int f = 0; f < frames; f++)
+        {
+            int baseIdx = offset + f * bps * channels;
+            int acc = 0;
+            for (int ch = 0; ch < channels; ch++)
+            {
+                int s = ReadSampleAsInt(src, baseIdx + ch * bps, inBits);
+                acc += ToInt16(s, inBits);
+            }
+            dst[f] = (short)(acc / channels);
+        }
+    }
+
+    private static byte[] ResampleTo48k(short[] mono, int frames, int inRate, AdaptCtx ctx)
+    {
+        if (frames <= 0 || inRate <= 0) return Array.Empty<byte>();
+        if (ctx.LastInRate != inRate)
+        {
+            ctx.LastInRate = inRate;
+            ctx.ResInCount = 0; ctx.ResInPos = 0;
+        }
+        int need = ctx.ResInCount + frames;
+        if (ctx.ResIn.Length < need)
+        {
+            var nb = new short[Math.Max(need, ctx.ResIn.Length == 0 ? frames * 2 : ctx.ResIn.Length * 2)];
+            if (ctx.ResInCount > 0) Array.Copy(ctx.ResIn, 0, nb, 0, ctx.ResInCount);
+            ctx.ResIn = nb;
+        }
+        Array.Copy(mono, 0, ctx.ResIn, ctx.ResInCount, frames);
+        ctx.ResInCount += frames;
+
+        double step = (double)inRate / 48000.0;
+        if (step <= 0) step = 1.0;
+        var outList = new List<short>(ctx.ResInCount);
+        while (ctx.ResInPos + 1.0 < ctx.ResInCount)
+        {
+            int i0 = (int)ctx.ResInPos;
+            double frac = ctx.ResInPos - i0;
+            short s0 = ctx.ResIn[i0];
+            short s1 = ctx.ResIn[i0 + 1];
+            int interp = s0 + (int)((s1 - s0) * frac);
+            outList.Add((short)interp);
+            ctx.ResInPos += step;
+        }
+        int consumed = Math.Max(0, (int)ctx.ResInPos);
+        if (consumed > 0)
+        {
+            int keep = ctx.ResInCount - consumed;
+            if (keep > 0) Array.Copy(ctx.ResIn, consumed, ctx.ResIn, 0, keep);
+            ctx.ResInCount = keep;
+            ctx.ResInPos -= consumed;
+        }
+        if (outList.Count == 0) return Array.Empty<byte>();
+        var outBytes = new byte[outList.Count * 2];
+        Buffer.BlockCopy(outList.ToArray(), 0, outBytes, 0, outBytes.Length);
+        return outBytes;
+    }
+
+    private static short[] ResampleFrom48k(byte[] mono48kBytes, int outRate, AdaptCtx ctx)
+    {
+        if (mono48kBytes.Length == 0 || outRate <= 0) return Array.Empty<short>();
+        if (ctx.LastOutRate != outRate)
+        {
+            ctx.LastOutRate = outRate;
+            ctx.ResOutInCount = 0; ctx.ResOutPos = 0;
+        }
+        int frames = mono48kBytes.Length / 2;
+        int need = ctx.ResOutInCount + frames;
+        if (ctx.ResOutIn.Length < need)
+        {
+            var nb = new short[Math.Max(need, ctx.ResOutIn.Length == 0 ? frames * 2 : ctx.ResOutIn.Length * 2)];
+            if (ctx.ResOutInCount > 0) Array.Copy(ctx.ResOutIn, 0, nb, 0, ctx.ResOutInCount);
+            ctx.ResOutIn = nb;
+        }
+        Buffer.BlockCopy(mono48kBytes, 0, ctx.ResOutIn, ctx.ResOutInCount * 2, mono48kBytes.Length);
+        ctx.ResOutInCount += frames;
+
+        double step = 48000.0 / (double)outRate;
+        var outList = new List<short>(ctx.ResOutInCount);
+        while (ctx.ResOutPos + 1.0 < ctx.ResOutInCount)
+        {
+            int i0 = (int)ctx.ResOutPos;
+            double frac = ctx.ResOutPos - i0;
+            short s0 = ctx.ResOutIn[i0];
+            short s1 = ctx.ResOutIn[i0 + 1];
+            int interp = s0 + (int)((s1 - s0) * frac);
+            outList.Add((short)interp);
+            ctx.ResOutPos += step;
+        }
+        int consumed = Math.Max(0, (int)ctx.ResOutPos);
+        if (consumed > 0)
+        {
+            int keep = ctx.ResOutInCount - consumed;
+            if (keep > 0) Array.Copy(ctx.ResOutIn, consumed, ctx.ResOutIn, 0, keep);
+            ctx.ResOutInCount = keep;
+            ctx.ResOutPos -= consumed;
+        }
+        return outList.ToArray();
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void PackMonoToFormat(ReadOnlySpan<short> mono, Span<byte> dst, int channels, int bits)
+    {
+        int frames = mono.Length;
+        if (bits == 16)
+        {
+            for (int f = 0; f < frames; f++)
+            {
+                short s = mono[f];
+                int baseOff = f * channels * 2;
+                for (int ch = 0; ch < channels; ch++)
+                {
+                    int off = baseOff + ch * 2;
+                    dst[off] = (byte)(s & 0xFF);
+                    dst[off + 1] = (byte)((s >> 8) & 0xFF);
+                }
+            }
+            return;
+        }
+        if (bits == 8)
+        {
+            for (int f = 0; f < frames; f++)
+            {
+                sbyte s8 = (sbyte)(mono[f] >> 8);
+                int baseOff = f * channels;
+                for (int ch = 0; ch < channels; ch++)
+                {
+                    dst[baseOff + ch] = unchecked((byte)s8);
+                }
+            }
+            return;
+        }
+        if (bits == 24)
+        {
+            for (int f = 0; f < frames; f++)
+            {
+                int v = mono[f] << 8;
+                int baseOff = f * channels * 3;
+                for (int ch = 0; ch < channels; ch++)
+                {
+                    int off = baseOff + ch * 3;
+                    dst[off] = (byte)(v & 0xFF);
+                    dst[off + 1] = (byte)((v >> 8) & 0xFF);
+                    dst[off + 2] = (byte)((v >> 16) & 0xFF);
+                }
+            }
+            return;
+        }
+        if (bits == 32)
+        {
+            for (int f = 0; f < frames; f++)
+            {
+                int v = mono[f] << 16;
+                int baseOff = f * channels * 4;
+                for (int ch = 0; ch < channels; ch++)
+                {
+                    int off = baseOff + ch * 4;
+                    dst[off] = (byte)(v & 0xFF);
+                    dst[off + 1] = (byte)((v >> 8) & 0xFF);
+                    dst[off + 2] = (byte)((v >> 16) & 0xFF);
+                    dst[off + 3] = (byte)((v >> 24) & 0xFF);
+                }
+            }
+            return;
+        }
+        PackMonoToFormat(mono, dst, channels, 16);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
