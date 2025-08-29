@@ -45,4 +45,11 @@ public partial class PlaybackStreamsViewModel(PlaybackBroadcastService broadcast
         };
         await Shell.Current.GoToAsync("AddStreamPage", navigationParameters);
     }
+
+    [RelayCommand]
+    private void ResetVolume(Endpoint endpoint)
+    {
+        if (endpoint == null) return;
+        endpoint.Volume = 1f;
+    }
 }

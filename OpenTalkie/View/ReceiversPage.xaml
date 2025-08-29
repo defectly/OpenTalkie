@@ -14,7 +14,7 @@
             <CollectionView.ItemTemplate>
                 <DataTemplate>
                     <Frame Margin="0,8" BackgroundColor="#1E1E1E" CornerRadius="8" Shadow="{StaticResource MaterialShadowDark}">
-                        <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" RowSpacing="16">
+                        <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto" RowSpacing="16">
                             <Grid Grid.Row="0" Grid.Column="0" RowDefinitions="*,Auto">
                                 <Label Grid.Row="0" FontAttributes="Bold" FontSize="16" Text="{Binding Name}" TextColor="#FFFFFF" />
                                 <Grid Grid.Row="1" ColumnDefinitions="Auto,Auto">
@@ -23,7 +23,14 @@
                                 </Grid>
                             </Grid>
                             <Switch Grid.Column="1" IsToggled="{Binding IsEnabled}" OnColor="#6200EE" ThumbColor="#BB86FC" />
-                            <HorizontalStackLayout Grid.Row="1" Grid.Column="0" Spacing="10">
+                            <!-- Volume slider -->
+                            <Grid Grid.Row="1" Grid.Column="0" ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10">
+                                <Label Text="Vol" TextColor="#B0B0B0" VerticalOptions="Center"/>
+                                <Slider Grid.Column="1" Minimum="0" Maximum="2" Value="{Binding Volume, Mode=TwoWay}"/>
+                                <Label Grid.Column="2" Text="{Binding Volume, StringFormat='x{0:F2}'}" TextColor="#B0B0B0" VerticalOptions="Center"/>
+                                <Button Grid.Column="3" Text="Reset" Command="{Binding BindingContext.ResetVolumeCommand, Source={RelativeSource AncestorType={x:Type ContentPage}}}" CommandParameter="{Binding}" BackgroundColor="#444444" TextColor="#FFFFFF"/>
+                            </Grid>
+                            <HorizontalStackLayout Grid.Row="2" Grid.Column="0" Spacing="10">
                                 <Button Padding="16,8" BackgroundColor="#BB86FC"
                                         Command="{Binding BindingContext.OpenSettingsCommand, Source={RelativeSource AncestorType={x:Type ContentPage}}}"
                                         CommandParameter="{Binding}"
@@ -60,4 +67,3 @@
         <Shadow x:Key="MaterialShadowDark" Brush="#80FFFFFF" Opacity="0.2" Radius="4" Offset="0,2" />
     </ContentPage.Resources>
 </ContentPage>
-

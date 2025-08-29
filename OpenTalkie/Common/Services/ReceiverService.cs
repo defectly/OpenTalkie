@@ -67,6 +67,10 @@ public class ReceiverService
 
         // Convert to 16-bit PCM little endian and adjust channel count
         byte[] pcm16 = ConvertToPcm16Interleaved(payload, wf.BitsPerSample, wf.Channels, outChannels);
+        if (ep.Volume != 1f)
+        {
+            ApplyVolume16(pcm16.AsSpan(), ep.Volume);
+        }
         _audioOutput.Write(pcm16, 0, pcm16.Length);
     }
 
@@ -189,6 +193,21 @@ public class ReceiverService
             32 => BitConverter.ToInt32(buffer, offset),
             _ => 0
         };
+    }
+
+    private static void ApplyVolume16(Span<byte> buffer, float gain)
+    {
+        if (Math.Abs(gain - 1f) < 0.0001f) return;
+        int samples = buffer.Length / 2;
+        for (int i = 0; i < samples; i++)
+        {
+            int off = i * 2;
+            short s = (short)(buffer[off] | (buffer[off + 1] << 8));
+            float amplified = s * gain;
+            short clamped = amplified > short.MaxValue ? short.MaxValue : amplified < short.MinValue ? short.MinValue : (short)amplified;
+            buffer[off] = (byte)(clamped & 0xFF);
+            buffer[off + 1] = (byte)((clamped >> 8) & 0xFF);
+        }
     }
 
     private static short ToInt16(int sample, int inBits)

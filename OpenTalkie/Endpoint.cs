@@ -19,6 +19,8 @@ public partial class Endpoint : ObservableObject, IDisposable
     private bool isEnabled;
     [ObservableProperty]
     private bool isDenoiseEnabled;
+    [ObservableProperty]
+    private float volume = 1f;
     public UdpClient UdpClient { get; private set; }
     public Guid Id { get; set; }
     public uint FrameCount;

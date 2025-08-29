@@ -67,7 +67,15 @@ public class AsyncSender : IDisposable
 
                 byte[] endpointBuffer = endpoint.IsDenoiseEnabled ? processedBuffer : buffer;
 
-                await SplitAndSendAsync(endpointBuffer.AsMemory(offset, readed), endpoint);
+                ReadOnlyMemory<byte> sendMemory = endpointBuffer.AsMemory(offset, readed);
+                if (endpoint.Volume != 1f)
+                {
+                    byte[] volBuf = new byte[readed];
+                    ApplyVolume(sendMemory.Span, volBuf.AsSpan(), endpoint.Volume);
+                    sendMemory = volBuf;
+                }
+
+                await SplitAndSendAsync(sendMemory, endpoint);
             }
         }
         return readed;
@@ -113,6 +121,72 @@ public class AsyncSender : IDisposable
         }
 
         endpoint.FrameCount++;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void ApplyVolume(ReadOnlySpan<byte> src, Span<byte> dst, float gain)
+    {
+        int bps = _bytesPerSample;
+        if (bps == 2)
+        {
+            // 16-bit LE
+            int samples = src.Length / 2;
+            for (int i = 0; i < samples; i++)
+            {
+                short s = (short)(src[i * 2] | (src[i * 2 + 1] << 8));
+                float amplified = s * gain;
+                short clamped = amplified > short.MaxValue ? short.MaxValue : amplified < short.MinValue ? short.MinValue : (short)amplified;
+                dst[i * 2] = (byte)(clamped & 0xFF);
+                dst[i * 2 + 1] = (byte)((clamped >> 8) & 0xFF);
+            }
+            return;
+        }
+        if (bps == 1)
+        {
+            int samples = src.Length;
+            for (int i = 0; i < samples; i++)
+            {
+                sbyte s = unchecked((sbyte)src[i]);
+                float amplified = s * gain;
+                sbyte clamped = amplified > sbyte.MaxValue ? sbyte.MaxValue : amplified < sbyte.MinValue ? sbyte.MinValue : (sbyte)amplified;
+                dst[i] = unchecked((byte)clamped);
+            }
+            return;
+        }
+        if (bps == 3)
+        {
+            int samples = src.Length / 3;
+            for (int i = 0; i < samples; i++)
+            {
+                int off = i * 3;
+                int val = src[off] | (src[off + 1] << 8) | (src[off + 2] << 16);
+                if ((src[off + 2] & 0x80) != 0) val |= unchecked((int)0xFF000000);
+                float amplified = val * gain;
+                int clamped = amplified > 0x7FFFFF ? 0x7FFFFF : amplified < unchecked((int)0xFF800000) ? unchecked((int)0xFF800000) : (int)amplified;
+                dst[off] = (byte)(clamped & 0xFF);
+                dst[off + 1] = (byte)((clamped >> 8) & 0xFF);
+                dst[off + 2] = (byte)((clamped >> 16) & 0xFF);
+            }
+            return;
+        }
+        if (bps == 4)
+        {
+            int samples = src.Length / 4;
+            for (int i = 0; i < samples; i++)
+            {
+                int off = i * 4;
+                int val = src[off] | (src[off + 1] << 8) | (src[off + 2] << 16) | (src[off + 3] << 24);
+                float amplified = val * gain;
+                int clamped = amplified > int.MaxValue ? int.MaxValue : amplified < int.MinValue ? int.MinValue : (int)amplified;
+                dst[off] = (byte)(clamped & 0xFF);
+                dst[off + 1] = (byte)((clamped >> 8) & 0xFF);
+                dst[off + 2] = (byte)((clamped >> 16) & 0xFF);
+                dst[off + 3] = (byte)((clamped >> 24) & 0xFF);
+            }
+            return;
+        }
+        // Fallback copy
+        src.CopyTo(dst);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
