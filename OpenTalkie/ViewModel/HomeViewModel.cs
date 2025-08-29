@@ -125,13 +125,16 @@ public partial class HomeViewModel : ObservableObject
         {
             NetworkInterface[] interfaces = NetworkInterface.GetAllNetworkInterfaces();
 
-            foreach (NetworkInterface ni in interfaces)
+            for (int i = 0; i < interfaces.Length; i++)
             {
+                var ni = interfaces[i];
                 if (ni.OperationalStatus == OperationalStatus.Up)
                 {
                     IPInterfaceProperties properties = ni.GetIPProperties();
-                    foreach (UnicastIPAddressInformation ip in properties.UnicastAddresses)
+                    var unicast = properties.UnicastAddresses.ToList();
+                    for (int j = 0; j < unicast.Count; j++)
                     {
+                        var ip = unicast[j];
                         if (ip.Address.AddressFamily == AddressFamily.InterNetwork) // IPv4
                         {
                             NetworkAddresses.Add($"{ni.Name}: {ip.Address}");

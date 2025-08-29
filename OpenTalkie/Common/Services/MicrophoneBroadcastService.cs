@@ -34,8 +34,8 @@ public class MicrophoneBroadcastService
         Endpoints = mapper.Map<ObservableCollection<Endpoint>>(_endpointRepository.List().Where(e => e.Type == EndpointType.Microphone));
         Endpoints.CollectionChanged += EndpointsCollectionChanged;
 
-        foreach (var endpoint in Endpoints)
-            endpoint.PropertyChanged += EndpointPropertyChanged;
+        for (int i = 0; i < Endpoints.Count; i++)
+            Endpoints[i].PropertyChanged += EndpointPropertyChanged;
 
         BroadcastStateChanged += OnBroadcastStateChange;
     }
@@ -104,8 +104,9 @@ public class MicrophoneBroadcastService
         {
             if (e.OldItems != null)
             {
-                foreach (Endpoint endpoint in e.OldItems)
+                for (int i = 0; i < e.OldItems.Count; i++)
                 {
+                    var endpoint = (Endpoint)e.OldItems[i]!;
                     _endpointRepository.RemoveAsync(endpoint.Id);
                 }
             }
@@ -114,8 +115,9 @@ public class MicrophoneBroadcastService
         {
             if (e.NewItems != null)
             {
-                foreach (Endpoint endpoint in e.NewItems)
+                for (int i = 0; i < e.NewItems.Count; i++)
                 {
+                    var endpoint = (Endpoint)e.NewItems[i]!;
                     endpoint.PropertyChanged += EndpointPropertyChanged;
                     var endpointDto = _mapper.Map<EndpointDto>(endpoint);
                     _endpointRepository.CreateAsync(endpointDto);

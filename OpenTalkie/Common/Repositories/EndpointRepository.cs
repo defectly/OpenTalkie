@@ -99,10 +99,11 @@ public class EndpointRepository : IEndpointRepository
         if (!Directory.Exists(_endpointDirectory))
             return;
 
-        var filePaths = Directory.EnumerateFiles(_endpointDirectory);
+        var filePaths = Directory.EnumerateFiles(_endpointDirectory).ToList();
 
-        foreach (var filePath in filePaths)
+        for (int i = 0; i < filePaths.Count; i++)
         {
+            var filePath = filePaths[i];
             var file = File.ReadAllText(filePath);
             var endpointDto = JsonSerializer.Deserialize<EndpointDto>(file);
 

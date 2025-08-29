@@ -29,8 +29,8 @@ public class ReceiverService
         Endpoints = mapper.Map<ObservableCollection<Endpoint>>(
             _endpointRepository.List().Where(e => e.Type == EndpointType.Receiver));
         Endpoints.CollectionChanged += EndpointsCollectionChanged;
-        foreach (var ep in Endpoints)
-            ep.PropertyChanged += EndpointPropertyChanged;
+        for (int i = 0; i < Endpoints.Count; i++)
+            Endpoints[i].PropertyChanged += EndpointPropertyChanged;
 
         ListeningStateChanged += OnListeningStateChange;
     }
@@ -209,13 +209,17 @@ public class ReceiverService
     {
         if (e.Action == NotifyCollectionChangedAction.Remove && e.OldItems != null)
         {
-            foreach (Endpoint endpoint in e.OldItems)
+            for (int i = 0; i < e.OldItems.Count; i++)
+            {
+                var endpoint = (Endpoint)e.OldItems[i]!;
                 _ = _endpointRepository.RemoveAsync(endpoint.Id);
+            }
         }
         else if (e.Action == NotifyCollectionChangedAction.Add && e.NewItems != null)
         {
-            foreach (Endpoint endpoint in e.NewItems)
+            for (int i = 0; i < e.NewItems.Count; i++)
             {
+                var endpoint = (Endpoint)e.NewItems[i]!;
                 endpoint.PropertyChanged += EndpointPropertyChanged;
                 var dto = _mapper.Map<EndpointDto>(endpoint);
                 _ = _endpointRepository.CreateAsync(dto);

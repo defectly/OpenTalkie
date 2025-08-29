@@ -12,8 +12,9 @@ public class MicrophoneRepository : IMicrophoneRepository
     {
         List<string> sampleRates = [];
 
-        foreach (var item in VBANConsts.SAMPLERATES.Order())
-            sampleRates.Add(item.ToString());
+        var rates = VBANConsts.SAMPLERATES.Order().ToArray();
+        for (int i = 0; i < rates.Length; i++)
+            sampleRates.Add(rates[i].ToString());
 
         return sampleRates;
     }
@@ -21,8 +22,9 @@ public class MicrophoneRepository : IMicrophoneRepository
     {
         List<string> inputChannels = [];
 
-        foreach (var source in Enum.GetNames<ChannelIn>())
-            inputChannels.Add(source.ToString());
+        var ins = Enum.GetNames<ChannelIn>();
+        for (int i = 0; i < ins.Length; i++)
+            inputChannels.Add(ins[i].ToString());
 
         return inputChannels;
     }
@@ -30,8 +32,9 @@ public class MicrophoneRepository : IMicrophoneRepository
     {
         List<string> audioSources = [];
 
-        foreach (var source in Enum.GetNames<AudioSource>())
-            audioSources.Add(source.ToString());
+        var srcs = Enum.GetNames<AudioSource>();
+        for (int i = 0; i < srcs.Length; i++)
+            audioSources.Add(srcs[i].ToString());
 
         return audioSources;
     }

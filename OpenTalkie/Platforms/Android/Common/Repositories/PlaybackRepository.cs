@@ -12,8 +12,9 @@ public class PlaybackRepository : IPlaybackRepository
     {
         List<string> sampleRates = [];
 
-        foreach (var item in VBANConsts.SAMPLERATES.Order())
-            sampleRates.Add(item.ToString());
+        var rates = VBANConsts.SAMPLERATES.Order().ToArray();
+        for (int i = 0; i < rates.Length; i++)
+            sampleRates.Add(rates[i].ToString());
 
         return sampleRates;
     }
@@ -21,8 +22,9 @@ public class PlaybackRepository : IPlaybackRepository
     {
         List<string> inputChannels = [];
 
-        foreach (var source in Enum.GetNames<ChannelOut>())
-            inputChannels.Add(source.ToString());
+        var outs = Enum.GetNames<ChannelOut>();
+        for (int i = 0; i < outs.Length; i++)
+            inputChannels.Add(outs[i].ToString());
 
         return inputChannels;
     }

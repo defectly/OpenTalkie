@@ -19,8 +19,8 @@ public class AsyncReceiver : IDisposable
     {
         _endpoints = endpoints ?? throw new ArgumentNullException(nameof(endpoints));
         _endpoints.CollectionChanged += OnEndpointsCollectionChanged;
-        foreach (var ep in _endpoints)
-            ep.PropertyChanged += OnEndpointPropertyChanged;
+        for (int i = 0; i < _endpoints.Count; i++)
+            _endpoints[i].PropertyChanged += OnEndpointPropertyChanged;
     }
 
     public event Action<Endpoint, byte[], WaveFormat>? FrameReceived;
@@ -35,8 +35,9 @@ public class AsyncReceiver : IDisposable
     public void Stop()
     {
         _started = false;
-        foreach (var l in _listeners.Values)
-            l.Dispose();
+        var __vals = _listeners.Values.ToList();
+        for (int __i = 0; __i < __vals.Count; __i++)
+            __vals[__i].Dispose();
         _listeners.Clear();
     }
 
@@ -45,13 +46,13 @@ public class AsyncReceiver : IDisposable
         if (!_started) return;
         if (e.Action == NotifyCollectionChangedAction.Add && e.NewItems != null)
         {
-            foreach (Endpoint ep in e.NewItems)
-                ep.PropertyChanged += OnEndpointPropertyChanged;
+            for (int i = 0; i < e.NewItems.Count; i++)
+                ((Endpoint)e.NewItems[i]!).PropertyChanged += OnEndpointPropertyChanged;
         }
         if (e.Action == NotifyCollectionChangedAction.Remove && e.OldItems != null)
         {
-            foreach (Endpoint ep in e.OldItems)
-                ep.PropertyChanged -= OnEndpointPropertyChanged;
+            for (int i = 0; i < e.OldItems.Count; i++)
+                ((Endpoint)e.OldItems[i]!).PropertyChanged -= OnEndpointPropertyChanged;
         }
         RebuildListeners();
     }
@@ -75,8 +76,10 @@ public class AsyncReceiver : IDisposable
             .GroupBy(e => e.Port)
             .ToDictionary(g => g.Key, g => g.ToList());
 
-        foreach (var port in _listeners.Keys.ToList())
+        var __keys = _listeners.Keys.ToList();
+        for (int __i = 0; __i < __keys.Count; __i++)
         {
+            var port = __keys[__i];
             if (!enabledByPort.ContainsKey(port))
             {
                 _listeners[port].Dispose();
@@ -84,10 +87,11 @@ public class AsyncReceiver : IDisposable
             }
         }
 
-        foreach (var kv in enabledByPort)
+        var __kvps = enabledByPort.ToArray();
+        for (int __i = 0; __i < __kvps.Length; __i++)
         {
-            var port = kv.Key;
-            var eps = kv.Value;
+            var port = __kvps[__i].Key;
+            var eps = __kvps[__i].Value;
             if (_listeners.TryGetValue(port, out var listener))
             {
                 listener.UpdateEndpoints(eps);
@@ -117,8 +121,8 @@ public class AsyncReceiver : IDisposable
     {
         Stop();
         _endpoints.CollectionChanged -= OnEndpointsCollectionChanged;
-        foreach (var ep in _endpoints)
-            ep.PropertyChanged -= OnEndpointPropertyChanged;
+        for (int i = 0; i < _endpoints.Count; i++)
+            _endpoints[i].PropertyChanged -= OnEndpointPropertyChanged;
         GC.SuppressFinalize(this);
     }
 
@@ -172,8 +176,10 @@ public class AsyncReceiver : IDisposable
             _eps = endpoints;
             // Clean up denoisers for endpoints that were removed
             var active = new HashSet<Guid>(endpoints.Select(e => e.Id));
-            foreach (var key in _denoisers.Keys.ToList())
+            var __dkeys = _denoisers.Keys.ToList();
+            for (int i = 0; i < __dkeys.Count; i++)
             {
+                var key = __dkeys[i];
                 if (!active.Contains(key))
                 {
                     _denoisers[key].Dn.Dispose();
@@ -220,8 +226,9 @@ public class AsyncReceiver : IDisposable
 
                 string name = GetStreamName(buf);
 
-                foreach (var ep in _eps)
+                for (int __ei = 0; __ei < _eps.Count; __ei++)
                 {
+                    var ep = _eps[__ei];
                     if (!ep.IsEnabled) continue;
                     if (!string.Equals(Normalize(ep.Name), name, StringComparison.Ordinal)) continue;
 
@@ -330,7 +337,8 @@ public class AsyncReceiver : IDisposable
             _cts?.Cancel();
             _cts?.Dispose();
             _udp?.Dispose();
-            foreach (var d in _denoisers.Values) d.Dn.Dispose();
+            var __dvals = _denoisers.Values.ToList();
+            for (int i = 0; i < __dvals.Count; i++) __dvals[i].Dn.Dispose();
             _denoisers.Clear();
         }
 
