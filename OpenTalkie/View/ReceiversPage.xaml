@@ -28,6 +28,8 @@
                                 <Label Text="Vol" TextColor="#B0B0B0" VerticalOptions="Center"/>
                                 <Slider Grid.Column="1" Minimum="0" Maximum="2" Value="{Binding Volume, Mode=TwoWay}"/>
                                 <Label Grid.Column="2" Text="{Binding Volume, StringFormat='x{0:F2}'}" TextColor="#B0B0B0" VerticalOptions="Center"/>
+                            </Grid>
+                            <Grid Grid.Row="1" Grid.Column="1" ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10">
                                 <Button Grid.Column="3" Text="Reset" Command="{Binding BindingContext.ResetVolumeCommand, Source={RelativeSource AncestorType={x:Type ContentPage}}}" CommandParameter="{Binding}" BackgroundColor="#444444" TextColor="#FFFFFF"/>
                             </Grid>
                             <HorizontalStackLayout Grid.Row="2" Grid.Column="0" Spacing="10">
