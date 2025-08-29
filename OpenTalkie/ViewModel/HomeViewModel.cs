@@ -103,16 +103,9 @@ public partial class HomeViewModel : ObservableObject
 
     private async Task<bool> CheckMicrophonePermissionAsync()
     {
+        // Just request and return the permission status; do not show UI alert.
         bool permissionStatus = await PermissionManager.RequestMicrophonePermissionAsync();
-
-        if (permissionStatus)
-            return true;
-
-        _ = Application.Current.MainPage
-            .DisplayAlert("Mic permission", "Please, give mic permission to let this app work", "Ok")
-            .ConfigureAwait(false);
-
-        return false;
+        return permissionStatus;
     }
 
     private void LoadNetworkAddresses()
