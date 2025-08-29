@@ -280,10 +280,9 @@ public class AsyncReceiver : IDisposable
                                 for (int i = 0; i < frames; i++)
                                 {
                                     int off = i * frameBytes;
-                                    var block = new byte[frameBytes];
-                                    Buffer.BlockCopy(ctx.Pending, off, block, 0, frameBytes);
-                                    ctx.Dn.Denoise(block, 0, frameBytes, false);
-                                    Buffer.BlockCopy(block, 0, outBuf, off, frameBytes);
+                                    // Denoise in place on pending buffer to avoid per-frame allocations
+                                    ctx.Dn.Denoise(ctx.Pending, off, frameBytes, false);
+                                    Buffer.BlockCopy(ctx.Pending, off, outBuf, off, frameBytes);
                                 }
 
                                 int remain = ctx.PendingCount - outLen;

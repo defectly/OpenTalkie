@@ -85,7 +85,11 @@ public class MicrophoneBroadcastService
     {
         _asyncSender ??= new(_microphoneService, Endpoints);
 
-        byte[] vbanBuffer = new byte[_microphoneService.GetBufferSize()];
+        var wf = _microphoneService.GetWaveFormat();
+        int bps = wf.BitsPerSample / 8;
+        int chunk = 256 * bps * wf.Channels; // VBAN chunk size
+        int bufferSize = chunk * 4; // 4 chunks per read
+        byte[] vbanBuffer = new byte[bufferSize];
 
         while (true)
         {

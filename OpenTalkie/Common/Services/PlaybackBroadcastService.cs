@@ -123,7 +123,11 @@ public class PlaybackBroadcastService
     {
         _asyncSender ??= new(_playbackService, Endpoints);
 
-        byte[] vbanBuffer = new byte[_playbackService.GetBufferSize()];
+        var wf = _playbackService.GetWaveFormat();
+        int bps = wf.BitsPerSample / 8;
+        int chunk = 256 * bps * wf.Channels; // VBAN chunk size
+        int bufferSize = chunk * 4; // 4 chunks per read
+        byte[] vbanBuffer = new byte[bufferSize];
 
         while (true)
         {

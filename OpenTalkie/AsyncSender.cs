@@ -14,6 +14,12 @@ public class AsyncSender : IDisposable
     private readonly Denoiser _denoiser = new();
     private readonly VBanBitResolution _bitResolution;
     private readonly int _bytesPerSample;
+    private byte[]? _denoiseBuffer;
+    private byte[]? _denoisePending;
+    private int _denoiseCount;
+    private byte[]? _volumeBuffer;
+    private byte[]? _packetBuffer;
+    private int _packetCapacity;
 
     public AsyncSender(IInputStream source, ObservableCollection<Endpoint> endpoints)
     {
@@ -44,39 +50,83 @@ public class AsyncSender : IDisposable
     {
         int readed = await _source.ReadAsync(buffer, offset, count);
 
-        byte[] processedBuffer = new byte[readed];
+        if (readed <= 0)
+            return readed;
 
-        if (_endpoints.Any(e => e.IsDenoiseEnabled && e.IsEnabled))
+        // Optional denoise (streaming, only if source is RNNoise-compatible)
+        byte[] processedBuffer = buffer;
+        ReadOnlyMemory<byte> denoisedOut = ReadOnlyMemory<byte>.Empty;
+        bool anyDenoise = false;
+        for (int ei = 0; ei < _endpoints.Count; ei++)
         {
-            Array.Copy(buffer, processedBuffer, readed);
-            _denoiser.Denoise(processedBuffer, offset, readed);
+            var ept = _endpoints[ei];
+            if (ept.IsEnabled && ept.IsDenoiseEnabled) { anyDenoise = true; break; }
         }
-        else
+        if (anyDenoise)
         {
-            processedBuffer = buffer;
-        }
-
-        if (readed > 0)
-        {
-            for (int i = 0; i < _endpoints.Count; i++)
+            // RNNoise supports only 48kHz, mono, 16-bit.
+            if (_waveFormat.SampleRate == 48000 && _waveFormat.BitsPerSample == 16 && _waveFormat.Channels == 1)
             {
-                Endpoint? endpoint = _endpoints[i];
+                // Append to pending
+                EnsureCapacity(ref _denoisePending, _denoiseCount + readed);
+                Buffer.BlockCopy(buffer, offset, _denoisePending!, _denoiseCount, readed);
+                _denoiseCount += readed;
 
-                if (!endpoint.IsEnabled)
-                    continue;
-
-                byte[] endpointBuffer = endpoint.IsDenoiseEnabled ? processedBuffer : buffer;
-
-                ReadOnlyMemory<byte> sendMemory = endpointBuffer.AsMemory(offset, readed);
-                if (endpoint.Volume != 1f)
+                int frameBytes = 480 * 2;
+                int framesReady = _denoiseCount / frameBytes;
+                if (framesReady > 0)
                 {
-                    byte[] volBuf = new byte[readed];
-                    ApplyVolume(sendMemory.Span, volBuf.AsSpan(), endpoint.Volume);
-                    sendMemory = volBuf;
+                    int outLen = framesReady * frameBytes;
+                    EnsureCapacity(ref _denoiseBuffer, outLen);
+                    // Process in place in pending, output to _denoiseBuffer
+                    for (int i = 0; i < framesReady; i++)
+                    {
+                        int off = i * frameBytes;
+                        _denoiser.Denoise(_denoisePending!, off, frameBytes, false);
+                        Buffer.BlockCopy(_denoisePending!, off, _denoiseBuffer!, off, frameBytes);
+                    }
+                    // shift remainder
+                    int remain = _denoiseCount - outLen;
+                    if (remain > 0)
+                        Buffer.BlockCopy(_denoisePending!, outLen, _denoisePending!, 0, remain);
+                    _denoiseCount = remain;
+                    denoisedOut = _denoiseBuffer.AsMemory(0, outLen);
                 }
-
-                await SplitAndSendAsync(sendMemory, endpoint);
+                else
+                {
+                    denoisedOut = ReadOnlyMemory<byte>.Empty; // no output yet
+                }
             }
+            // else: not compatible; skip adaptation as requested to avoid lag
+        }
+
+        for (int i = 0; i < _endpoints.Count; i++)
+        {
+            Endpoint? endpoint = _endpoints[i];
+            if (!endpoint.IsEnabled)
+                continue;
+
+            ReadOnlyMemory<byte> sendMemory;
+            if (endpoint.IsDenoiseEnabled && denoisedOut.Length > 0)
+            {
+                sendMemory = denoisedOut;
+            }
+            else
+            {
+                byte[] endpointBuffer = processedBuffer;
+                sendMemory = endpointBuffer == buffer
+                    ? endpointBuffer.AsMemory(offset, readed)
+                    : endpointBuffer.AsMemory(0, readed);
+            }
+
+            if (endpoint.Volume != 1f)
+            {
+                EnsureCapacity(ref _volumeBuffer, readed);
+                ApplyVolume(sendMemory.Span, _volumeBuffer!.AsSpan(0, readed), endpoint.Volume);
+                sendMemory = _volumeBuffer.AsMemory(0, readed);
+            }
+
+            await SplitAndSendAsync(sendMemory, endpoint);
         }
         return readed;
     }
@@ -101,7 +151,8 @@ public class AsyncSender : IDisposable
         int sampleCount = samples.Length / (_waveFormat.Channels * _bytesPerSample);
         int dataLength = samples.Length;
 
-        byte[] packetBuffer = new byte[28 + dataLength];
+        EnsurePacketCapacity(28 + dataLength);
+        var packetBuffer = _packetBuffer!;
 
         InitializePacketHeader(packetBuffer);
         FillPacketData(samples, sampleCount, packetBuffer);
@@ -206,5 +257,23 @@ public class AsyncSender : IDisposable
         packetBuffer[4] = (byte)((int)VBanProtocol.VBAN_PROTOCOL_AUDIO << 5 | Array.IndexOf(VBANConsts.SAMPLERATES, _waveFormat.SampleRate));
         packetBuffer[6] = (byte)(_waveFormat.Channels - 1);
         packetBuffer[7] = (byte)((int)VBanCodec.VBAN_CODEC_PCM << 5 | (byte)_bitResolution);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void EnsureCapacity(ref byte[]? buffer, int size)
+    {
+        if (buffer == null || buffer.Length < size)
+            buffer = new byte[size];
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void EnsurePacketCapacity(int size)
+    {
+        if (_packetBuffer == null || _packetCapacity < size)
+        {
+            _packetCapacity = Math.Max(size, _packetCapacity * 2);
+            if (_packetCapacity == 0) _packetCapacity = size;
+            _packetBuffer = new byte[_packetCapacity];
+        }
     }
 }

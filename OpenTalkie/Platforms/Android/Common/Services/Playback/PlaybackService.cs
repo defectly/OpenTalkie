@@ -33,20 +33,22 @@ public class PlaybackService : IPlaybackService
 
         int read = await _audioRecord.ReadAsync(buffer, offset, count);
 
-        ChangeVolume(buffer, _volume);
+        if (read > 0)
+            ChangeVolume(buffer, offset, read, _volume);
 
         return read;
     }
 
-    public static unsafe void ChangeVolume(byte[] audioBytes, float gain)
+    public static unsafe void ChangeVolume(byte[] audioBytes, int offset, int length, float gain)
     {
-        if (audioBytes == null || audioBytes.Length % 2 != 0)
+        if (audioBytes == null || length % 2 != 0)
             throw new ArgumentException("Incorrect audio data format");
 
-        fixed (byte* ptr = audioBytes)
+        fixed (byte* basePtr = audioBytes)
         {
+            byte* ptr = basePtr + offset;
             short* samples = (short*)ptr;
-            int sampleCount = audioBytes.Length / 2;
+            int sampleCount = length / 2;
 
             for (int i = 0; i < sampleCount; i++)
             {
@@ -143,7 +145,18 @@ public class PlaybackService : IPlaybackService
         if (_audioRecord == null)
             throw new NullReferenceException($"Audio record is not created");
 
-        return _audioRecord.BufferSizeInFrames;
+        // Return buffer size in BYTES, not frames
+        int frames = _audioRecord.BufferSizeInFrames;
+        int channels = _audioRecord.ChannelCount;
+        int bps = _encoding switch
+        {
+            Encoding.Pcm8bit => 1,
+            Encoding.Pcm16bit => 2,
+            Encoding.Pcm24bitPacked => 3,
+            Encoding.Pcm32bit => 4,
+            _ => 2
+        };
+        return frames * channels * bps;
     }
 
     public WaveFormat GetWaveFormat()
