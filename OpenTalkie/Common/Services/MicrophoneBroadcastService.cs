@@ -18,15 +18,13 @@ public class MicrophoneBroadcastService
     private readonly IMicrophoneCapturingService _microphoneService;
     private readonly IEndpointRepository _endpointRepository;
     private AsyncSender? _asyncSender;
-    private readonly AppShell _mainPage;
     public ObservableCollection<Endpoint> Endpoints;
     public bool BroadcastState { get; private set; }
     public Action<bool>? BroadcastStateChanged;
 
     public MicrophoneBroadcastService(IMicrophoneCapturingService microphoneService, IEndpointRepository endpointRepository,
-        IMapper mapper, AppShell mainPage)
+        IMapper mapper)
     {
-        _mainPage = mainPage;
         _microphoneService = microphoneService;
         _endpointRepository = endpointRepository;
         _mapper = mapper;
@@ -62,7 +60,7 @@ public class MicrophoneBroadcastService
             catch (Exception ex)
             {
                 var errorPopup = new ErrorPopup(ex.Message);
-                _ = _mainPage.ShowPopupAsync(errorPopup);
+                _ = Application.Current.MainPage.ShowPopupAsync(errorPopup);
                 return false;
             }
 
@@ -85,10 +83,10 @@ public class MicrophoneBroadcastService
     {
         _asyncSender ??= new(_microphoneService, Endpoints);
 
-        var wf = _microphoneService.GetWaveFormat();
-        int bps = wf.BitsPerSample / 8;
-        int chunk = 256 * bps * wf.Channels; // VBAN chunk size
-        int bufferSize = chunk * 4; // 4 chunks per read
+        var waveFormat = _microphoneService.GetWaveFormat();
+        int bytesPerSample = waveFormat.BitsPerSample / 8;
+        int chunkSize = 256 * bytesPerSample * waveFormat.Channels; // VBAN chunk size
+        int bufferSize = chunkSize * 4; // 4 chunks per read
         byte[] vbanBuffer = new byte[bufferSize];
 
         while (true)

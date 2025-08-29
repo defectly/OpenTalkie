@@ -24,12 +24,11 @@ public partial class HomeViewModel : ObservableObject
     [ObservableProperty]
     private bool isPlaybackAvailable;
 
-    private readonly AppShell _mainPage;
     public MicrophoneBroadcastService MicrophoneBroadcastService { get; set; }
     public PlaybackBroadcastService PlaybackBroadcastService { get; set; }
     public ReceiverService ReceiverService { get; set; }
 
-    public HomeViewModel(AppShell mainPage, MicrophoneBroadcastService microphoneBroadcastService,
+    public HomeViewModel(MicrophoneBroadcastService microphoneBroadcastService,
         PlaybackBroadcastService playbackBroadcastService,
         ReceiverService receiverService)
     {
@@ -38,13 +37,12 @@ public partial class HomeViewModel : ObservableObject
         else
             IsPlaybackAvailable = false;
 
-        _mainPage = mainPage;
         MicrophoneBroadcastService = microphoneBroadcastService;
         PlaybackBroadcastService = playbackBroadcastService;
         ReceiverService = receiverService;
         OnMicrophoneServiceStateChange(microphoneBroadcastService.BroadcastState);
-        PlaybackBroadcastButtonText = "Start playback service";
-        ReceiverButtonText = "Start Receiver";
+        PlaybackBroadcastButtonText = "start playback service";
+        ReceiverButtonText = "start receiver service";
         NetworkAddresses = [];
         LoadNetworkAddresses();
 
@@ -56,22 +54,22 @@ public partial class HomeViewModel : ObservableObject
     private void OnMicrophoneServiceStateChange(bool isActive)
     {
         if (isActive)
-            MicrophoneBroadcastButtonText = "Stop microphone service";
+            MicrophoneBroadcastButtonText = "stop microphone service";
         else
-            MicrophoneBroadcastButtonText = "Start microphone service";
+            MicrophoneBroadcastButtonText = "start microphone service";
     }
 
     private void OnPlaybackServiceStateChange(bool isActive)
     {
         if (isActive)
-            PlaybackBroadcastButtonText = "Stop playback service";
+            PlaybackBroadcastButtonText = "stop playback service";
         else
-            PlaybackBroadcastButtonText = "Start playback service";
+            PlaybackBroadcastButtonText = "start playback service";
     }
 
     private void OnReceiverStateChange(bool isActive)
     {
-        ReceiverButtonText = isActive ? "Stop Receiver" : "Start Receiver";
+        ReceiverButtonText = isActive ? "stop receiver service" : "start receiver service";
     }
 
     [RelayCommand]
@@ -110,7 +108,7 @@ public partial class HomeViewModel : ObservableObject
         if (permissionStatus)
             return true;
 
-        _ = _mainPage
+        _ = Application.Current.MainPage
             .DisplayAlert("Mic permission", "Please, give mic permission to let this app work", "Ok")
             .ConfigureAwait(false);
 
@@ -127,17 +125,17 @@ public partial class HomeViewModel : ObservableObject
 
             for (int i = 0; i < interfaces.Length; i++)
             {
-                var ni = interfaces[i];
-                if (ni.OperationalStatus == OperationalStatus.Up)
+                var networkInterface = interfaces[i];
+                if (networkInterface.OperationalStatus == OperationalStatus.Up)
                 {
-                    IPInterfaceProperties properties = ni.GetIPProperties();
-                    var unicast = properties.UnicastAddresses.ToList();
-                    for (int j = 0; j < unicast.Count; j++)
+                    IPInterfaceProperties properties = networkInterface.GetIPProperties();
+                    var unicastAddresses = properties.UnicastAddresses.ToList();
+                    for (int j = 0; j < unicastAddresses.Count; j++)
                     {
-                        var ip = unicast[j];
-                        if (ip.Address.AddressFamily == AddressFamily.InterNetwork) // IPv4
+                        var unicastAddress = unicastAddresses[j];
+                        if (unicastAddress.Address.AddressFamily == AddressFamily.InterNetwork) // IPv4
                         {
-                            NetworkAddresses.Add($"{ni.Name}: {ip.Address}");
+                            NetworkAddresses.Add($"{networkInterface.Name}: {unicastAddress.Address}");
                         }
                     }
                 }

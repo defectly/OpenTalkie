@@ -9,7 +9,6 @@ namespace OpenTalkie.ViewModel;
 public partial class PlaybackSettingsViewModel : ObservableObject
 {
     private readonly IPlaybackRepository _playbackRepository;
-    private readonly AppShell _mainPage;
 
     [ObservableProperty]
     private string selectedChannelOut;
@@ -26,9 +25,8 @@ public partial class PlaybackSettingsViewModel : ObservableObject
     [ObservableProperty]
     private float volume;
 
-    public PlaybackSettingsViewModel(AppShell mainPage, IPlaybackRepository playbackRepository)
+    public PlaybackSettingsViewModel(IPlaybackRepository playbackRepository)
     {
-        _mainPage = mainPage;
         _playbackRepository = playbackRepository;
 
         SelectedChannelOut = _playbackRepository.GetSelectedChannelOut();

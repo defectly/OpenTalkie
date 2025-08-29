@@ -4,9 +4,9 @@ namespace OpenTalkie.View;
 
 public partial class PlaybackSettingsPage : ContentPage
 {
-    public PlaybackSettingsPage(PlaybackSettingsViewModel vm)
+    public PlaybackSettingsPage(PlaybackSettingsViewModel viewModel)
     {
         InitializeComponent();
-        BindingContext = vm;
+        BindingContext = viewModel;
     }
 }

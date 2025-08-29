@@ -15,7 +15,6 @@ public class PlaybackBroadcastService
 {
     private readonly IMapper _mapper;
     private CancellationTokenSource? _cancellationTokenSource;
-    private readonly AppShell _mainPage;
     private readonly IPlaybackService _playbackService;
     private readonly IEndpointRepository _endpointRepository;
     private AsyncSender? _asyncSender;
@@ -23,9 +22,8 @@ public class PlaybackBroadcastService
     public bool BroadcastState { get; private set; }
     public Action<bool> BroadcastStateChanged;
 
-    public PlaybackBroadcastService(AppShell mainPage, IPlaybackService playbackService, IEndpointRepository endpointRepository, IMapper mapper)
+    public PlaybackBroadcastService(IPlaybackService playbackService, IEndpointRepository endpointRepository, IMapper mapper)
     {
-        _mainPage = mainPage;
         _playbackService = playbackService;
         _endpointRepository = endpointRepository;
         _mapper = mapper;
@@ -102,7 +100,7 @@ public class PlaybackBroadcastService
             catch (Exception ex)
             {
                 var errorPopup = new ErrorPopup(ex.Message);
-                _mainPage.ShowPopupAsync(errorPopup);
+                Application.Current.MainPage.ShowPopupAsync(errorPopup);
                 return false;
             }
 
@@ -123,10 +121,10 @@ public class PlaybackBroadcastService
     {
         _asyncSender ??= new(_playbackService, Endpoints);
 
-        var wf = _playbackService.GetWaveFormat();
-        int bps = wf.BitsPerSample / 8;
-        int chunk = 256 * bps * wf.Channels; // VBAN chunk size
-        int bufferSize = chunk * 4; // 4 chunks per read
+        var waveFormat = _playbackService.GetWaveFormat();
+        int bytesPerSample = waveFormat.BitsPerSample / 8;
+        int chunkSize = 256 * bytesPerSample * waveFormat.Channels; // VBAN chunk size
+        int bufferSize = chunkSize * 4; // 4 chunks per read
         byte[] vbanBuffer = new byte[bufferSize];
 
         while (true)

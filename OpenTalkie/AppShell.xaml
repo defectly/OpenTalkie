@@ -16,11 +16,11 @@
         </Tab>
         <Tab
             x:Name="PlaybackStreams"
-            Title="Playback"
+            Title="Cast"
             Icon="cast.svg">
             <ShellContent ContentTemplate="{DataTemplate view:PlaybackStreamsPage}" Route="PlaybackStreamsPage" />
         </Tab>
-        <Tab Title="Receivers" Icon="speaker.svg">
+        <Tab Title="Receiver" Icon="speaker.svg">
             <ShellContent ContentTemplate="{DataTemplate view:ReceiversPage}" Route="ReceiversPage" />
         </Tab>
         <Tab Title="Settings" Icon="settings.svg">

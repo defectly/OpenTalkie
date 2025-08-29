@@ -17,7 +17,6 @@ public class AsyncSender : IDisposable
     private byte[]? _denoiseBuffer;
     private byte[]? _denoisePending; // mono 16-bit 48k pending bytes
     private int _denoiseCount;
-    private byte[]? _dnWorkMonoBuffer; // temp downmix buffer per read (mono 16-bit)
     private byte[]? _replicateBuffer;  // temp replicate back to original channels
     private byte[]? _volumeBuffer;
     private byte[]? _packetBuffer;
@@ -51,19 +50,19 @@ public class AsyncSender : IDisposable
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public async Task<int> ReadAsync(byte[] buffer, int offset, int count)
     {
-        int readed = await _source.ReadAsync(buffer, offset, count);
+        int bytesRead = await _source.ReadAsync(buffer, offset, count);
 
-        if (readed <= 0)
-            return readed;
+        if (bytesRead <= 0)
+            return bytesRead;
 
         // Optional denoise (streaming, only if source is RNNoise-compatible)
         byte[] processedBuffer = buffer;
         ReadOnlyMemory<byte> denoisedOut = ReadOnlyMemory<byte>.Empty;
         bool anyDenoise = false;
-        for (int ei = 0; ei < _endpoints.Count; ei++)
+        for (int endpointIndex = 0; endpointIndex < _endpoints.Count; endpointIndex++)
         {
-            var ept = _endpoints[ei];
-            if (ept.IsEnabled && ept.IsDenoiseEnabled) { anyDenoise = true; break; }
+            var endpointItem = _endpoints[endpointIndex];
+            if (endpointItem.IsEnabled && endpointItem.IsDenoiseEnabled) { anyDenoise = true; break; }
         }
         if (anyDenoise)
         {
@@ -71,15 +70,15 @@ public class AsyncSender : IDisposable
             if (_waveFormat.BitsPerSample == 16 && _waveFormat.SampleRate == 48000 && _waveFormat.Channels == 1)
             {
                 // Fast path: already mono/48k/16
-                EnsureCapacity(ref _denoisePending, _denoiseCount + readed);
-                Buffer.BlockCopy(buffer, offset, _denoisePending!, _denoiseCount, readed);
-                _denoiseCount += readed;
+                EnsureCapacity(ref _denoisePending, _denoiseCount + bytesRead);
+                Buffer.BlockCopy(buffer, offset, _denoisePending!, _denoiseCount, bytesRead);
+                _denoiseCount += bytesRead;
             }
             else
             {
                 // Convert arbitrary input to mono 16-bit at input rate
                 short[] monoShorts = Array.Empty<short>();
-                ConvertToMono16(buffer, offset, readed, _waveFormat.BitsPerSample, _waveFormat.Channels, ref monoShorts, out int inFrames);
+                ConvertToMono16(buffer, offset, bytesRead, _waveFormat.BitsPerSample, _waveFormat.Channels, ref monoShorts, out int inFrames);
                 // Resample to 48k if needed
                 byte[] mono48Bytes;
                 if (_waveFormat.SampleRate == 48000)
@@ -150,10 +149,10 @@ public class AsyncSender : IDisposable
                 }
                 if (endpoint.Volume != 1f)
                 {
-                    int len = sendMemory.Length;
-                    EnsureCapacity(ref _volumeBuffer, len);
-                    ApplyVolume16(sendMemory.Span, _volumeBuffer!.AsSpan(0, len), endpoint.Volume);
-                    sendMemory = _volumeBuffer.AsMemory(0, len);
+                    int length = sendMemory.Length;
+                    EnsureCapacity(ref _volumeBuffer, length);
+                    ApplyVolume16(sendMemory.Span, _volumeBuffer!.AsSpan(0, length), endpoint.Volume);
+                    sendMemory = _volumeBuffer.AsMemory(0, length);
                 }
                 await SplitAndSendAsync(sendMemory, endpoint, outChannels, 2, 48000, VBanBitResolution.VBAN_BITFMT_16_INT, 256);
                 continue;
@@ -162,21 +161,21 @@ public class AsyncSender : IDisposable
             {
                 byte[] endpointBuffer = processedBuffer;
                 sendMemory = endpointBuffer == buffer
-                    ? endpointBuffer.AsMemory(offset, readed)
-                    : endpointBuffer.AsMemory(0, readed);
+                    ? endpointBuffer.AsMemory(offset, bytesRead)
+                    : endpointBuffer.AsMemory(0, bytesRead);
             }
 
             if (endpoint.Volume != 1f)
             {
-                int len = sendMemory.Length;
-                EnsureCapacity(ref _volumeBuffer, len);
-                ApplyVolume(sendMemory.Span, _volumeBuffer!.AsSpan(0, len), endpoint.Volume);
-                sendMemory = _volumeBuffer.AsMemory(0, len);
+                int length = sendMemory.Length;
+                EnsureCapacity(ref _volumeBuffer, length);
+                ApplyVolume(sendMemory.Span, _volumeBuffer!.AsSpan(0, length), endpoint.Volume);
+                sendMemory = _volumeBuffer.AsMemory(0, length);
             }
 
             await SplitAndSendAsync(sendMemory, endpoint);
         }
-        return readed;
+        return bytesRead;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -449,44 +448,44 @@ public class AsyncSender : IDisposable
         }
     }
 
-    private static byte[] ResampleTo48k(short[] mono, int frames, int inRate, AdaptCtx ctx)
+    private static byte[] ResampleTo48k(short[] mono, int frames, int inRate, AdaptCtx context)
     {
         if (frames <= 0 || inRate <= 0) return Array.Empty<byte>();
-        if (ctx.LastInRate != inRate)
+        if (context.LastInRate != inRate)
         {
-            ctx.LastInRate = inRate;
-            ctx.ResInCount = 0; ctx.ResInPos = 0;
+            context.LastInRate = inRate;
+            context.ResInCount = 0; context.ResInPos = 0;
         }
-        int need = ctx.ResInCount + frames;
-        if (ctx.ResIn.Length < need)
+        int required = context.ResInCount + frames;
+        if (context.ResIn.Length < required)
         {
-            var nb = new short[Math.Max(need, ctx.ResIn.Length == 0 ? frames * 2 : ctx.ResIn.Length * 2)];
-            if (ctx.ResInCount > 0) Array.Copy(ctx.ResIn, 0, nb, 0, ctx.ResInCount);
-            ctx.ResIn = nb;
+            var newBuffer = new short[Math.Max(required, context.ResIn.Length == 0 ? frames * 2 : context.ResIn.Length * 2)];
+            if (context.ResInCount > 0) Array.Copy(context.ResIn, 0, newBuffer, 0, context.ResInCount);
+            context.ResIn = newBuffer;
         }
-        Array.Copy(mono, 0, ctx.ResIn, ctx.ResInCount, frames);
-        ctx.ResInCount += frames;
+        Array.Copy(mono, 0, context.ResIn, context.ResInCount, frames);
+        context.ResInCount += frames;
 
         double step = (double)inRate / 48000.0;
         if (step <= 0) step = 1.0;
-        var outList = new List<short>(ctx.ResInCount);
-        while (ctx.ResInPos + 1.0 < ctx.ResInCount)
+        var outList = new List<short>(context.ResInCount);
+        while (context.ResInPos + 1.0 < context.ResInCount)
         {
-            int i0 = (int)ctx.ResInPos;
-            double frac = ctx.ResInPos - i0;
-            short s0 = ctx.ResIn[i0];
-            short s1 = ctx.ResIn[i0 + 1];
+            int i0 = (int)context.ResInPos;
+            double frac = context.ResInPos - i0;
+            short s0 = context.ResIn[i0];
+            short s1 = context.ResIn[i0 + 1];
             int interp = s0 + (int)((s1 - s0) * frac);
             outList.Add((short)interp);
-            ctx.ResInPos += step;
+            context.ResInPos += step;
         }
-        int consumed = Math.Max(0, (int)ctx.ResInPos);
+        int consumed = Math.Max(0, (int)context.ResInPos);
         if (consumed > 0)
         {
-            int keep = ctx.ResInCount - consumed;
-            if (keep > 0) Array.Copy(ctx.ResIn, consumed, ctx.ResIn, 0, keep);
-            ctx.ResInCount = keep;
-            ctx.ResInPos -= consumed;
+            int remaining = context.ResInCount - consumed;
+            if (remaining > 0) Array.Copy(context.ResIn, consumed, context.ResIn, 0, remaining);
+            context.ResInCount = remaining;
+            context.ResInPos -= consumed;
         }
         if (outList.Count == 0) return Array.Empty<byte>();
         var outBytes = new byte[outList.Count * 2];
@@ -494,44 +493,44 @@ public class AsyncSender : IDisposable
         return outBytes;
     }
 
-    private static short[] ResampleFrom48k(byte[] mono48kBytes, int outRate, AdaptCtx ctx)
+    private static short[] ResampleFrom48k(byte[] mono48kBytes, int outRate, AdaptCtx context)
     {
         if (mono48kBytes.Length == 0 || outRate <= 0) return Array.Empty<short>();
-        if (ctx.LastOutRate != outRate)
+        if (context.LastOutRate != outRate)
         {
-            ctx.LastOutRate = outRate;
-            ctx.ResOutInCount = 0; ctx.ResOutPos = 0;
+            context.LastOutRate = outRate;
+            context.ResOutInCount = 0; context.ResOutPos = 0;
         }
         int frames = mono48kBytes.Length / 2;
-        int need = ctx.ResOutInCount + frames;
-        if (ctx.ResOutIn.Length < need)
+        int required = context.ResOutInCount + frames;
+        if (context.ResOutIn.Length < required)
         {
-            var nb = new short[Math.Max(need, ctx.ResOutIn.Length == 0 ? frames * 2 : ctx.ResOutIn.Length * 2)];
-            if (ctx.ResOutInCount > 0) Array.Copy(ctx.ResOutIn, 0, nb, 0, ctx.ResOutInCount);
-            ctx.ResOutIn = nb;
+            var newBuffer = new short[Math.Max(required, context.ResOutIn.Length == 0 ? frames * 2 : context.ResOutIn.Length * 2)];
+            if (context.ResOutInCount > 0) Array.Copy(context.ResOutIn, 0, newBuffer, 0, context.ResOutInCount);
+            context.ResOutIn = newBuffer;
         }
-        Buffer.BlockCopy(mono48kBytes, 0, ctx.ResOutIn, ctx.ResOutInCount * 2, mono48kBytes.Length);
-        ctx.ResOutInCount += frames;
+        Buffer.BlockCopy(mono48kBytes, 0, context.ResOutIn, context.ResOutInCount * 2, mono48kBytes.Length);
+        context.ResOutInCount += frames;
 
         double step = 48000.0 / (double)outRate;
-        var outList = new List<short>(ctx.ResOutInCount);
-        while (ctx.ResOutPos + 1.0 < ctx.ResOutInCount)
+        var outList = new List<short>(context.ResOutInCount);
+        while (context.ResOutPos + 1.0 < context.ResOutInCount)
         {
-            int i0 = (int)ctx.ResOutPos;
-            double frac = ctx.ResOutPos - i0;
-            short s0 = ctx.ResOutIn[i0];
-            short s1 = ctx.ResOutIn[i0 + 1];
+            int i0 = (int)context.ResOutPos;
+            double frac = context.ResOutPos - i0;
+            short s0 = context.ResOutIn[i0];
+            short s1 = context.ResOutIn[i0 + 1];
             int interp = s0 + (int)((s1 - s0) * frac);
             outList.Add((short)interp);
-            ctx.ResOutPos += step;
+            context.ResOutPos += step;
         }
-        int consumed = Math.Max(0, (int)ctx.ResOutPos);
+        int consumed = Math.Max(0, (int)context.ResOutPos);
         if (consumed > 0)
         {
-            int keep = ctx.ResOutInCount - consumed;
-            if (keep > 0) Array.Copy(ctx.ResOutIn, consumed, ctx.ResOutIn, 0, keep);
-            ctx.ResOutInCount = keep;
-            ctx.ResOutPos -= consumed;
+            int remaining = context.ResOutInCount - consumed;
+            if (remaining > 0) Array.Copy(context.ResOutIn, consumed, context.ResOutIn, 0, remaining);
+            context.ResOutInCount = remaining;
+            context.ResOutPos -= consumed;
         }
         return outList.ToArray();
     }

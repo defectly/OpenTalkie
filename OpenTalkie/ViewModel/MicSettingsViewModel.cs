@@ -9,7 +9,6 @@ namespace OpenTalkie.ViewModel;
 public partial class MicSettingsViewModel : ObservableObject
 {
     private readonly IMicrophoneRepository _microphoneRepository;
-    private readonly AppShell _mainPage;
 
     [ObservableProperty]
     private string selectedSource;
@@ -29,9 +28,8 @@ public partial class MicSettingsViewModel : ObservableObject
     [ObservableProperty]
     private float volume;
 
-    public MicSettingsViewModel(AppShell mainPage, IMicrophoneRepository microphoneRepository)
+    public MicSettingsViewModel(IMicrophoneRepository microphoneRepository)
     {
-        _mainPage = mainPage;
         _microphoneRepository = microphoneRepository;
 
         SelectedSource = _microphoneRepository.GetSelectedSource();

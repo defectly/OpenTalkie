@@ -5,7 +5,7 @@ using OpenTalkie.View.Popups;
 
 namespace OpenTalkie.ViewModel;
 
-public partial class StreamSettingsViewModel(AppShell mainPage) : ObservableObject
+public partial class StreamSettingsViewModel : ObservableObject
 {
     [ObservableProperty]
     private Endpoint? endpoint;

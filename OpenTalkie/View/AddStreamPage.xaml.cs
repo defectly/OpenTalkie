@@ -4,9 +4,9 @@ namespace OpenTalkie.View;
 
 public partial class AddStreamPage : ContentPage
 {
-    public AddStreamPage(AddStreamViewModel vm)
+    public AddStreamPage(AddStreamViewModel viewModel)
     {
         InitializeComponent();
-        BindingContext = vm;
+        BindingContext = viewModel;
     }
 }

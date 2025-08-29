@@ -4,9 +4,9 @@ namespace OpenTalkie.View;
 
 public partial class SettingsPage : ContentPage
 {
-    public SettingsPage(SettingsViewModel vm)
+    public SettingsPage(SettingsViewModel viewModel)
     {
         InitializeComponent();
-        BindingContext = vm;
+        BindingContext = viewModel;
     }
 }

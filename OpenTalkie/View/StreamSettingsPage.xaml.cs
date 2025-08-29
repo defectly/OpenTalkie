@@ -5,20 +5,20 @@ namespace OpenTalkie.View;
 [QueryProperty(nameof(Endpoint), "Endpoint")]
 public partial class StreamSettingsPage : ContentPage
 {
-    private readonly StreamSettingsViewModel _vm;
+    private readonly StreamSettingsViewModel _viewModel;
 
     public Endpoint Endpoint
     {
         set
         {
-            _vm.Endpoint = value;
+            _viewModel.Endpoint = value;
         }
     }
 
-    public StreamSettingsPage(StreamSettingsViewModel vm)
+    public StreamSettingsPage(StreamSettingsViewModel viewModel)
     {
         InitializeComponent();
-        _vm = vm;
-        BindingContext = _vm;
+        _viewModel = viewModel;
+        BindingContext = _viewModel;
     }
 }

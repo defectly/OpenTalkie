@@ -4,9 +4,9 @@ namespace OpenTalkie.View;
 
 public partial class MicrophoneStreamsPage : ContentPage
 {
-    public MicrophoneStreamsPage(MicrophoneStreamsViewModel vm)
+    public MicrophoneStreamsPage(MicrophoneStreamsViewModel viewModel)
     {
         InitializeComponent();
-        BindingContext = vm;
+        BindingContext = viewModel;
     }
 }

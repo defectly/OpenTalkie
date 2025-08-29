@@ -112,10 +112,14 @@
                 </Grid>
             </Frame>
 
-            <HorizontalStackLayout Spacing="10" HorizontalOptions="FillAndExpand" Margin="0,20,0,0">
-                <Button Style="{StaticResource FilledButton}" Text="Save" Command="{Binding SaveCommand}" HorizontalOptions="FillAndExpand"/>
-                <Button Style="{StaticResource OutlinedButton}" Text="Cancel" Command="{Binding CancelCommand}" HorizontalOptions="FillAndExpand"/>
-            </HorizontalStackLayout>
+            <Grid ColumnSpacing="10" Margin="0,20,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition/>
+                    <ColumnDefinition/>
+                </Grid.ColumnDefinitions>
+                <Button Grid.Column="0" Style="{StaticResource FilledButton}" Text="Save" Command="{Binding SaveCommand}"/>
+                <Button Grid.Column="1" Style="{StaticResource OutlinedButton}" Text="Cancel" Command="{Binding CancelCommand}"/>
+            </Grid>
 
         </VerticalStackLayout>
     </ScrollView>

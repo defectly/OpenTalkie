@@ -9,7 +9,6 @@ namespace OpenTalkie.ViewModel;
 [QueryProperty(nameof(StreamType), "StreamType")]
 public partial class AddStreamViewModel : ObservableObject
 {
-    private readonly AppShell _appShell;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(DisplayName))]
@@ -37,10 +36,7 @@ public partial class AddStreamViewModel : ObservableObject
     public string DisplayPort => Port.ToString();
 
 
-    public AddStreamViewModel(AppShell appShell)
-    {
-        _appShell = appShell;
-    }
+    public AddStreamViewModel() { }
 
     [RelayCommand]
     private async Task EditName()
@@ -136,7 +132,7 @@ public partial class AddStreamViewModel : ObservableObject
         catch (Exception ex) // Catch other unexpected errors during Endpoint creation
         {
             System.Diagnostics.Debug.WriteLine($"Unexpected error creating Endpoint: {ex}"); // Keep debug for now
-            await _appShell.ShowPopupAsync(new ErrorPopup($"An unexpected error occurred during stream creation: {ex.Message}"));
+            await Application.Current.MainPage.ShowPopupAsync(new ErrorPopup($"An unexpected error occurred during stream creation: {ex.Message}"));
             return;
         }
 

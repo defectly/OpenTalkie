@@ -2,10 +2,9 @@ namespace OpenTalkie.View;
 
 public partial class ReceiversPage : ContentPage
 {
-    public ReceiversPage(ViewModel.ReceiversViewModel vm)
+    public ReceiversPage(ViewModel.ReceiversViewModel viewModel)
     {
         InitializeComponent();
-        BindingContext = vm;
+        BindingContext = viewModel;
     }
 }
-

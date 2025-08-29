@@ -4,9 +4,9 @@ namespace OpenTalkie.View;
 
 public partial class MicSettingsPage : ContentPage
 {
-    public MicSettingsPage(MicSettingsViewModel vm)
+    public MicSettingsPage(MicSettingsViewModel viewModel)
     {
         InitializeComponent();
-        BindingContext = vm;
+        BindingContext = viewModel;
     }
 }
