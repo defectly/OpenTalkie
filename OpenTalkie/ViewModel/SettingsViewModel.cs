@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using OpenTalkie.View;
 using System.Collections.ObjectModel;
@@ -28,7 +28,7 @@ public partial class SettingsViewModel : ObservableObject
         };
 
         if (OperatingSystem.IsAndroidVersionAtLeast(29))
-            SettingsItems.Add(new SettingsItem { Name = "Playback Settings", PageType = "PlaybackSettingsPage" });
+            SettingsItems.Add(new SettingsItem { Name = "Cast Settings", PageType = "PlaybackSettingsPage" });
     }
 
     [RelayCommand]

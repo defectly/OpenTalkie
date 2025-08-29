@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using OpenTalkie.Common.Services;
 using OpenTalkie.Platforms.Android.Common;
@@ -41,7 +41,7 @@ public partial class HomeViewModel : ObservableObject
         PlaybackBroadcastService = playbackBroadcastService;
         ReceiverService = receiverService;
         OnMicrophoneServiceStateChange(microphoneBroadcastService.BroadcastState);
-        PlaybackBroadcastButtonText = "start playback service";
+        PlaybackBroadcastButtonText = "start cast service";
         ReceiverButtonText = "start receiver service";
         NetworkAddresses = [];
         LoadNetworkAddresses();
@@ -62,9 +62,9 @@ public partial class HomeViewModel : ObservableObject
     private void OnPlaybackServiceStateChange(bool isActive)
     {
         if (isActive)
-            PlaybackBroadcastButtonText = "stop playback service";
+            PlaybackBroadcastButtonText = "stop cast service";
         else
-            PlaybackBroadcastButtonText = "start playback service";
+            PlaybackBroadcastButtonText = "start cast service";
     }
 
     private void OnReceiverStateChange(bool isActive)
