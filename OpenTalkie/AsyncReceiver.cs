@@ -129,12 +129,25 @@ public class AsyncReceiver : IDisposable
         private readonly Action<Endpoint, byte[], int, int, int> _onPayload;
         private UdpClient? _udp;
         private CancellationTokenSource? _cts;
-        // Keep RNNoise state per endpoint
+        // Keep RNNoise + resampler state per endpoint
         private sealed class DenoiseCtx
         {
             public Denoiser Dn = new();
-            public byte[] Pending = Array.Empty<byte>();
-            public int Count;
+            public byte[] Pending = Array.Empty<byte>(); // 48k mono 16-bit pending bytes for 480-sample frames
+            public int PendingCount;
+            public short[] ResIn = Array.Empty<short>(); // mono 16-bit input samples for resampler
+            public int ResInCount;
+            public double ResPos; // fractional position in ResIn
+            public int LastInRate = 48000;
+            public void ClearResampler()
+            {
+                ResInCount = 0;
+                ResPos = 0;
+            }
+            public void ClearPending()
+            {
+                PendingCount = 0;
+            }
         }
 
         private readonly Dictionary<Guid, DenoiseCtx> _denoisers = new();
@@ -221,72 +234,75 @@ public class AsyncReceiver : IDisposable
                     var payload = new byte[payloadBytes];
                     Buffer.BlockCopy(buf, header, payload, 0, payloadBytes);
 
-                    // Optional denoise BEFORE any downstream conversion in ReceiverService
-                    // RNNoise supports only 48kHz, mono, 16-bit PCM and prefers blocks of 480 samples
-                    bool canDenoise = ep.IsDenoiseEnabled && bitsPerSample == 16 && channels == 1 && sampleRate == 48000;
-                    if (canDenoise)
+                    if (ep.IsDenoiseEnabled)
                     {
-                        int frameBytes = 480 * 2; // 480 samples * 2 bytes (mono 16-bit)
-
+                        // Convert any format to 48kHz, mono, 16-bit for RNNoise, then denoise
                         if (!_denoisers.TryGetValue(ep.Id, out var ctx))
                         {
                             ctx = new DenoiseCtx();
                             _denoisers[ep.Id] = ctx;
                         }
 
-                        // Append to pending buffer
-                        int needed = ctx.Count + payloadBytes;
-                        if (ctx.Pending.Length < needed)
-                        {
-                            int newCap = Math.Max(needed, ctx.Pending.Length == 0 ? 2048 : ctx.Pending.Length * 2);
-                            var nb = new byte[newCap];
-                            if (ctx.Count > 0)
-                                Buffer.BlockCopy(ctx.Pending, 0, nb, 0, ctx.Count);
-                            ctx.Pending = nb;
-                        }
-                        Buffer.BlockCopy(payload, 0, ctx.Pending, ctx.Count, payloadBytes);
-                        ctx.Count += payloadBytes;
+                        // 1) Convert to mono 16-bit at source rate
+                        var mono16 = ConvertToMono16(payload, bitsPerSample, channels);
 
-                        int framesReady = ctx.Count / frameBytes;
-                        if (framesReady > 0)
-                        {
-                            int outLen = framesReady * frameBytes;
-                            var outBuf = new byte[outLen];
+                        // 2) Resample to 48k mono 16-bit
+                        var res48 = ResampleTo48k(mono16, sampleRate, ctx);
 
-                            for (int i = 0; i < framesReady; i++)
+                        // 3) Accumulate to 480-sample blocks and denoise
+                        int frameBytes = 480 * 2;
+                        if (res48.Length > 0)
+                        {
+                            int addBytes = res48.Length; // res48 already in bytes (16-bit LE)
+                            int need = ctx.PendingCount + addBytes;
+                            if (ctx.Pending.Length < need)
                             {
-                                int off = i * frameBytes;
-                                // Process a 480-sample block
-                                var block = new byte[frameBytes];
-                                Buffer.BlockCopy(ctx.Pending, off, block, 0, frameBytes);
-                                ctx.Dn.Denoise(block, 0, frameBytes, false);
-                                Buffer.BlockCopy(block, 0, outBuf, off, frameBytes);
+                                int newCap = Math.Max(need, ctx.Pending.Length == 0 ? 4096 : ctx.Pending.Length * 2);
+                                var nb = new byte[newCap];
+                                if (ctx.PendingCount > 0) Buffer.BlockCopy(ctx.Pending, 0, nb, 0, ctx.PendingCount);
+                                ctx.Pending = nb;
                             }
+                            Buffer.BlockCopy(res48, 0, ctx.Pending, ctx.PendingCount, addBytes);
+                            ctx.PendingCount += addBytes;
 
-                            // Shift pending remainder to front
-                            int consumed = outLen;
-                            int remain = ctx.Count - consumed;
-                            if (remain > 0)
-                                Buffer.BlockCopy(ctx.Pending, consumed, ctx.Pending, 0, remain);
-                            ctx.Count = remain;
+                            int frames = ctx.PendingCount / frameBytes;
+                            if (frames > 0)
+                            {
+                                int outLen = frames * frameBytes;
+                                var outBuf = new byte[outLen];
+                                for (int i = 0; i < frames; i++)
+                                {
+                                    int off = i * frameBytes;
+                                    var block = new byte[frameBytes];
+                                    Buffer.BlockCopy(ctx.Pending, off, block, 0, frameBytes);
+                                    ctx.Dn.Denoise(block, 0, frameBytes, false);
+                                    Buffer.BlockCopy(block, 0, outBuf, off, frameBytes);
+                                }
 
-                            // Emit only processed portion; keep remainder for next packet
-                            try { _onPayload(ep, outBuf, channels, bitsPerSample, sampleRate); } catch { }
-                            continue; // Done for this packet
+                                int remain = ctx.PendingCount - outLen;
+                                if (remain > 0) Buffer.BlockCopy(ctx.Pending, outLen, ctx.Pending, 0, remain);
+                                ctx.PendingCount = remain;
+
+                                try { _onPayload(ep, outBuf, 1, 16, 48000); } catch { }
+                                continue;
+                            }
+                            else
+                            {
+                                continue; // not enough for a full denoise frame yet
+                            }
                         }
                         else
                         {
-                            // Not enough for a full RNNoise frame yet; skip emitting
-                            continue;
+                            continue; // no samples after conversion/resample yet
                         }
                     }
-                    else
-                    {
-                        // If previously accumulating, drop pending to avoid stale buffers
-                        if (_denoisers.TryGetValue(ep.Id, out var ctx))
-                            ctx.Count = 0;
-                    }
 
+                    // Denoise disabled -> clear any accumulators and pass original
+                    if (_denoisers.TryGetValue(ep.Id, out var ctx2))
+                    {
+                        ctx2.ClearPending();
+                        ctx2.ClearResampler();
+                    }
                     try { _onPayload(ep, payload, channels, bitsPerSample, sampleRate); }
                     catch { }
                 }
@@ -316,6 +332,114 @@ public class AsyncReceiver : IDisposable
             _udp?.Dispose();
             foreach (var d in _denoisers.Values) d.Dn.Dispose();
             _denoisers.Clear();
+        }
+
+        // ---------- Conversion helpers ----------
+        private static short[] ConvertToMono16(byte[] input, int bits, int channels)
+        {
+            int inBps = bits / 8;
+            if (inBps <= 0 || channels <= 0) return Array.Empty<short>();
+            int frames = input.Length / (inBps * channels);
+            if (frames <= 0) return Array.Empty<short>();
+            var mono = new short[frames];
+            for (int f = 0; f < frames; f++)
+            {
+                int baseIdx = f * inBps * channels;
+                int acc = 0;
+                for (int ch = 0; ch < channels; ch++)
+                {
+                    int s = ReadSampleAsInt(input, baseIdx + ch * inBps, bits);
+                    short s16 = ToInt16(s, bits);
+                    acc += s16;
+                }
+                mono[f] = (short)(acc / channels);
+            }
+            return mono;
+        }
+
+        private static int ReadSampleAsInt(byte[] buffer, int offset, int bits)
+        {
+            return bits switch
+            {
+                8 => (sbyte)buffer[offset],
+                16 => BitConverter.ToInt16(buffer, offset),
+                24 =>
+                    ((buffer[offset] | (buffer[offset + 1] << 8) | (buffer[offset + 2] << 16))
+                    | ((buffer[offset + 2] & 0x80) != 0 ? unchecked((int)0xFF000000) : 0)),
+                32 => BitConverter.ToInt32(buffer, offset),
+                _ => 0
+            };
+        }
+
+        private static short ToInt16(int sample, int inBits)
+        {
+            return inBits switch
+            {
+                8 => (short)(sample << 8),
+                16 => (short)sample,
+                24 => (short)(sample >> 8),
+                32 => (short)(sample >> 16),
+                _ => 0
+            };
+        }
+
+        private static byte[] ResampleTo48k(short[] mono16, int inRate, DenoiseCtx ctx)
+        {
+            if (mono16.Length == 0) return Array.Empty<byte>();
+            if (inRate <= 0) return Array.Empty<byte>();
+
+            if (ctx.LastInRate != inRate)
+            {
+                ctx.LastInRate = inRate;
+                ctx.ClearResampler();
+            }
+
+            // Append input to resampler buffer
+            int need = ctx.ResInCount + mono16.Length;
+            if (ctx.ResIn.Length < need)
+            {
+                int newCap = Math.Max(need, ctx.ResIn.Length == 0 ? mono16.Length * 2 : ctx.ResIn.Length * 2);
+                var nb = new short[newCap];
+                if (ctx.ResInCount > 0)
+                    Array.Copy(ctx.ResIn, 0, nb, 0, ctx.ResInCount);
+                ctx.ResIn = nb;
+            }
+            Array.Copy(mono16, 0, ctx.ResIn, ctx.ResInCount, mono16.Length);
+            ctx.ResInCount += mono16.Length;
+
+            double step = (double)inRate / 48000.0;
+            if (step <= 0) step = 1.0;
+            var outList = new List<short>(ctx.ResInCount);
+
+            // Generate while two points are available for interpolation
+            while (ctx.ResPos + 1.0 < ctx.ResInCount)
+            {
+                int i0 = (int)ctx.ResPos;
+                double frac = ctx.ResPos - i0;
+                short s0 = ctx.ResIn[i0];
+                short s1 = ctx.ResIn[i0 + 1];
+                int interp = s0 + (int)((s1 - s0) * frac);
+                outList.Add((short)interp);
+                ctx.ResPos += step;
+            }
+
+            // Discard consumed input samples
+            int consumed = Math.Max(0, (int)ctx.ResPos);
+            if (consumed > 0)
+            {
+                int keep = ctx.ResInCount - consumed;
+                if (keep > 0)
+                    Array.Copy(ctx.ResIn, consumed, ctx.ResIn, 0, keep);
+                ctx.ResInCount = keep;
+                ctx.ResPos -= consumed;
+            }
+
+            if (outList.Count == 0) return Array.Empty<byte>();
+
+            // Convert to bytes LE
+            var outBytes = new byte[outList.Count * 2];
+            Buffer.BlockCopy(outList.ToArray(), 0, outBytes, 0, outBytes.Length);
+            return outBytes;
         }
     }
 }
