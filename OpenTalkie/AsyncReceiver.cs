@@ -129,7 +129,15 @@ public class AsyncReceiver : IDisposable
         private readonly Action<Endpoint, byte[], int, int, int> _onPayload;
         private UdpClient? _udp;
         private CancellationTokenSource? _cts;
-        private readonly Denoiser _denoiser = new();
+        // Keep RNNoise state per endpoint
+        private sealed class DenoiseCtx
+        {
+            public Denoiser Dn = new();
+            public byte[] Pending = Array.Empty<byte>();
+            public int Count;
+        }
+
+        private readonly Dictionary<Guid, DenoiseCtx> _denoisers = new();
 
         public Listener(int port, List<Endpoint> endpoints, Action<Endpoint, byte[], int, int, int> onPayload)
         {
@@ -146,7 +154,20 @@ public class AsyncReceiver : IDisposable
             _ = Task.Run(() => LoopAsync(_cts.Token));
         }
 
-        public void UpdateEndpoints(List<Endpoint> endpoints) => _eps = endpoints;
+        public void UpdateEndpoints(List<Endpoint> endpoints)
+        {
+            _eps = endpoints;
+            // Clean up denoisers for endpoints that were removed
+            var active = new HashSet<Guid>(endpoints.Select(e => e.Id));
+            foreach (var key in _denoisers.Keys.ToList())
+            {
+                if (!active.Contains(key))
+                {
+                    _denoisers[key].Dn.Dispose();
+                    _denoisers.Remove(key);
+                }
+            }
+        }
 
         private async Task LoopAsync(CancellationToken ct)
         {
@@ -200,10 +221,70 @@ public class AsyncReceiver : IDisposable
                     var payload = new byte[payloadBytes];
                     Buffer.BlockCopy(buf, header, payload, 0, payloadBytes);
 
-                    // Optional denoise when 16-bit PCM
-                    if (ep.IsDenoiseEnabled && bitsPerSample == 16)
+                    // Optional denoise BEFORE any downstream conversion in ReceiverService
+                    // RNNoise supports only 48kHz, mono, 16-bit PCM and prefers blocks of 480 samples
+                    bool canDenoise = ep.IsDenoiseEnabled && bitsPerSample == 16 && channels == 1 && sampleRate == 48000;
+                    if (canDenoise)
                     {
-                        try { _denoiser.Denoise(payload, 0, payload.Length); } catch { }
+                        int frameBytes = 480 * 2; // 480 samples * 2 bytes (mono 16-bit)
+
+                        if (!_denoisers.TryGetValue(ep.Id, out var ctx))
+                        {
+                            ctx = new DenoiseCtx();
+                            _denoisers[ep.Id] = ctx;
+                        }
+
+                        // Append to pending buffer
+                        int needed = ctx.Count + payloadBytes;
+                        if (ctx.Pending.Length < needed)
+                        {
+                            int newCap = Math.Max(needed, ctx.Pending.Length == 0 ? 2048 : ctx.Pending.Length * 2);
+                            var nb = new byte[newCap];
+                            if (ctx.Count > 0)
+                                Buffer.BlockCopy(ctx.Pending, 0, nb, 0, ctx.Count);
+                            ctx.Pending = nb;
+                        }
+                        Buffer.BlockCopy(payload, 0, ctx.Pending, ctx.Count, payloadBytes);
+                        ctx.Count += payloadBytes;
+
+                        int framesReady = ctx.Count / frameBytes;
+                        if (framesReady > 0)
+                        {
+                            int outLen = framesReady * frameBytes;
+                            var outBuf = new byte[outLen];
+
+                            for (int i = 0; i < framesReady; i++)
+                            {
+                                int off = i * frameBytes;
+                                // Process a 480-sample block
+                                var block = new byte[frameBytes];
+                                Buffer.BlockCopy(ctx.Pending, off, block, 0, frameBytes);
+                                ctx.Dn.Denoise(block, 0, frameBytes, false);
+                                Buffer.BlockCopy(block, 0, outBuf, off, frameBytes);
+                            }
+
+                            // Shift pending remainder to front
+                            int consumed = outLen;
+                            int remain = ctx.Count - consumed;
+                            if (remain > 0)
+                                Buffer.BlockCopy(ctx.Pending, consumed, ctx.Pending, 0, remain);
+                            ctx.Count = remain;
+
+                            // Emit only processed portion; keep remainder for next packet
+                            try { _onPayload(ep, outBuf, channels, bitsPerSample, sampleRate); } catch { }
+                            continue; // Done for this packet
+                        }
+                        else
+                        {
+                            // Not enough for a full RNNoise frame yet; skip emitting
+                            continue;
+                        }
+                    }
+                    else
+                    {
+                        // If previously accumulating, drop pending to avoid stale buffers
+                        if (_denoisers.TryGetValue(ep.Id, out var ctx))
+                            ctx.Count = 0;
                     }
 
                     try { _onPayload(ep, payload, channels, bitsPerSample, sampleRate); }
@@ -233,7 +314,8 @@ public class AsyncReceiver : IDisposable
             _cts?.Cancel();
             _cts?.Dispose();
             _udp?.Dispose();
-            _denoiser.Dispose();
+            foreach (var d in _denoisers.Values) d.Dn.Dispose();
+            _denoisers.Clear();
         }
     }
 }
