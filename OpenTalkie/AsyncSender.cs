@@ -1,4 +1,4 @@
-﻿using OpenTalkie.Common.Services.Interfaces;
+using OpenTalkie.Common.Services.Interfaces;
 using OpenTalkie.RNNoise;
 using OpenTalkie.VBAN;
 using System.Collections.ObjectModel;
@@ -135,16 +135,27 @@ public class AsyncSender : IDisposable
             ReadOnlyMemory<byte> sendMemory;
             if (endpoint.IsDenoiseEnabled && denoisedOut.Length > 0)
             {
-                // Force VBAN header and chunking for RNNoise output
-                sendMemory = denoisedOut;
+                // RNNoise output is mono 48k/16-bit; replicate to 2 channels if original had >1 channel
+                int outChannels = _waveFormat.Channels > 1 ? 2 : 1;
+                if (outChannels == 2)
+                {
+                    int stereoLen = denoisedOut.Length * 2;
+                    EnsureCapacity(ref _replicateBuffer, stereoLen);
+                    ReplicateMonoToChannels16(denoisedOut.Span, _replicateBuffer.AsSpan(0, stereoLen), 2);
+                    sendMemory = _replicateBuffer.AsMemory(0, stereoLen);
+                }
+                else
+                {
+                    sendMemory = denoisedOut;
+                }
                 if (endpoint.Volume != 1f)
                 {
                     int len = sendMemory.Length;
                     EnsureCapacity(ref _volumeBuffer, len);
-                    ApplyVolume(sendMemory.Span, _volumeBuffer!.AsSpan(0, len), endpoint.Volume);
+                    ApplyVolume16(sendMemory.Span, _volumeBuffer!.AsSpan(0, len), endpoint.Volume);
                     sendMemory = _volumeBuffer.AsMemory(0, len);
                 }
-                await SplitAndSendAsync(sendMemory, endpoint, 1, 2, 48000, VBanBitResolution.VBAN_BITFMT_16_INT, 256);
+                await SplitAndSendAsync(sendMemory, endpoint, outChannels, 2, 48000, VBanBitResolution.VBAN_BITFMT_16_INT, 256);
                 continue;
             }
             else
@@ -318,6 +329,20 @@ public class AsyncSender : IDisposable
         }
         // Fallback copy
         src.CopyTo(dst);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void ApplyVolume16(ReadOnlySpan<byte> src, Span<byte> dst, float gain)
+    {
+        int samples = src.Length / 2;
+        for (int i = 0; i < samples; i++)
+        {
+            short s = (short)(src[i * 2] | (src[i * 2 + 1] << 8));
+            float amplified = s * gain;
+            short clamped = amplified > short.MaxValue ? short.MaxValue : amplified < short.MinValue ? short.MinValue : (short)amplified;
+            dst[i * 2] = (byte)(clamped & 0xFF);
+            dst[i * 2 + 1] = (byte)((clamped >> 8) & 0xFF);
+        }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -617,3 +642,4 @@ public class AsyncSender : IDisposable
         }
     }
 }
+
