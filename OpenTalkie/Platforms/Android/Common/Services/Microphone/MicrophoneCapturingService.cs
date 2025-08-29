@@ -14,7 +14,18 @@ public class MicrophoneCapturingService : IMicrophoneCapturingService
 
         await MicrophoneForegroundServiceManager.StartForegroundServiceAsync();
 
-        MicrophoneAudioRecord.Start();
+        try
+        {
+            MicrophoneAudioRecord.Start();
+        }
+        catch
+        {
+            // If starting AudioRecord failed (e.g., incompatible format),
+            // ensure the foreground service is stopped to avoid a lingering notification/service.
+            MicrophoneForegroundServiceManager.StopForegroundService();
+            OnServiceStateChange?.Invoke(false);
+            throw; // propagate to caller so UI can show the error message
+        }
 
         OnServiceStateChange?.Invoke(true);
 
