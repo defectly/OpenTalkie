@@ -63,6 +63,6 @@ public class AudioOutputService : IAudioOutputService
     public void Write(byte[] buffer, int offset, int count)
     {
         if (_track == null) return;
-        try { _track.Write(buffer, offset, count, WriteMode.NonBlocking); } catch { }
+        try { _track.Write(buffer, offset, count, WriteMode.Blocking); } catch { }
     }
 }

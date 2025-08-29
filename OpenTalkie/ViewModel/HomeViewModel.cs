@@ -80,11 +80,7 @@ public partial class HomeViewModel : ObservableObject
     {
         if (!PlaybackBroadcastService.BroadcastState)
         {
-            bool isPermissionGranted = await CheckMicrophonePermissionAsync();
-
-            if (!isPermissionGranted)
-                return;
-
+            // Only request the required cast permission; microphone permission is not needed here.
             if (!await PlaybackBroadcastService.RequestPermissionAsync())
                 return;
         }

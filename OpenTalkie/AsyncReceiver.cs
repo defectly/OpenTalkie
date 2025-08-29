@@ -226,11 +226,18 @@ public class AsyncReceiver : IDisposable
 
                 string name = GetStreamName(buf);
 
+                var remoteAddress = res.RemoteEndPoint.Address;
                 for (int __ei = 0; __ei < _eps.Count; __ei++)
                 {
                     var ep = _eps[__ei];
                     if (!ep.IsEnabled) continue;
                     if (!string.Equals(Normalize(ep.Name), name, StringComparison.Ordinal)) continue;
+                    // If endpoint hostname is an IP, require sender IP to match
+                    if (!string.IsNullOrWhiteSpace(ep.Hostname) && System.Net.IPAddress.TryParse(ep.Hostname, out var expectedIp))
+                    {
+                        if (!remoteAddress.Equals(expectedIp))
+                            continue;
+                    }
 
                     int header = 28;
                     int payloadBytes = buf.Length - header;

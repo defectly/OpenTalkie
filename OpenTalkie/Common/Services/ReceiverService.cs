@@ -15,6 +15,19 @@ public class ReceiverService
     private readonly IEndpointRepository _endpointRepository;
     private readonly IAudioOutputService _audioOutput;
     private AsyncReceiver? _receiver;
+    private CancellationTokenSource? _mixCts;
+    private Task? _mixTask;
+    private readonly Dictionary<Guid, StreamBuffer> _buffers = new();
+    private readonly object _outputLock = new();
+    private int _currentSampleRate;
+    private int _currentChannels;
+    private const int TargetSampleRate = 48000;
+    private const int TargetChannels = 2;
+    private const int MixChunkSamples = 480; // per channel (~10ms at 48k)
+    private const int BytesPerSample = 2; // 16-bit
+    private const int BytesPerChunk = MixChunkSamples * TargetChannels * BytesPerSample;
+    private const int MaxQueuedChunksPerStream = 10; // ~100ms max per-stream buffering
+    private const int MaxQueueBytesPerStream = BytesPerChunk * MaxQueuedChunksPerStream;
 
     public ObservableCollection<Endpoint> Endpoints { get; }
     public bool ListeningState { get; private set; }
@@ -41,6 +54,10 @@ public class ReceiverService
         _receiver ??= new AsyncReceiver(Endpoints);
         _receiver.FrameReceived += OnFrameReceived;
         _receiver.Start();
+        // Start output once at target format and begin mixer loop
+        EnsureOutput(TargetSampleRate, TargetChannels);
+        _mixCts = new CancellationTokenSource();
+        _mixTask = Task.Run(() => MixLoopAsync(_mixCts.Token));
         ListeningStateChanged?.Invoke(true);
     }
 
@@ -50,7 +67,13 @@ public class ReceiverService
         _receiver!.FrameReceived -= OnFrameReceived;
         _receiver.Stop();
         _receiver = null;
+        _mixCts?.Cancel();
+        try { _mixTask?.Wait(500); } catch { }
         _audioOutput.Stop();
+        lock (_buffers)
+        {
+            _buffers.Clear();
+        }
         ListeningStateChanged?.Invoke(false);
     }
 
@@ -61,29 +84,169 @@ public class ReceiverService
 
     private void OnFrameReceived(Endpoint ep, byte[] payload, WaveFormat wf)
     {
-        // Ensure output is running with compatible format (16-bit PCM, mono/stereo)
-        int outChannels = wf.Channels <= 1 ? 1 : 2;
-        EnsureOutput(wf.SampleRate, outChannels);
-
-        // Convert to 16-bit PCM little endian and adjust channel count
-        byte[] pcm16 = ConvertToPcm16Interleaved(payload, wf.BitsPerSample, wf.Channels, outChannels);
+        // Convert to target format and enqueue for mixing
+        byte[] pcm16 = ConvertToPcm16Interleaved(payload, wf.BitsPerSample, wf.Channels, TargetChannels);
+        if (wf.SampleRate != TargetSampleRate)
+        {
+            pcm16 = ResamplePcm16Interleaved(pcm16, wf.SampleRate, TargetSampleRate, TargetChannels);
+        }
         if (ep.Volume != 1f)
         {
             ApplyVolume16(pcm16.AsSpan(), ep.Volume);
         }
-        _audioOutput.Write(pcm16, 0, pcm16.Length);
+        lock (_buffers)
+        {
+            if (!_buffers.TryGetValue(ep.Id, out var buf))
+            {
+                buf = new StreamBuffer();
+                _buffers[ep.Id] = buf;
+            }
+            buf.Enqueue(pcm16);
+        }
     }
 
     private void EnsureOutput(int sampleRate, int channels)
     {
-        if (!_audioOutput.IsStarted)
+        lock (_outputLock)
         {
-            _audioOutput.Start(sampleRate, channels);
-            return;
+            if (!_audioOutput.IsStarted)
+            {
+                _audioOutput.Start(sampleRate, channels);
+                _currentSampleRate = sampleRate;
+                _currentChannels = channels <= 1 ? 1 : 2;
+                return;
+            }
+            // Do not restart to minimize glitches; keep current output format.
         }
-        // A minimal approach: restart if different format arrives
-        // More advanced buffering/format negotiation could be added later.
-        _audioOutput.Start(sampleRate, channels);
+    }
+
+    private static byte[] ResamplePcm16Interleaved(byte[] input, int inRate, int outRate, int channels)
+    {
+        if (inRate <= 0 || outRate <= 0 || channels <= 0) return input;
+        if (inRate == outRate) return input;
+        int inFrames = input.Length / (2 * channels);
+        if (inFrames <= 1) return input;
+        int outFrames = (int)((long)inFrames * outRate / inRate);
+        short[] inShorts = new short[inFrames * channels];
+        Buffer.BlockCopy(input, 0, inShorts, 0, input.Length);
+        short[] outShorts = new short[outFrames * channels];
+
+        double step = (double)inRate / outRate;
+        double pos = 0.0;
+        for (int of = 0; of < outFrames; of++)
+        {
+            int i0 = (int)pos;
+            double frac = pos - i0;
+            int i1 = i0 + 1;
+            if (i1 >= inFrames) i1 = inFrames - 1;
+            int inBase0 = i0 * channels;
+            int inBase1 = i1 * channels;
+            int outBase = of * channels;
+            for (int ch = 0; ch < channels; ch++)
+            {
+                int s0 = inShorts[inBase0 + ch];
+                int s1 = inShorts[inBase1 + ch];
+                int interp = s0 + (int)((s1 - s0) * frac);
+                outShorts[outBase + ch] = (short)interp;
+            }
+            pos += step;
+        }
+        byte[] outBytes = new byte[outShorts.Length * 2];
+        Buffer.BlockCopy(outShorts, 0, outBytes, 0, outBytes.Length);
+        return outBytes;
+    }
+
+    private async Task MixLoopAsync(CancellationToken ct)
+    {
+        byte[] mixBytes = new byte[BytesPerChunk];
+        short[] mixShorts = new short[MixChunkSamples * TargetChannels];
+        byte[] temp = new byte[BytesPerChunk];
+
+        while (!ct.IsCancellationRequested)
+        {
+            Array.Clear(mixShorts, 0, mixShorts.Length);
+            int activeSources = 0;
+            lock (_buffers)
+            {
+                foreach (var kv in _buffers)
+                {
+                    var buf = kv.Value;
+                    int read = buf.Read(temp);
+                    if (read <= 0) continue;
+                    if (read < BytesPerChunk)
+                    {
+                        // pad missing with zeros
+                        Array.Clear(temp, read, BytesPerChunk - read);
+                    }
+                    // sum into mixShorts
+                    for (int i = 0, s = 0; i < BytesPerChunk; i += 2, s++)
+                    {
+                        short sample = (short)(temp[i] | (temp[i + 1] << 8));
+                        int sum = mixShorts[s] + sample;
+                        if (sum > short.MaxValue) sum = short.MaxValue; else if (sum < short.MinValue) sum = short.MinValue;
+                        mixShorts[s] = (short)sum;
+                    }
+                    activeSources++;
+                }
+            }
+
+            // serialize mixShorts to bytes and write (blocking write paces real time)
+            Buffer.BlockCopy(mixShorts, 0, mixBytes, 0, mixBytes.Length);
+            _audioOutput.Write(mixBytes, 0, mixBytes.Length);
+        }
+    }
+
+    private sealed class StreamBuffer
+    {
+        private readonly Queue<byte[]> _queue = new();
+        private int _offset = 0;
+        private readonly object _lock = new();
+        private int _queuedBytes = 0;
+
+        public void Enqueue(byte[] data)
+        {
+            lock (_lock)
+            {
+                _queue.Enqueue(data);
+                _queuedBytes += data.Length;
+                // Trim oldest data if queue grows too large to limit latency
+                while (_queuedBytes > MaxQueueBytesPerStream && _queue.Count > 0)
+                {
+                    var dropped = _queue.Dequeue();
+                    _queuedBytes -= dropped.Length;
+                    // reset offset if queue was just one element partially read
+                    if (_offset > 0)
+                    {
+                        // if we dropped the element under read, reset offset to 0
+                        _offset = 0;
+                    }
+                }
+            }
+        }
+
+        public int Read(Span<byte> destination)
+        {
+            int copied = 0;
+            lock (_lock)
+            {
+                while (copied < destination.Length && _queue.Count > 0)
+                {
+                    var current = _queue.Peek();
+                    int avail = current.Length - _offset;
+                    int toCopy = Math.Min(avail, destination.Length - copied);
+                    current.AsSpan(_offset, toCopy).CopyTo(destination.Slice(copied, toCopy));
+                    copied += toCopy;
+                    _offset += toCopy;
+                    if (_offset >= current.Length)
+                    {
+                        _queue.Dequeue();
+                        _queuedBytes -= current.Length;
+                        _offset = 0;
+                    }
+                }
+            }
+            return copied;
+        }
     }
 
     private static byte[] ConvertToPcm16Interleaved(byte[] input, int inBits, int inCh, int outCh)

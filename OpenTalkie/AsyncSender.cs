@@ -227,7 +227,9 @@ public class AsyncSender : IDisposable
 
         try
         {
-            await endpoint.UdpClient.SendAsync(packetBuffer, 28 + dataLength);
+            var udpClient = endpoint.UdpClient;
+            if (udpClient != null)
+                await udpClient.SendAsync(packetBuffer, 28 + dataLength);
         }
         catch
         {
@@ -255,7 +257,9 @@ public class AsyncSender : IDisposable
 
         try
         {
-            await endpoint.UdpClient.SendAsync(packetBuffer, 28 + dataLength);
+            var udpClient = endpoint.UdpClient;
+            if (udpClient != null)
+                await udpClient.SendAsync(packetBuffer, 28 + dataLength);
         }
         catch
         {
