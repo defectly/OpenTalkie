@@ -73,27 +73,31 @@ public class PlaybackService : IPlaybackService
         if (_audioRecord != null)
             return;
 
-        var mediaProjection = audioRecording.GetMediaProjection();
-
-        if (mediaProjection == null)
-            throw new NullReferenceException($"Media projection not provided");
-
-        LoadPreferences();
-        CreateAudioRecord(mediaProjection);
-
-        if (_audioRecord == null || _audioRecord.State == State.Uninitialized)
+        try
         {
-            _audioRecord = null;
-            audioRecording.StopRecording();
-            throw new Exception("Can't initialize audio record.. Selected parameters may be not supported");
+            var mediaProjection = audioRecording.GetMediaProjection();
+
+            if (mediaProjection == null)
+                throw new NullReferenceException($"Media projection not provided");
+
+            LoadPreferences();
+            CreateAudioRecord(mediaProjection);
+
+            if (_audioRecord == null || _audioRecord.State == State.Uninitialized)
+            {
+                _audioRecord = null;
+                audioRecording.StopRecording();
+                throw new Exception("Can't initialize audio record.. Selected parameters may be not supported");
+            }
+
+            _audioRecord.StartRecording();
         }
-
-        if (_audioRecord == null)
-            throw new NullReferenceException($"Audio record not created");
-
-        _audioRecord.StartRecording();
-
-        return;
+        catch
+        {
+            // Ensure foreground service is stopped if start fails for any reason
+            try { audioRecording.StopRecording(); } catch { }
+            throw;
+        }
     }
 
     public async Task<bool> RequestPermissionAsync()
