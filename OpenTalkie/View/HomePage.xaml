@@ -20,8 +20,8 @@
                 CornerRadius="8"
                 FontAttributes="Bold"
                 FontSize="16"
-                HorizontalOptions="Center"
-                MinimumHeightRequest="48"
+                HorizontalOptions="Fill"
+                HeightRequest="56"
                 Shadow="{StaticResource MaterialShadowDark}"
                 Text="{Binding MicrophoneBroadcastButtonText}"
                 TextColor="#FFFFFF" />
@@ -35,9 +35,9 @@
                 CornerRadius="8"
                 FontAttributes="Bold"
                 FontSize="16"
-                HorizontalOptions="Center"
+                HorizontalOptions="Fill"
                 IsVisible="{Binding IsPlaybackAvailable}"
-                MinimumHeightRequest="48"
+                HeightRequest="56"
                 Shadow="{StaticResource MaterialShadowDark}"
                 Text="{Binding PlaybackBroadcastButtonText}"
                 TextColor="#FFFFFF" />
@@ -51,8 +51,8 @@
                 CornerRadius="8"
                 FontAttributes="Bold"
                 FontSize="16"
-                HorizontalOptions="Center"
-                MinimumHeightRequest="48"
+                HorizontalOptions="Fill"
+                HeightRequest="56"
                 Shadow="{StaticResource MaterialShadowDark}"
                 Text="{Binding ReceiverButtonText}"
                 TextColor="#FFFFFF" />
