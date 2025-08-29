@@ -26,7 +26,7 @@
                             <!-- Volume slider -->
                             <Grid Grid.Row="1" Grid.Column="0" ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10">
                                 <Label Text="Vol" TextColor="#B0B0B0" VerticalOptions="Center"/>
-                                <Slider Grid.Column="1" Minimum="0" Maximum="2" Value="{Binding Volume, Mode=TwoWay}"/>
+                                <Slider Grid.Column="1" Minimum="0" Maximum="4" Value="{Binding Volume, Mode=TwoWay}"/>
                                 <Label Grid.Column="2" Text="{Binding Volume, StringFormat='x{0:F2}'}" TextColor="#B0B0B0" VerticalOptions="Center"/>
                             </Grid>
                             <Grid Grid.Row="1" Grid.Column="1" ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10">
