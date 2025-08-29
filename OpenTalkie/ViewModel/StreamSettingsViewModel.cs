@@ -24,7 +24,7 @@ public partial class StreamSettingsViewModel(AppShell mainPage) : ObservableObje
                 if (string.IsNullOrEmpty(result))
                 {
                     var errorPopup = new ErrorPopup("Empty string");
-                    await mainPage.ShowPopupAsync(errorPopup);
+                    await Application.Current.MainPage.ShowPopupAsync(errorPopup);
                     return;
                 }
 
@@ -35,7 +35,7 @@ public partial class StreamSettingsViewModel(AppShell mainPage) : ObservableObje
                 }
             });
 
-        await mainPage.ShowPopupAsync(popup);
+        await Application.Current.MainPage.ShowPopupAsync(popup);
     }
 
     [RelayCommand]
@@ -52,7 +52,7 @@ public partial class StreamSettingsViewModel(AppShell mainPage) : ObservableObje
                 if (string.IsNullOrEmpty(result))
                 {
                     var errorPopup = new ErrorPopup("Empty string");
-                    await mainPage.ShowPopupAsync(errorPopup);
+                    await Application.Current.MainPage.ShowPopupAsync(errorPopup);
                     return;
                 }
 
@@ -63,7 +63,7 @@ public partial class StreamSettingsViewModel(AppShell mainPage) : ObservableObje
                 }
             });
 
-        await mainPage.ShowPopupAsync(popup);
+        await Application.Current.MainPage.ShowPopupAsync(popup);
     }
 
     [RelayCommand]
@@ -89,11 +89,11 @@ public partial class StreamSettingsViewModel(AppShell mainPage) : ObservableObje
                     else
                     {
                         var errorPopup = new ErrorPopup("Invalid port number");
-                        await mainPage.ShowPopupAsync(errorPopup);
+                        await Application.Current.MainPage.ShowPopupAsync(errorPopup);
                     }
                 }
             });
 
-        await mainPage.ShowPopupAsync(popup);
+        await Application.Current.MainPage.ShowPopupAsync(popup);
     }
 }

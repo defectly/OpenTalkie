@@ -6,7 +6,7 @@
     xmlns:local="clr-namespace:OpenTalkie"
     xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
     HorizontalOptions="Fill"
-    Color="#121212">
+    Color="{AppThemeBinding Light={StaticResource SurfaceLight}, Dark={StaticResource SurfaceDark}}">
     <Grid
         Padding="16"
         RowDefinitions="Auto,Auto,Auto,Auto"
@@ -23,21 +23,21 @@
         <Frame
             Grid.Row="0"
             Padding="16"
-            BackgroundColor="#1E1E1E"
+            BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceVariantLight}, Dark={StaticResource SurfaceVariantDark}}"
             CornerRadius="8">
             <Label
                 FontAttributes="Bold"
                 FontSize="18"
                 HorizontalOptions="Center"
                 Text="{Binding Title}"
-                TextColor="#FFFFFF" />
+                TextColor="{AppThemeBinding Light={StaticResource OnSurfaceLight}, Dark={StaticResource OnSurfaceDark}}" />
         </Frame>
 
         <Frame
             x:Name="EntryFrame"
             Grid.Row="1"
             Padding="8"
-            BackgroundColor="#2E2E2E"
+            BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceVariantLight}, Dark={StaticResource SurfaceVariantDark}}"
             CornerRadius="8"
             Shadow="{StaticResource MaterialShadowDark}">
             <Entry
@@ -45,15 +45,14 @@
                 Keyboard="{Binding KeyboardType}"
                 MaxLength="{Binding MaxLength}"
                 Placeholder="{Binding Placeholder}"
-                PlaceholderColor="#B0B0B0"
+                PlaceholderColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}"
                 Text="{Binding Value}"
-                TextColor="#FFFFFF" />
+                TextColor="{AppThemeBinding Light={StaticResource OnSurfaceLight}, Dark={StaticResource OnSurfaceDark}}" />
         </Frame>
 
-        <Button
+        <Button Style="{StaticResource FilledButton}"
             Grid.Row="2"
             Padding="16,8"
-            BackgroundColor="#BB86FC"
             Command="{Binding SaveCommand}"
             CornerRadius="8"
             FontAttributes="Bold"
@@ -61,12 +60,11 @@
             MinimumHeightRequest="48"
             Shadow="{StaticResource MaterialShadowDark}"
             Text="Save"
-            TextColor="#FFFFFF" />
+             />
 
-        <Button
+        <Button Style="{StaticResource TextButton}"
             Grid.Row="3"
             Padding="16,8"
-            BackgroundColor="#CF6679"
             Command="{Binding CancelCommand}"
             CornerRadius="8"
             FontAttributes="Bold"
@@ -74,6 +72,6 @@
             MinimumHeightRequest="48"
             Shadow="{StaticResource MaterialShadowDark}"
             Text="Cancel"
-            TextColor="#FFFFFF" />
+             />
     </Grid>
 </toolkit:Popup>

@@ -53,17 +53,17 @@ public partial class AddStreamViewModel : ObservableObject
             {
                 if (string.IsNullOrWhiteSpace(result))
                 {
-                    await _appShell.ShowPopupAsync(new ErrorPopup("Name cannot be empty."));
+                    await Application.Current.MainPage.ShowPopupAsync(new ErrorPopup("Name cannot be empty."));
                     return;
                 }
                 if (result.Length > 16)
                 {
-                    await _appShell.ShowPopupAsync(new ErrorPopup("Name cannot be longer than 16 characters."));
+                    await Application.Current.MainPage.ShowPopupAsync(new ErrorPopup("Name cannot be longer than 16 characters."));
                     return;
                 }
                 Name = result;
             });
-        await _appShell.ShowPopupAsync(popup);
+        await Application.Current.MainPage.ShowPopupAsync(popup);
     }
 
     [RelayCommand]
@@ -77,19 +77,19 @@ public partial class AddStreamViewModel : ObservableObject
             {
                 if (string.IsNullOrWhiteSpace(result))
                 {
-                    await _appShell.ShowPopupAsync(new ErrorPopup("Hostname cannot be empty."));
+                    await Application.Current.MainPage.ShowPopupAsync(new ErrorPopup("Hostname cannot be empty."));
                     return;
                 }
                 if (!Uri.CheckHostName(result).HasFlag(UriHostNameType.IPv4) &&
                     !Uri.CheckHostName(result).HasFlag(UriHostNameType.IPv6) &&
                     !Uri.CheckHostName(result).HasFlag(UriHostNameType.Dns))
                 {
-                    await _appShell.ShowPopupAsync(new ErrorPopup("Invalid hostname format."));
+                    await Application.Current.MainPage.ShowPopupAsync(new ErrorPopup("Invalid hostname format."));
                     return;
                 }
                 Hostname = result;
             });
-        await _appShell.ShowPopupAsync(popup);
+        await Application.Current.MainPage.ShowPopupAsync(popup);
     }
 
     [RelayCommand]
@@ -105,12 +105,12 @@ public partial class AddStreamViewModel : ObservableObject
             {
                 if (string.IsNullOrWhiteSpace(result) || !int.TryParse(result, out int newPort) || newPort <= 0 || newPort > 65535)
                 {
-                    await _appShell.ShowPopupAsync(new ErrorPopup("Invalid port number (must be 1-65535)."));
+                    await Application.Current.MainPage.ShowPopupAsync(new ErrorPopup("Invalid port number (must be 1-65535)."));
                     return;
                 }
                 Port = newPort;
             });
-        await _appShell.ShowPopupAsync(popup);
+        await Application.Current.MainPage.ShowPopupAsync(popup);
     }
 
     [RelayCommand]
@@ -119,7 +119,7 @@ public partial class AddStreamViewModel : ObservableObject
         // Final validation check before saving
         if (string.IsNullOrWhiteSpace(Name) || string.IsNullOrWhiteSpace(Hostname) || Port <= 0 || Port > 65535)
         {
-            await _appShell.ShowPopupAsync(new ErrorPopup("All fields must be valid before saving. Please check Name, Hostname, and Port."));
+            await Application.Current.MainPage.ShowPopupAsync(new ErrorPopup("All fields must be valid before saving. Please check Name, Hostname, and Port."));
             return;
         }
 

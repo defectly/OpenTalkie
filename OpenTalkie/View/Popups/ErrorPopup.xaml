@@ -4,7 +4,7 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
-    Color="#121212">
+    Color="{AppThemeBinding Light={StaticResource SurfaceLight}, Dark={StaticResource SurfaceDark}}">
     <Grid
         Padding="16"
         HorizontalOptions="Center"
@@ -27,13 +27,13 @@
             HorizontalOptions="Center"
             HorizontalTextAlignment="Center"
             Text="{Binding Message}"
-            TextColor="#FFFFFF"
+            TextColor="{AppThemeBinding Light={StaticResource OnSurfaceLight}, Dark={StaticResource OnSurfaceDark}}"
             VerticalOptions="Center" />
 
         <Button
             Grid.Row="1"
             Padding="16,8"
-            BackgroundColor="#BB86FC"
+            BackgroundColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
             Command="{Binding CloseCommand}"
             CornerRadius="8"
             FontAttributes="Bold"
@@ -41,6 +41,6 @@
             MinimumHeightRequest="48"
             Shadow="{StaticResource MaterialShadowDark}"
             Text="OK"
-            TextColor="#FFFFFF" />
+            TextColor="{AppThemeBinding Light={StaticResource OnPrimaryLight}, Dark={StaticResource PrimaryDarkText}}" />
     </Grid>
 </toolkit:Popup>

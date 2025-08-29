@@ -5,7 +5,6 @@
              x:Class="OpenTalkie.View.AddStreamPage"
              Title="Add New Stream"
              Padding="16"
-             BackgroundColor="#121212"
              x:DataType="viewmodel:AddStreamViewModel">
 
     <ContentPage.Resources>
@@ -18,42 +17,42 @@
 
         <Style TargetType="Frame">
             <Setter Property="Padding" Value="16"/>
-            <Setter Property="BackgroundColor" Value="#1E1E1E"/>
-            <Setter Property="BorderColor" Value="#2E2E2E"/>
+            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource SurfaceVariantLight}, Dark={StaticResource SurfaceVariantDark}}"/>
+            <Setter Property="BorderColor" Value="{AppThemeBinding Light={StaticResource OutlineLight}, Dark={StaticResource OutlineDark}}"/>
             <Setter Property="CornerRadius" Value="8"/>
             <Setter Property="Shadow" Value="{StaticResource MaterialShadowDark}"/>
-            <Setter Property="Margin" Value="0,0,0,10"/> <!-- Added margin between frames -->
+            <Setter Property="Margin" Value="0,0,0,10"/>
         </Style>
         <Style x:Key="InputLabelStyle" TargetType="Label">
-            <Setter Property="TextColor" Value="#B0B0B0" /> <!-- Lighter text for input field labels -->
+            <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" />
             <Setter Property="FontSize" Value="14"/>
             <Setter Property="Margin" Value="0,0,0,4" />
         </Style>
-        <Style x:Key="SectionLabelStyle" TargetType="Label"> <!-- For Denoise/Enable labels -->
-            <Setter Property="TextColor" Value="#FFFFFF" />
+        <Style x:Key="SectionLabelStyle" TargetType="Label">
+            <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource OnSurfaceLight}, Dark={StaticResource OnSurfaceDark}}" />
             <Setter Property="FontSize" Value="16"/>
             <Setter Property="FontAttributes" Value="Bold"/>
             <Setter Property="VerticalOptions" Value="Center"/>
         </Style>
         <Style TargetType="Entry">
-            <Setter Property="TextColor" Value="#FFFFFF" />
-            <Setter Property="PlaceholderColor" Value="#A0A0A0" />
-            <Setter Property="BackgroundColor" Value="#282828" /> <!-- Slightly different from Frame BG for contrast -->
+            <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource OnSurfaceLight}, Dark={StaticResource OnSurfaceDark}}" />
+            <Setter Property="PlaceholderColor" Value="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" />
+            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource SurfaceVariantLight}, Dark={StaticResource SurfaceVariantDark}}" />
             <Setter Property="HeightRequest" Value="44"/>
             <Setter Property="FontSize" Value="16"/>
         </Style>
         <Style TargetType="Switch">
-            <Setter Property="OnColor" Value="#BB86FC"/>
-            <Setter Property="ThumbColor" Value="#6200EE"/>
+            <Setter Property="OnColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"/>
+            <Setter Property="ThumbColor" Value="{AppThemeBinding Light={StaticResource OnPrimaryLight}, Dark={StaticResource PrimaryDarkText}}"/>
             <Setter Property="VerticalOptions" Value="Center"/>
         </Style>
         <Style TargetType="Button">
-            <Setter Property="BackgroundColor" Value="#BB86FC"/>
-            <Setter Property="TextColor" Value="#FFFFFF"/>
+            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"/>
+            <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource OnPrimaryLight}, Dark={StaticResource PrimaryDarkText}}"/>
             <Setter Property="CornerRadius" Value="8"/>
             <Setter Property="FontAttributes" Value="Bold"/>
             <Setter Property="Padding" Value="12,8"/>
-            <Setter Property="Margin" Value="0,10,0,0"/> <!-- Adjusted margin for buttons -->
+            <Setter Property="Margin" Value="0,10,0,0"/>
         </Style>
     </ContentPage.Resources>
 
@@ -114,8 +113,8 @@
             </Frame>
 
             <HorizontalStackLayout Spacing="10" HorizontalOptions="FillAndExpand" Margin="0,20,0,0">
-                <Button Text="Save" Command="{Binding SaveCommand}" HorizontalOptions="FillAndExpand"/>
-                <Button Text="Cancel" Command="{Binding CancelCommand}" BackgroundColor="#444444" HorizontalOptions="FillAndExpand"/>
+                <Button Style="{StaticResource FilledButton}" Text="Save" Command="{Binding SaveCommand}" HorizontalOptions="FillAndExpand"/>
+                <Button Style="{StaticResource OutlinedButton}" Text="Cancel" Command="{Binding CancelCommand}" HorizontalOptions="FillAndExpand"/>
             </HorizontalStackLayout>
 
         </VerticalStackLayout>

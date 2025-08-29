@@ -6,31 +6,31 @@
     xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
     HorizontalOptions="Fill"
     VerticalOptions="Center"
-    Color="#121212">
+    Color="{AppThemeBinding Light={StaticResource SurfaceLight}, Dark={StaticResource SurfaceDark}}">
 
     <Grid
         Padding="16"
-        BackgroundColor="#1E1E1E"
+        BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceVariantLight}, Dark={StaticResource SurfaceVariantDark}}"
         RowDefinitions="Auto,*,Auto"
         RowSpacing="8">
 
         <Frame
             Grid.Row="0"
             Padding="16"
-            BackgroundColor="#333333"
-            BorderColor="#FFFFFF"
+            BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceLight}, Dark={StaticResource SurfaceDark}}"
+            BorderColor="{AppThemeBinding Light={StaticResource OutlineLight}, Dark={StaticResource OutlineDark}}"
             CornerRadius="8">
             <Label
                 FontAttributes="Bold"
                 FontSize="18"
                 HorizontalOptions="Center"
                 Text="{Binding Title}"
-                TextColor="#FFFFFF" />
+                TextColor="{AppThemeBinding Light={StaticResource OnSurfaceLight}, Dark={StaticResource OnSurfaceDark}}" />
         </Frame>
 
         <Grid
             Grid.Row="1"
-            BackgroundColor="#444444"
+            BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceVariantLight}, Dark={StaticResource SurfaceVariantDark}}"
             HorizontalOptions="Fill"
             VerticalOptions="Fill">
             <ScrollView>
@@ -40,29 +40,28 @@
                             <Button
                                 Margin="8"
                                 Padding="12"
-                                BackgroundColor="#2E2E2E"
+                                BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceLight}, Dark={StaticResource SurfaceDark}}"
                                 Command="{Binding BindingContext.SelectOptionCommand, Source={RelativeSource AncestorType={x:Type toolkit:Popup}}}"
                                 CommandParameter="{Binding}"
                                 CornerRadius="8"
                                 FontSize="16"
                                 Text="{Binding}"
-                                TextColor="#FFFFFF" />
+                                TextColor="{AppThemeBinding Light={StaticResource OnSurfaceLight}, Dark={StaticResource OnSurfaceDark}}" />
                         </DataTemplate>
                     </CollectionView.ItemTemplate>
                 </CollectionView>
             </ScrollView>
         </Grid>
 
-        <Button
+        <Button Style="{StaticResource TextButton}"
             Grid.Row="2"
             Padding="16"
-            BackgroundColor="#CF6679"
             Command="{Binding CancelCommand}"
             CornerRadius="8"
             FontAttributes="Bold"
             FontSize="16"
             HorizontalOptions="Center"
             Text="Cancel"
-            TextColor="#FFFFFF" />
+             />
     </Grid>
 </toolkit:Popup>

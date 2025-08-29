@@ -5,8 +5,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
     Title="Microphone settings"
-    Padding="16"
-    BackgroundColor="#121212">
+    Padding="16">
     <ScrollView>
         <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,*" RowSpacing="16">
 
@@ -15,14 +14,14 @@
                 x:Name="AudioSourceFrame"
                 Grid.Row="0"
                 Padding="16"
-                BackgroundColor="#1E1E1E"
-                BorderColor="#2E2E2E"
+                BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceVariantLight}, Dark={StaticResource SurfaceVariantDark}}"
+                BorderColor="{AppThemeBinding Light={StaticResource OutlineLight}, Dark={StaticResource OutlineDark}}"
                 CornerRadius="8"
                 Shadow="{StaticResource MaterialShadowDark}">
-                <Frame.GestureRecognizers>
-                    <TapGestureRecognizer Command="{Binding EditFieldCommand}" CommandParameter="Source" />
-                </Frame.GestureRecognizers>
                 <Grid Padding="5">
+                    <Grid.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding EditFieldCommand}" CommandParameter="Source" />
+                    </Grid.GestureRecognizers>
                     <Image
                         HeightRequest="24"
                         Source="mic_icon.png"
@@ -37,8 +36,8 @@
                             Grid.Row="0">
                             <Label.FormattedText>
                                 <FormattedString>
-                                    <Span Text="Audio Source " TextColor="#FFFFFF" FontAttributes="Bold" FontSize="16" />
-                                    <Span Text="(requires restart)" TextColor="#B0B0B0" FontSize="14" />
+                                    <Span Text="Audio Source " TextColor="{AppThemeBinding Light={StaticResource OnSurfaceLight}, Dark={StaticResource OnSurfaceDark}}" FontAttributes="Bold" FontSize="16" />
+                                    <Span Text="(requires restart)" TextColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" FontSize="14" />
                                 </FormattedString>
                             </Label.FormattedText>
                         </Label>
@@ -46,7 +45,7 @@
                             Grid.Row="1"
                             FontSize="14"
                             Text="{Binding SelectedSource}"
-                            TextColor="#B0B0B0" />
+                            TextColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" />
                     </Grid>
                 </Grid>
             </Frame>
@@ -55,14 +54,14 @@
             <Frame
                 Grid.Row="1"
                 Padding="16"
-                BackgroundColor="#1E1E1E"
-                BorderColor="#2E2E2E"
+                BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceVariantLight}, Dark={StaticResource SurfaceVariantDark}}"
+                BorderColor="{AppThemeBinding Light={StaticResource OutlineLight}, Dark={StaticResource OutlineDark}}"
                 CornerRadius="8"
                 Shadow="{StaticResource MaterialShadowDark}">
-                <Frame.GestureRecognizers>
-                    <TapGestureRecognizer Command="{Binding EditFieldCommand}" CommandParameter="InputChannel" />
-                </Frame.GestureRecognizers>
                 <Grid Padding="5">
+                    <Grid.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding EditFieldCommand}" CommandParameter="InputChannel" />
+                    </Grid.GestureRecognizers>
                     <Image
                         HeightRequest="24"
                         Source="channel_icon.png"
@@ -77,8 +76,8 @@
                             Grid.Row="0">
                             <Label.FormattedText>
                                 <FormattedString>
-                                    <Span Text="Input Channel " TextColor="#FFFFFF" FontAttributes="Bold" FontSize="16" />
-                                    <Span Text="(requires restart)" TextColor="#B0B0B0" FontSize="14" />
+                                    <Span Text="Input Channel " TextColor="{AppThemeBinding Light={StaticResource OnSurfaceLight}, Dark={StaticResource OnSurfaceDark}}" FontAttributes="Bold" FontSize="16" />
+                                    <Span Text="(requires restart)" TextColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" FontSize="14" />
                                 </FormattedString>
                             </Label.FormattedText>
                         </Label>
@@ -86,7 +85,7 @@
                             Grid.Row="1"
                             FontSize="14"
                             Text="{Binding SelectedInputChannel}"
-                            TextColor="#B0B0B0" />
+                            TextColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" />
                     </Grid>
                 </Grid>
             </Frame>
@@ -95,14 +94,14 @@
             <Frame
                 Grid.Row="2"
                 Padding="16"
-                BackgroundColor="#1E1E1E"
-                BorderColor="#2E2E2E"
+                BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceVariantLight}, Dark={StaticResource SurfaceVariantDark}}"
+                BorderColor="{AppThemeBinding Light={StaticResource OutlineLight}, Dark={StaticResource OutlineDark}}"
                 CornerRadius="8"
                 Shadow="{StaticResource MaterialShadowDark}">
-                <Frame.GestureRecognizers>
-                    <TapGestureRecognizer Command="{Binding EditFieldCommand}" CommandParameter="SampleRate" />
-                </Frame.GestureRecognizers>
                 <Grid Padding="5">
+                    <Grid.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding EditFieldCommand}" CommandParameter="SampleRate" />
+                    </Grid.GestureRecognizers>
                     <Image
                         HeightRequest="24"
                         Source="samplerate_icon.png"
@@ -117,8 +116,8 @@
                             Grid.Row="0">
                             <Label.FormattedText>
                                 <FormattedString>
-                                    <Span Text="Sample Rate " TextColor="#FFFFFF" FontAttributes="Bold" FontSize="16" />
-                                    <Span Text="(requires restart)" TextColor="#B0B0B0" FontSize="14" />
+                                    <Span Text="Sample Rate " TextColor="{AppThemeBinding Light={StaticResource OnSurfaceLight}, Dark={StaticResource OnSurfaceDark}}" FontAttributes="Bold" FontSize="16" />
+                                    <Span Text="(requires restart)" TextColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" FontSize="14" />
                                 </FormattedString>
                             </Label.FormattedText>
                         </Label>
@@ -126,7 +125,7 @@
                             Grid.Row="1"
                             FontSize="14"
                             Text="{Binding SelectedSampleRate}"
-                            TextColor="#B0B0B0" />
+                            TextColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" />
                     </Grid>
                 </Grid>
             </Frame>
@@ -135,14 +134,14 @@
             <Frame
                 Grid.Row="3"
                 Padding="16"
-                BackgroundColor="#1E1E1E"
-                BorderColor="#2E2E2E"
+                BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceVariantLight}, Dark={StaticResource SurfaceVariantDark}}"
+                BorderColor="{AppThemeBinding Light={StaticResource OutlineLight}, Dark={StaticResource OutlineDark}}"
                 CornerRadius="8"
                 Shadow="{StaticResource MaterialShadowDark}">
-                <Frame.GestureRecognizers>
-                    <TapGestureRecognizer Command="{Binding EditFieldCommand}" CommandParameter="Encoding" />
-                </Frame.GestureRecognizers>
                 <Grid Padding="5">
+                    <Grid.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding EditFieldCommand}" CommandParameter="Encoding" />
+                    </Grid.GestureRecognizers>
                     <Image
                         HeightRequest="24"
                         Source="encoding_icon.png"
@@ -157,8 +156,8 @@
                             Grid.Row="0">
                             <Label.FormattedText>
                                 <FormattedString>
-                                    <Span Text="Encoding " TextColor="#FFFFFF" FontAttributes="Bold" FontSize="16" />
-                                    <Span Text="(requires restart)" TextColor="#B0B0B0" FontSize="14" />
+                                    <Span Text="Encoding " TextColor="{AppThemeBinding Light={StaticResource OnSurfaceLight}, Dark={StaticResource OnSurfaceDark}}" FontAttributes="Bold" FontSize="16" />
+                                    <Span Text="(requires restart)" TextColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" FontSize="14" />
                                 </FormattedString>
                             </Label.FormattedText>
                         </Label>
@@ -166,7 +165,7 @@
                             Grid.Row="1"
                             FontSize="14"
                             Text="{Binding SelectedEncoding}"
-                            TextColor="#B0B0B0" />
+                            TextColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" />
                     </Grid>
                 </Grid>
             </Frame>
@@ -175,14 +174,14 @@
             <Frame
                 Grid.Row="4"
                 Padding="16"
-                BackgroundColor="#1E1E1E"
-                BorderColor="#2E2E2E"
+                BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceVariantLight}, Dark={StaticResource SurfaceVariantDark}}"
+                BorderColor="{AppThemeBinding Light={StaticResource OutlineLight}, Dark={StaticResource OutlineDark}}"
                 CornerRadius="8"
                 Shadow="{StaticResource MaterialShadowDark}">
-                <Frame.GestureRecognizers>
-                    <TapGestureRecognizer Command="{Binding EditBufferSizeCommand}" CommandParameter="BufferSize" />
-                </Frame.GestureRecognizers>
                 <Grid Padding="5">
+                    <Grid.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding EditBufferSizeCommand}" CommandParameter="BufferSize" />
+                    </Grid.GestureRecognizers>
                     <Image
                         HeightRequest="24"
                         Source="buffer_icon.png"
@@ -197,8 +196,8 @@
                             Grid.Row="0">
                             <Label.FormattedText>
                                 <FormattedString>
-                                    <Span Text="Buffer Size " TextColor="#FFFFFF" FontAttributes="Bold" FontSize="16" />
-                                    <Span Text="(requires restart)" TextColor="#B0B0B0" FontSize="14" />
+                                    <Span Text="Buffer Size " TextColor="{AppThemeBinding Light={StaticResource OnSurfaceLight}, Dark={StaticResource OnSurfaceDark}}" FontAttributes="Bold" FontSize="16" />
+                                    <Span Text="(requires restart)" TextColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" FontSize="14" />
                                 </FormattedString>
                             </Label.FormattedText>
                         </Label>
@@ -206,7 +205,7 @@
                             Grid.Row="1"
                             FontSize="14"
                             Text="{Binding SelectedBufferSize}"
-                            TextColor="#B0B0B0" />
+                            TextColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" />
                     </Grid>
                 </Grid>
             </Frame>
@@ -215,8 +214,8 @@
             <Frame
                 Grid.Row="5"
                 Padding="16"
-                BackgroundColor="#1E1E1E"
-                BorderColor="#2E2E2E"
+                BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceVariantLight}, Dark={StaticResource SurfaceVariantDark}}"
+                BorderColor="{AppThemeBinding Light={StaticResource OutlineLight}, Dark={StaticResource OutlineDark}}"
                 CornerRadius="8"
                 Shadow="{StaticResource MaterialShadowDark}">
                 <VerticalStackLayout Spacing="12">
@@ -238,32 +237,31 @@
                                     FontAttributes="Bold"
                                     FontSize="16"
                                     Text="Volume"
-                                    TextColor="#FFFFFF" />
+                                    TextColor="{AppThemeBinding Light={StaticResource OnSurfaceLight}, Dark={StaticResource OnSurfaceDark}}" />
                                 <Label
                                     Grid.Row="1"
                                     Grid.Column="0"
                                     FontSize="14"
                                     Text="{Binding Volume, StringFormat='{0:F0}%'}"
-                                    TextColor="#B0B0B0" />
+                                    TextColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" />
                             </Grid>
-                            <Button
+                            <Button Style="{StaticResource OutlinedButton}"
                                 Grid.Column="1"
                                 Padding="8"
-                                BackgroundColor="#2E2E2E"
                                 Command="{Binding ResetVolumeCommand}"
                                 CornerRadius="4"
                                 FontSize="14"
                                 Text="Reset"
-                                TextColor="#FFFFFF" />
+                                 />
                         </Grid>
                     </Grid>
                     <Slider
                         DragCompletedCommand="{Binding VolumeChangedCommand}"
                         Maximum="400"
-                        MaximumTrackColor="#B0B0B0"
+                        MaximumTrackColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}"
                         Minimum="0"
-                        MinimumTrackColor="#4CAF50"
-                        ThumbColor="#FFFFFF"
+                        MinimumTrackColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
+                        ThumbColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
                         Value="{Binding Volume}" />
                 </VerticalStackLayout>
             </Frame>

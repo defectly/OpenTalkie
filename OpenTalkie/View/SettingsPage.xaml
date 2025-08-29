@@ -3,15 +3,14 @@
     x:Class="OpenTalkie.View.SettingsPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    Padding="16"
-    BackgroundColor="#121212">
+    Padding="16">
     <CollectionView ItemsSource="{Binding SettingsItems}">
         <CollectionView.ItemTemplate>
             <DataTemplate>
                 <Frame
                     Margin="0,8"
                     Padding="16"
-                    BackgroundColor="#1E1E1E"
+                    BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceVariantLight}, Dark={StaticResource SurfaceVariantDark}}"
                     CornerRadius="8"
                     Shadow="{StaticResource MaterialShadowDark}">
                     <Frame.GestureRecognizers>
@@ -21,7 +20,7 @@
                         FontAttributes="Bold"
                         FontSize="16"
                         Text="{Binding Name}"
-                        TextColor="#FFFFFF" />
+                        TextColor="{AppThemeBinding Light={StaticResource OnSurfaceLight}, Dark={StaticResource OnSurfaceDark}}" />
                 </Frame>
             </DataTemplate>
         </CollectionView.ItemTemplate>

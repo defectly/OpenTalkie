@@ -4,8 +4,7 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:vm="clr-namespace:OpenTalkie.ViewModel"
-    Padding="16,16,16,0"
-    BackgroundColor="#121212">
+    Padding="16,16,16,0">
     <AbsoluteLayout>
         <CollectionView
             AbsoluteLayout.LayoutBounds="0,0,1,1"
@@ -15,7 +14,7 @@
                 <DataTemplate>
                     <Frame
                         Margin="0,8"
-                        BackgroundColor="#1E1E1E"
+                        BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceVariantLight}, Dark={StaticResource SurfaceVariantDark}}"
                         CornerRadius="8"
                         Shadow="{StaticResource MaterialShadowDark}">
                         <Grid
@@ -31,33 +30,33 @@
                                     FontAttributes="Bold"
                                     FontSize="16"
                                     Text="{Binding Name}"
-                                    TextColor="#FFFFFF" />
+                                    TextColor="{AppThemeBinding Light={StaticResource OnSurfaceLight}, Dark={StaticResource OnSurfaceDark}}" />
                                 <Grid Grid.Row="1" ColumnDefinitions="Auto,Auto">
                                     <Label
                                         Grid.Column="0"
                                         FontSize="14"
                                         Text="{Binding Hostname}"
-                                        TextColor="#B0B0B0" />
+                                        TextColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" />
                                     <Label
                                         Grid.Column="1"
                                         FontSize="14"
                                         Text="{Binding Port, StringFormat=':{0}'}"
-                                        TextColor="#B0B0B0" />
+                                        TextColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" />
                                 </Grid>
                             </Grid>
                             <Switch
                                 Grid.Column="1"
                                 IsToggled="{Binding IsEnabled}"
-                                OnColor="#6200EE"
-                                ThumbColor="#BB86FC" />
+                                OnColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
+                                ThumbColor="{AppThemeBinding Light={StaticResource OnPrimaryLight}, Dark={StaticResource PrimaryDarkText}}" />
                             <!-- Volume slider -->
                             <Grid Grid.Row="1" Grid.Column="0" ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10">
-                                <Label Text="Vol" TextColor="#B0B0B0" VerticalOptions="Center"/>
+                                <Label Text="Vol" TextColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" VerticalOptions="Center"/>
                                 <Slider Grid.Column="1" Minimum="0" Maximum="4" Value="{Binding Volume, Mode=TwoWay}"/>
-                                <Label Grid.Column="2" Text="{Binding Volume, StringFormat='x{0:F2}'}" TextColor="#B0B0B0" VerticalOptions="Center"/>
+                                <Label Grid.Column="2" Text="{Binding Volume, StringFormat='x{0:F2}'}" TextColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" VerticalOptions="Center"/>
                             </Grid>
                             <Grid Grid.Row="1" Grid.Column="1" ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10">
-                                <Button Grid.Column="3" Text="Reset" Command="{Binding BindingContext.ResetVolumeCommand, Source={RelativeSource AncestorType={x:Type ContentPage}}}" CommandParameter="{Binding}" BackgroundColor="#444444" TextColor="#FFFFFF"/>
+                                <Button Grid.Column="3" Text="Reset" Command="{Binding BindingContext.ResetVolumeCommand, Source={RelativeSource AncestorType={x:Type ContentPage}}}" CommandParameter="{Binding}" BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceVariantLight}, Dark={StaticResource SurfaceVariantDark}}" TextColor="{AppThemeBinding Light={StaticResource OnSurfaceLight}, Dark={StaticResource OnSurfaceDark}}"/>
                             </Grid>
 
                             <HorizontalStackLayout
@@ -66,7 +65,7 @@
                                 Spacing="10">
                                 <Button
                                     Padding="16,8"
-                                    BackgroundColor="#BB86FC"
+                                    BackgroundColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
                                     Command="{Binding BindingContext.OpenSettingsCommand, Source={RelativeSource AncestorType={x:Type ContentPage}}}"
                                     CommandParameter="{Binding}"
                                     CornerRadius="8"
@@ -74,10 +73,10 @@
                                     FontSize="14"
                                     Shadow="{StaticResource MaterialShadowDark}"
                                     Text="Open"
-                                    TextColor="#FFFFFF" />
+                                    TextColor="{AppThemeBinding Light={StaticResource OnPrimaryLight}, Dark={StaticResource PrimaryDarkText}}" />
                                 <Button
                                     Padding="16,8"
-                                    BackgroundColor="#CF6679"
+                                    BackgroundColor="{AppThemeBinding Light={StaticResource ErrorLight}, Dark={StaticResource ErrorDark}}"
                                     Command="{Binding BindingContext.DeleteStreamCommand, Source={RelativeSource AncestorType={x:Type ContentPage}}}"
                                     CommandParameter="{Binding}"
                                     CornerRadius="8"
@@ -85,7 +84,7 @@
                                     FontSize="14"
                                     Shadow="{StaticResource MaterialShadowDark}"
                                     Text="Delete"
-                                    TextColor="#FFFFFF" />
+                                    TextColor="{AppThemeBinding Light={StaticResource OnErrorLight}, Dark={StaticResource OnErrorDark}}" />
                             </HorizontalStackLayout>
                         </Grid>
                     </Frame>
@@ -96,7 +95,7 @@
         <Button
             AbsoluteLayout.LayoutBounds="0.95,0.95,AutoSize,AutoSize"
             AbsoluteLayout.LayoutFlags="PositionProportional"
-            BackgroundColor="#03DAC6"
+            BackgroundColor="{AppThemeBinding Light={StaticResource SecondaryContainerLight}, Dark={StaticResource SecondaryContainerDark}}"
             Command="{Binding AddStreamCommand}"
             CornerRadius="25"
             FontAttributes="Bold"
@@ -104,7 +103,7 @@
             HeightRequest="50"
             Shadow="{StaticResource MaterialShadowDark}"
             Text="+"
-            TextColor="#FFFFFF"
+            TextColor="{AppThemeBinding Light={StaticResource OnSecondaryLight}, Dark={StaticResource OnSecondaryDark}}"
             WidthRequest="50" />
     </AbsoluteLayout>
 

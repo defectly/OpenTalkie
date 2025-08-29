@@ -3,8 +3,7 @@
     x:Class="OpenTalkie.View.HomePage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    Padding="16"
-    BackgroundColor="#121212">
+    Padding="16">
     <ScrollView>
         <Grid
             RowDefinitions="Auto,Auto,Auto,*"
@@ -15,7 +14,7 @@
             <Button
                 Grid.Row="0"
                 Padding="16,12"
-                BackgroundColor="#BB86FC"
+                BackgroundColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
                 Command="{Binding SwitchMicrophoneBroadcastCommand}"
                 CornerRadius="8"
                 FontAttributes="Bold"
@@ -24,13 +23,13 @@
                 HeightRequest="56"
                 Shadow="{StaticResource MaterialShadowDark}"
                 Text="{Binding MicrophoneBroadcastButtonText}"
-                TextColor="#FFFFFF" />
+                TextColor="{AppThemeBinding Light={StaticResource OnPrimaryLight}, Dark={StaticResource PrimaryDarkText}}" />
 
             <!--  playback service button  -->
             <Button
                 Grid.Row="1"
                 Padding="16,12"
-                BackgroundColor="#03DAC6"
+                BackgroundColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
                 Command="{Binding SwitchPlaybackBroadcastCommand}"
                 CornerRadius="8"
                 FontAttributes="Bold"
@@ -40,13 +39,13 @@
                 HeightRequest="56"
                 Shadow="{StaticResource MaterialShadowDark}"
                 Text="{Binding PlaybackBroadcastButtonText}"
-                TextColor="#FFFFFF" />
+                TextColor="{AppThemeBinding Light={StaticResource OnPrimaryLight}, Dark={StaticResource PrimaryDarkText}}" />
 
             <!--  receiver button  -->
             <Button
                 Grid.Row="2"
                 Padding="16,12"
-                BackgroundColor="#4CAF50"
+                BackgroundColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
                 Command="{Binding SwitchReceiverCommand}"
                 CornerRadius="8"
                 FontAttributes="Bold"
@@ -55,7 +54,7 @@
                 HeightRequest="56"
                 Shadow="{StaticResource MaterialShadowDark}"
                 Text="{Binding ReceiverButtonText}"
-                TextColor="#FFFFFF" />
+                TextColor="{AppThemeBinding Light={StaticResource OnPrimaryLight}, Dark={StaticResource PrimaryDarkText}}" />
 
             <!--  ip addresses  -->
             <Grid
@@ -70,7 +69,7 @@
                     FontSize="20"
                     HorizontalOptions="Center"
                     Text="Available networks"
-                    TextColor="#FFFFFF" />
+                    TextColor="{AppThemeBinding Light={StaticResource OnSurfaceLight}, Dark={StaticResource OnSurfaceDark}}" />
 
                 <CollectionView Grid.Row="1" ItemsSource="{Binding NetworkAddresses}">
                     <CollectionView.ItemTemplate>
@@ -78,12 +77,12 @@
                             <Frame
                                 Margin="0,4"
                                 Padding="12"
-                                BackgroundColor="#1E1E1E"
+                                BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceVariantLight}, Dark={StaticResource SurfaceVariantDark}}"
                                 CornerRadius="8">
                                 <Label
                                     FontSize="14"
                                     Text="{Binding .}"
-                                    TextColor="#B0B0B0" />
+                                    TextColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" />
                             </Frame>
                         </DataTemplate>
                     </CollectionView.ItemTemplate>
@@ -92,14 +91,14 @@
                 <Button
                     Grid.Row="2"
                     Padding="16,8"
-                    BackgroundColor="#1E90FF"
+                    BackgroundColor="{AppThemeBinding Light={StaticResource SecondaryContainerLight}, Dark={StaticResource SecondaryContainerDark}}"
                     Command="{Binding RefreshNetworkAddressesCommand}"
                     CornerRadius="8"
                     FontAttributes="Bold"
                     FontSize="14"
                     HorizontalOptions="Center"
                     Text="Refresh"
-                    TextColor="#FFFFFF"
+                    TextColor="{AppThemeBinding Light={StaticResource OnSecondaryLight}, Dark={StaticResource OnSecondaryDark}}"
                     VerticalOptions="End" />
             </Grid>
         </Grid>

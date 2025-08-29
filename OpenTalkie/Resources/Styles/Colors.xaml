@@ -6,18 +6,48 @@
 
     <!-- Note: For Android please see also Platforms\Android\Resources\values\colors.xml -->
 
-    <Color x:Key="Primary">#512BD4</Color>
-    <Color x:Key="PrimaryDark">#ac99ea</Color>
-    <Color x:Key="PrimaryDarkText">#242424</Color>
-    <Color x:Key="Secondary">#DFD8F7</Color>
-    <Color x:Key="SecondaryDarkText">#9880e5</Color>
-    <Color x:Key="Tertiary">#2B0B98</Color>
+    <!-- Material Design 3 baseline palette (light/dark) -->
+    <!-- Primary -->
+    <Color x:Key="Primary">#6750A4</Color> <!-- Light primary -->
+    <Color x:Key="PrimaryDark">#D0BCFF</Color> <!-- Dark primary -->
+    <Color x:Key="PrimaryDarkText">#381E72</Color> <!-- OnPrimary for dark -->
+    <!-- Secondary -->
+    <Color x:Key="Secondary">#625B71</Color>
+    <Color x:Key="SecondaryDarkText">#332D41</Color> <!-- OnSecondary for dark -->
+    <!-- Tertiary -->
+    <Color x:Key="Tertiary">#7D5260</Color>
 
     <Color x:Key="White">White</Color>
     <Color x:Key="Black">Black</Color>
     <Color x:Key="Magenta">#D600AA</Color>
     <Color x:Key="MidnightBlue">#190649</Color>
-    <Color x:Key="OffBlack">#1f1f1f</Color>
+    <Color x:Key="OffBlack">#1C1B1F</Color> <!-- M3 dark background -->
+
+    <!-- Material surfaces and roles -->
+    <Color x:Key="BackgroundLight">#FFFBFE</Color>
+    <Color x:Key="BackgroundDark">#1C1B1F</Color>
+    <Color x:Key="SurfaceLight">#FFFBFE</Color>
+    <Color x:Key="SurfaceDark">#1C1B1F</Color>
+    <Color x:Key="SurfaceVariantLight">#E7E0EC</Color>
+    <Color x:Key="SurfaceVariantDark">#49454F</Color>
+    <Color x:Key="OnSurfaceLight">#1C1B1F</Color>
+    <Color x:Key="OnSurfaceDark">#E6E1E5</Color>
+    <Color x:Key="OnSurfaceVariantLight">#49454F</Color>
+    <Color x:Key="OnSurfaceVariantDark">#CAC4D0</Color>
+    <Color x:Key="OutlineLight">#79747E</Color>
+    <Color x:Key="OutlineDark">#938F99</Color>
+    <Color x:Key="ErrorLight">#B3261E</Color>
+    <Color x:Key="ErrorDark">#F2B8B5</Color>
+    <Color x:Key="OnErrorLight">#FFFFFF</Color>
+    <Color x:Key="OnErrorDark">#601410</Color>
+    <Color x:Key="PrimaryContainerLight">#EADDFF</Color>
+    <Color x:Key="PrimaryContainerDark">#4F378B</Color>
+    <Color x:Key="OnPrimaryLight">#FFFFFF</Color>
+    <Color x:Key="OnPrimaryDark">#381E72</Color>
+    <Color x:Key="SecondaryContainerLight">#E8DEF8</Color>
+    <Color x:Key="SecondaryContainerDark">#4A4458</Color>
+    <Color x:Key="OnSecondaryLight">#FFFFFF</Color>
+    <Color x:Key="OnSecondaryDark">#E8DEF8</Color>
 
     <Color x:Key="Gray100">#E1E1E1</Color>
     <Color x:Key="Gray200">#C8C8C8</Color>
@@ -28,7 +58,9 @@
     <Color x:Key="Gray900">#212121</Color>
     <Color x:Key="Gray950">#141414</Color>
 
-    <SolidColorBrush x:Key="PrimaryBrush" Color="{StaticResource Primary}"/>
+    <!-- Brushes with theme-aware bindings -->
+    <SolidColorBrush x:Key="PrimaryBrush" Color="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"/>
+    <SolidColorBrush x:Key="OnPrimaryBrush" Color="{AppThemeBinding Light={StaticResource OnPrimaryLight}, Dark={StaticResource OnPrimaryDark}}"/>
     <SolidColorBrush x:Key="SecondaryBrush" Color="{StaticResource Secondary}"/>
     <SolidColorBrush x:Key="TertiaryBrush" Color="{StaticResource Tertiary}"/>
     <SolidColorBrush x:Key="WhiteBrush" Color="{StaticResource White}"/>
@@ -42,4 +74,17 @@
     <SolidColorBrush x:Key="Gray600Brush" Color="{StaticResource Gray600}"/>
     <SolidColorBrush x:Key="Gray900Brush" Color="{StaticResource Gray900}"/>
     <SolidColorBrush x:Key="Gray950Brush" Color="{StaticResource Gray950}"/>
+    
+    <!-- Material surface brushes -->
+    <SolidColorBrush x:Key="BackgroundBrush" Color="{AppThemeBinding Light={StaticResource BackgroundLight}, Dark={StaticResource BackgroundDark}}"/>
+    <SolidColorBrush x:Key="SurfaceBrush" Color="{AppThemeBinding Light={StaticResource SurfaceLight}, Dark={StaticResource SurfaceDark}}"/>
+    <SolidColorBrush x:Key="SurfaceVariantBrush" Color="{AppThemeBinding Light={StaticResource SurfaceVariantLight}, Dark={StaticResource SurfaceVariantDark}}"/>
+    <SolidColorBrush x:Key="OnSurfaceBrush" Color="{AppThemeBinding Light={StaticResource OnSurfaceLight}, Dark={StaticResource OnSurfaceDark}}"/>
+    <SolidColorBrush x:Key="OnSurfaceVariantBrush" Color="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}"/>
+    <SolidColorBrush x:Key="OutlineBrush" Color="{AppThemeBinding Light={StaticResource OutlineLight}, Dark={StaticResource OutlineDark}}"/>
+    <SolidColorBrush x:Key="ErrorBrush" Color="{AppThemeBinding Light={StaticResource ErrorLight}, Dark={StaticResource ErrorDark}}"/>
+    <SolidColorBrush x:Key="OnErrorBrush" Color="{AppThemeBinding Light={StaticResource OnErrorLight}, Dark={StaticResource OnErrorDark}}"/>
+    <SolidColorBrush x:Key="PrimaryContainerBrush" Color="{AppThemeBinding Light={StaticResource PrimaryContainerLight}, Dark={StaticResource PrimaryContainerDark}}"/>
+    <SolidColorBrush x:Key="SecondaryContainerBrush" Color="{AppThemeBinding Light={StaticResource SecondaryContainerLight}, Dark={StaticResource SecondaryContainerDark}}"/>
+    <SolidColorBrush x:Key="OnSecondaryBrush" Color="{AppThemeBinding Light={StaticResource OnSecondaryLight}, Dark={StaticResource OnSecondaryDark}}"/>
 </ResourceDictionary>

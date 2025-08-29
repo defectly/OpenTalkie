@@ -5,35 +5,34 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:view="clr-namespace:OpenTalkie.View"
     Title="OpenTalkie"
-    BackgroundColor="#1E1E1E"
     Shell.FlyoutBehavior="Disabled">
 
     <TabBar>
-        <Tab Title="Home" Icon="home.png">
+        <Tab Title="Home" Icon="home.svg">
             <ShellContent ContentTemplate="{DataTemplate view:HomePage}" Route="HomePage" />
         </Tab>
-        <Tab Title="Mic Streams" Icon="mic_streams.png">
+        <Tab Title="Mic" Icon="mic.svg">
             <ShellContent ContentTemplate="{DataTemplate view:MicrophoneStreamsPage}" Route="MicrophoneStreamsPage" />
         </Tab>
         <Tab
             x:Name="PlaybackStreams"
-            Title="Playback Streams"
-            Icon="playback_streams.png">
+            Title="Playback"
+            Icon="cast.svg">
             <ShellContent ContentTemplate="{DataTemplate view:PlaybackStreamsPage}" Route="PlaybackStreamsPage" />
         </Tab>
-        <Tab Title="Receivers" Icon="playback_streams.png">
+        <Tab Title="Receivers" Icon="speaker.svg">
             <ShellContent ContentTemplate="{DataTemplate view:ReceiversPage}" Route="ReceiversPage" />
         </Tab>
-        <Tab Title="Settings">
+        <Tab Title="Settings" Icon="settings.svg">
             <ShellContent ContentTemplate="{DataTemplate view:SettingsPage}" Route="SettingsPage" />
         </Tab>
     </TabBar>
 
     <Shell.Resources>
         <Style ApplyToDerivedTypes="True" TargetType="Shell">
-            <Setter Property="Shell.TabBarForegroundColor" Value="#1E1E1E" />
-            <Setter Property="Shell.TabBarUnselectedColor" Value="#B0B0B0" />
-            <Setter Property="Shell.TabBarTitleColor" Value="#FFFFFF" />
+            <Setter Property="Shell.TabBarForegroundColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+            <Setter Property="Shell.TabBarUnselectedColor" Value="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" />
+            <Setter Property="Shell.TabBarTitleColor" Value="{AppThemeBinding Light={StaticResource OnSurfaceLight}, Dark={StaticResource OnSurfaceDark}}" />
         </Style>
     </Shell.Resources>
 </Shell>

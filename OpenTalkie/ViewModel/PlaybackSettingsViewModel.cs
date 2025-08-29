@@ -88,7 +88,7 @@ public partial class PlaybackSettingsViewModel : ObservableObject
                 }
             });
 
-        await _mainPage.ShowPopupAsync(popup);
+        await Application.Current.MainPage.ShowPopupAsync(popup);
     }
 
     [RelayCommand]
@@ -110,11 +110,11 @@ public partial class PlaybackSettingsViewModel : ObservableObject
                 else if (result != null)
                 {
                     var errorPopup = new ErrorPopup("Something's wrong with the number");
-                    await _mainPage.ShowPopupAsync(errorPopup);
+                    await Application.Current.MainPage.ShowPopupAsync(errorPopup);
                 }
             });
 
-        await _mainPage.ShowPopupAsync(popup);
+        await Application.Current.MainPage.ShowPopupAsync(popup);
     }
 
     [RelayCommand]

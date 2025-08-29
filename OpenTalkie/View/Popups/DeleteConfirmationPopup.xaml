@@ -4,7 +4,7 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
-    Color="#121212">
+    Color="{AppThemeBinding Light={StaticResource SurfaceLight}, Dark={StaticResource SurfaceDark}}">
     <Grid
         Padding="16"
         HorizontalOptions="Center"
@@ -31,20 +31,19 @@
                 FontSize="18"
                 HorizontalOptions="Center"
                 Text="Delete Stream"
-                TextColor="#FFFFFF" />
+                TextColor="{AppThemeBinding Light={StaticResource OnSurfaceLight}, Dark={StaticResource OnSurfaceDark}}" />
             <Label
                 Grid.Row="1"
                 FontSize="14"
                 HorizontalOptions="Center"
                 HorizontalTextAlignment="Center"
                 Text="{Binding Message}"
-                TextColor="#B0B0B0" />
+                TextColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" />
         </Grid>
 
-        <Button
+        <Button Style="{StaticResource DestructiveButton}"
             Grid.Row="1"
             Padding="16,8"
-            BackgroundColor="#CF6679"
             Command="{Binding DeleteCommand}"
             CornerRadius="8"
             FontAttributes="Bold"
@@ -52,12 +51,11 @@
             MinimumHeightRequest="48"
             Shadow="{StaticResource MaterialShadowDark}"
             Text="Delete"
-            TextColor="#FFFFFF" />
+             />
 
-        <Button
+        <Button Style="{StaticResource TextButton}"
             Grid.Row="2"
             Padding="16,8"
-            BackgroundColor="#BB86FC"
             Command="{Binding CancelCommand}"
             CornerRadius="8"
             FontAttributes="Bold"
@@ -65,6 +63,6 @@
             MinimumHeightRequest="48"
             Shadow="{StaticResource MaterialShadowDark}"
             Text="Cancel"
-            TextColor="#FFFFFF" />
+             />
     </Grid>
 </toolkit:Popup>
