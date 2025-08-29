@@ -68,12 +68,15 @@ public static class MauiProgram
 #endif
         services.AddSingleton<MicrophoneBroadcastService>();
         services.AddSingleton<PlaybackBroadcastService>();
+        services.AddSingleton<IAudioOutputService, OpenTalkie.Platforms.Android.Common.Services.Output.AudioOutputService>();
+        services.AddSingleton<ReceiverService>();
     }
     private static void RegisterViewModels(IServiceCollection services)
     {
         services.AddTransient<HomeViewModel>();
         services.AddTransient<MicrophoneStreamsViewModel>();
         services.AddTransient<PlaybackStreamsViewModel>();
+        services.AddTransient<ReceiversViewModel>();
         services.AddTransient<StreamSettingsViewModel>();
         services.AddTransient<MicSettingsViewModel>();
         services.AddTransient<PlaybackSettingsViewModel>();
@@ -85,6 +88,7 @@ public static class MauiProgram
         services.AddTransient<HomePage>();
         services.AddTransient<MicrophoneStreamsPage>();
         services.AddTransient<PlaybackStreamsPage>();
+        services.AddTransient<ReceiversPage>();
         services.AddTransient<StreamSettingsPage>();
         services.AddTransient<MicSettingsPage>();
         services.AddTransient<PlaybackSettingsPage>();

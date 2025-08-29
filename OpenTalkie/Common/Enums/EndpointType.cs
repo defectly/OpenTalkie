@@ -3,5 +3,6 @@
 public enum EndpointType
 {
     Microphone,
-    Playback
+    Playback,
+    Receiver
 }

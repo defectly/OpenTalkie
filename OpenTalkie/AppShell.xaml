@@ -21,6 +21,9 @@
             Icon="playback_streams.png">
             <ShellContent ContentTemplate="{DataTemplate view:PlaybackStreamsPage}" Route="PlaybackStreamsPage" />
         </Tab>
+        <Tab Title="Receivers" Icon="playback_streams.png">
+            <ShellContent ContentTemplate="{DataTemplate view:ReceiversPage}" Route="ReceiversPage" />
+        </Tab>
         <Tab Title="Settings">
             <ShellContent ContentTemplate="{DataTemplate view:SettingsPage}" Route="SettingsPage" />
         </Tab>

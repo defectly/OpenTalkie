@@ -42,6 +42,21 @@
                 Text="{Binding PlaybackBroadcastButtonText}"
                 TextColor="#FFFFFF" />
 
+            <!--  receiver button  -->
+            <Button
+                Grid.Row="2"
+                Padding="16,12"
+                BackgroundColor="#4CAF50"
+                Command="{Binding SwitchReceiverCommand}"
+                CornerRadius="8"
+                FontAttributes="Bold"
+                FontSize="16"
+                HorizontalOptions="Center"
+                MinimumHeightRequest="48"
+                Shadow="{StaticResource MaterialShadowDark}"
+                Text="{Binding ReceiverButtonText}"
+                TextColor="#FFFFFF" />
+
             <!--  ip addresses  -->
             <Grid
                 Grid.Row="3"

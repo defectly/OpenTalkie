@@ -17,6 +17,9 @@ public partial class HomeViewModel : ObservableObject
     private string playbackBroadcastButtonText;
 
     [ObservableProperty]
+    private string receiverButtonText;
+
+    [ObservableProperty]
     private ObservableCollection<string> networkAddresses;
     [ObservableProperty]
     private bool isPlaybackAvailable;
@@ -24,9 +27,11 @@ public partial class HomeViewModel : ObservableObject
     private readonly AppShell _mainPage;
     public MicrophoneBroadcastService MicrophoneBroadcastService { get; set; }
     public PlaybackBroadcastService PlaybackBroadcastService { get; set; }
+    public ReceiverService ReceiverService { get; set; }
 
     public HomeViewModel(AppShell mainPage, MicrophoneBroadcastService microphoneBroadcastService,
-        PlaybackBroadcastService playbackBroadcastService)
+        PlaybackBroadcastService playbackBroadcastService,
+        ReceiverService receiverService)
     {
         if (OperatingSystem.IsAndroidVersionAtLeast(29))
             IsPlaybackAvailable = true;
@@ -36,13 +41,16 @@ public partial class HomeViewModel : ObservableObject
         _mainPage = mainPage;
         MicrophoneBroadcastService = microphoneBroadcastService;
         PlaybackBroadcastService = playbackBroadcastService;
+        ReceiverService = receiverService;
         OnMicrophoneServiceStateChange(microphoneBroadcastService.BroadcastState);
         PlaybackBroadcastButtonText = "Start playback service";
+        ReceiverButtonText = "Start Receiver";
         NetworkAddresses = [];
         LoadNetworkAddresses();
 
         microphoneBroadcastService.BroadcastStateChanged += OnMicrophoneServiceStateChange;
         playbackBroadcastService.BroadcastStateChanged += OnPlaybackServiceStateChange;
+        receiverService.ListeningStateChanged += OnReceiverStateChange;
     }
 
     private void OnMicrophoneServiceStateChange(bool isActive)
@@ -59,6 +67,11 @@ public partial class HomeViewModel : ObservableObject
             PlaybackBroadcastButtonText = "Stop playback service";
         else
             PlaybackBroadcastButtonText = "Start playback service";
+    }
+
+    private void OnReceiverStateChange(bool isActive)
+    {
+        ReceiverButtonText = isActive ? "Stop Receiver" : "Start Receiver";
     }
 
     [RelayCommand]
@@ -86,6 +99,9 @@ public partial class HomeViewModel : ObservableObject
     {
         LoadNetworkAddresses();
     }
+
+    [RelayCommand]
+    private void SwitchReceiver() => ReceiverService.Switch();
 
     private async Task<bool> CheckMicrophonePermissionAsync()
     {
