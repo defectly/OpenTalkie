@@ -17,7 +17,7 @@
         <Tab
             x:Name="PlaybackStreams"
             Title="Cast"
-            Icon="cast.svg">
+            Icon="music_cast.svg">
             <ShellContent ContentTemplate="{DataTemplate view:PlaybackStreamsPage}" Route="PlaybackStreamsPage" />
         </Tab>
         <Tab Title="Receiver" Icon="speaker.svg">
