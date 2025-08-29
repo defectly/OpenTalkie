@@ -5,42 +5,47 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
     Color="{AppThemeBinding Light={StaticResource SurfaceLight}, Dark={StaticResource SurfaceDark}}">
-    <Grid
-        Padding="16"
-        HorizontalOptions="Center"
-        MaximumWidthRequest="300"
-        RowDefinitions="*,Auto"
-        RowSpacing="16"
-        VerticalOptions="Center">
+    <Grid HorizontalOptions="Fill" VerticalOptions="Fill" Padding="24">
         <Grid.Resources>
             <Shadow
                 x:Key="MaterialShadowDark"
-                Brush="#80FFFFFF"
-                Opacity="0.2"
-                Radius="4"
-                Offset="0,2" />
+                Brush="#80000000"
+                Opacity="0.3"
+                Radius="12"
+                Offset="0,4" />
         </Grid.Resources>
 
-        <Label
-            Grid.Row="0"
-            FontSize="16"
+        <Frame
             HorizontalOptions="Center"
-            HorizontalTextAlignment="Center"
-            Text="{Binding Message}"
-            TextColor="{AppThemeBinding Light={StaticResource OnSurfaceLight}, Dark={StaticResource OnSurfaceDark}}"
-            VerticalOptions="Center" />
-
-        <Button
-            Grid.Row="1"
-            Padding="16,8"
-            BackgroundColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
-            Command="{Binding CloseCommand}"
-            CornerRadius="8"
-            FontAttributes="Bold"
-            FontSize="16"
-            MinimumHeightRequest="48"
+            VerticalOptions="Center"
+            Padding="20"
+            CornerRadius="12"
+            HasShadow="True"
             Shadow="{StaticResource MaterialShadowDark}"
-            Text="OK"
-            TextColor="{AppThemeBinding Light={StaticResource OnPrimaryLight}, Dark={StaticResource PrimaryDarkText}}" />
+            BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceLight}, Dark={StaticResource SurfaceDark}}">
+            <Grid RowDefinitions="Auto,Auto" RowSpacing="16" MaximumWidthRequest="360">
+                <Label
+                    Grid.Row="0"
+                    FontSize="16"
+                    HorizontalOptions="Center"
+                    HorizontalTextAlignment="Center"
+                    LineBreakMode="WordWrap"
+                    Text="{Binding Message}"
+                    TextColor="{AppThemeBinding Light={StaticResource OnSurfaceLight}, Dark={StaticResource OnSurfaceDark}}" />
+                <Button
+                    Grid.Row="1"
+                    Padding="16,10"
+                    BackgroundColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
+                    Command="{Binding CloseCommand}"
+                    CornerRadius="8"
+                    FontAttributes="Bold"
+                    FontSize="16"
+                    MinimumHeightRequest="44"
+                    Text="OK"
+                    HorizontalOptions="Center"
+                    WidthRequest="120"
+                    TextColor="{AppThemeBinding Light={StaticResource OnPrimaryLight}, Dark={StaticResource PrimaryDarkText}}" />
+            </Grid>
+        </Frame>
     </Grid>
 </toolkit:Popup>
