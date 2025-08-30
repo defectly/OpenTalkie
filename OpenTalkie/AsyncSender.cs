@@ -213,8 +213,8 @@ public class AsyncSender : IDisposable
         int sampleCount = samples.Length / (_waveFormat.Channels * _bytesPerSample);
         int dataLength = samples.Length;
 
-        EnsurePacketCapacity(28 + dataLength);
-        var packetBuffer = _packetBuffer!;
+        int packetLength = 28 + dataLength;
+        var packetBuffer = new byte[packetLength];
 
         InitializePacketHeader(packetBuffer);
         FillPacketData(samples, sampleCount, packetBuffer);
@@ -224,12 +224,13 @@ public class AsyncSender : IDisposable
             packetBuffer[j + 8] = (byte)name[j];
 
         BitConverter.TryWriteBytes(packetBuffer.AsSpan(24, 4), endpoint.FrameCount);
+        var sendBuffer = packetBuffer; // already dedicated per send
 
         try
         {
             var udpClient = endpoint.UdpClient;
             if (udpClient != null)
-                await udpClient.SendAsync(packetBuffer, 28 + dataLength);
+                await udpClient.SendAsync(sendBuffer, sendBuffer.Length);
         }
         catch
         {
@@ -243,8 +244,8 @@ public class AsyncSender : IDisposable
         int sampleCount = samples.Length / (channels * bytesPerSample);
         int dataLength = samples.Length;
 
-        EnsurePacketCapacity(28 + dataLength);
-        var packetBuffer = _packetBuffer!;
+        int packetLength = 28 + dataLength;
+        var packetBuffer = new byte[packetLength];
 
         InitializePacketHeader(packetBuffer, sampleRate, channels, bitRes);
         FillPacketData(samples, sampleCount, packetBuffer);
@@ -254,12 +255,13 @@ public class AsyncSender : IDisposable
             packetBuffer[j + 8] = (byte)name[j];
 
         BitConverter.TryWriteBytes(packetBuffer.AsSpan(24, 4), endpoint.FrameCount);
+        var sendBuffer = packetBuffer; // already dedicated per send
 
         try
         {
             var udpClient = endpoint.UdpClient;
             if (udpClient != null)
-                await udpClient.SendAsync(packetBuffer, 28 + dataLength);
+                await udpClient.SendAsync(sendBuffer, sendBuffer.Length);
         }
         catch
         {
