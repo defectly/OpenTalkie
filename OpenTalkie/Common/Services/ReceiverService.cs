@@ -6,6 +6,7 @@ using OpenTalkie.Common.Services.Interfaces;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System.Threading;
 
 namespace OpenTalkie.Common.Services;
 
@@ -18,6 +19,7 @@ public class ReceiverService
     private CancellationTokenSource? _mixCts;
     private Task? _mixTask;
     private readonly Dictionary<Guid, StreamBuffer> _buffers = new();
+    private volatile StreamBuffer[] _activeBuffers = Array.Empty<StreamBuffer>();
     private readonly object _outputLock = new();
     private int _currentSampleRate;
     private int _currentChannels;
@@ -73,6 +75,7 @@ public class ReceiverService
         {
             _buffers.Clear();
         }
+        Volatile.Write(ref _activeBuffers, Array.Empty<StreamBuffer>());
         ListeningStateChanged?.Invoke(false);
     }
 
@@ -93,14 +96,21 @@ public class ReceiverService
         {
             ApplyVolume16(pcm16.AsSpan(), ep.Volume);
         }
+        bool added = false;
         lock (_buffers)
         {
             if (!_buffers.TryGetValue(ep.Id, out var buf))
             {
                 buf = new StreamBuffer(BytesPerChunk, ComputeMaxQueuedChunks(ep.Quality));
                 _buffers[ep.Id] = buf;
+                added = true;
             }
-            buf.Enqueue(pcm16);
+            _buffers[ep.Id].Enqueue(pcm16);
+            if (added)
+            {
+                var snap = _buffers.Values.ToArray();
+                Volatile.Write(ref _activeBuffers, snap);
+            }
         }
     }
 
@@ -175,29 +185,26 @@ public class ReceiverService
         {
             Array.Clear(mixShorts, 0, mixShorts.Length);
             int activeSources = 0;
-            lock (_buffers)
+            var buffers = Volatile.Read(ref _activeBuffers);
+            for (int i = 0; i < buffers.Length; i++)
             {
-                var entries = _buffers.ToArray();
-                for (int i = 0; i < entries.Length; i++)
+                var buf = buffers[i];
+                int read = buf.Read(temp);
+                if (read <= 0) continue;
+                if (read < BytesPerChunk)
                 {
-                    var buf = entries[i].Value;
-                    int read = buf.Read(temp);
-                    if (read <= 0) continue;
-                    if (read < BytesPerChunk)
-                    {
-                        // pad missing with zeros
-                        Array.Clear(temp, read, BytesPerChunk - read);
-                    }
-                    // sum into mixShorts
-                    for (int b = 0, s = 0; b < BytesPerChunk; b += 2, s++)
-                    {
-                        short sample = (short)(temp[b] | (temp[b + 1] << 8));
-                        int sum = mixShorts[s] + sample;
-                        if (sum > short.MaxValue) sum = short.MaxValue; else if (sum < short.MinValue) sum = short.MinValue;
-                        mixShorts[s] = (short)sum;
-                    }
-                    activeSources++;
+                    // pad missing with zeros
+                    Array.Clear(temp, read, BytesPerChunk - read);
                 }
+                // sum into mixShorts
+                for (int b = 0, s = 0; b < BytesPerChunk; b += 2, s++)
+                {
+                    short sample = (short)(temp[b] | (temp[b + 1] << 8));
+                    int sum = mixShorts[s] + sample;
+                    if (sum > short.MaxValue) sum = short.MaxValue; else if (sum < short.MinValue) sum = short.MinValue;
+                    mixShorts[s] = (short)sum;
+                }
+                activeSources++;
             }
 
             // serialize mixShorts to bytes and write (blocking write paces real time)
