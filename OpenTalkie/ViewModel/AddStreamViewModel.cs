@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using OpenTalkie.Common.Enums;
 using OpenTalkie.View.Popups; // For EditFieldPopup and ErrorPopup
+using OpenTalkie.VBAN;
 
 namespace OpenTalkie.ViewModel;
 
@@ -28,12 +29,25 @@ public partial class AddStreamViewModel : ObservableObject
     [ObservableProperty]
     private bool isEnabled = true;
 
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DisplayQuality))]
+    private VBanQuality selectedQuality = VBanQuality.VBAN_QUALITY_FAST;
+
     public EndpointType StreamType { get; set; }
 
     // Properties for display in Labels
     public string DisplayName => string.IsNullOrWhiteSpace(Name) ? "Tap to set name" : Name;
     public string DisplayHostname => string.IsNullOrWhiteSpace(Hostname) ? "Tap to set hostname" : Hostname;
     public string DisplayPort => Port.ToString();
+    public string DisplayQuality => SelectedQuality switch
+    {
+        VBanQuality.VBAN_QUALITY_OPTIMAL => "Optimal",
+        VBanQuality.VBAN_QUALITY_FAST => "Fast",
+        VBanQuality.VBAN_QUALITY_MEDIUM => "Medium",
+        VBanQuality.VBAN_QUALITY_SLOW => "Slow",
+        VBanQuality.VBAN_QUALITY_VERYSLOW => "Very Slow",
+        _ => "Fast"
+    };
 
 
     public AddStreamViewModel() { }
@@ -110,6 +124,29 @@ public partial class AddStreamViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private async Task EditQuality()
+    {
+        var options = new[] { "Optimal", "Fast", "Medium", "Slow", "Very Slow" };
+        var popup = new OptionsPopup(
+            "Select Net Quality",
+            options,
+            (choice) =>
+            {
+                SelectedQuality = choice switch
+                {
+                    "Optimal" => VBanQuality.VBAN_QUALITY_OPTIMAL,
+                    "Fast" => VBanQuality.VBAN_QUALITY_FAST,
+                    "Medium" => VBanQuality.VBAN_QUALITY_MEDIUM,
+                    "Slow" => VBanQuality.VBAN_QUALITY_SLOW,
+                    "Very Slow" => VBanQuality.VBAN_QUALITY_VERYSLOW,
+                    _ => VBanQuality.VBAN_QUALITY_FAST
+                };
+                OnPropertyChanged(nameof(DisplayQuality));
+            });
+        await Application.Current.MainPage.ShowPopupAsync(popup);
+    }
+
+    [RelayCommand]
     private async Task Save()
     {
         // Final validation check before saving
@@ -126,7 +163,8 @@ public partial class AddStreamViewModel : ObservableObject
         {
             newEndpoint = new Endpoint(StreamType, Name, Hostname, Port, IsDenoiseEnabled)
             {
-                IsEnabled = this.IsEnabled
+                IsEnabled = this.IsEnabled,
+                Quality = this.SelectedQuality
             };
         }
         catch (Exception ex) // Catch other unexpected errors during Endpoint creation

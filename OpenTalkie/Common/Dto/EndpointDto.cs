@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using OpenTalkie.Common.Enums;
+using OpenTalkie.VBAN;
 
 namespace OpenTalkie.Common.Dto;
 
@@ -13,6 +14,7 @@ public class EndpointDto
     public bool IsEnabled { get; set; }
     public bool IsDenoiseEnabled { get; set; }
     public float Volume { get; set; } = 1f;
+    public VBanQuality Quality { get; set; } = VBanQuality.VBAN_QUALITY_FAST;
 }
 
 public class EndpointDtoMappingProfile : Profile
@@ -28,6 +30,7 @@ public class EndpointDtoMappingProfile : Profile
             .ForMember(dest => dest.IsEnabled, src => src.MapFrom(endpoint => endpoint.IsEnabled))
             .ForMember(dest => dest.IsDenoiseEnabled, src => src.MapFrom(endpoint => endpoint.IsDenoiseEnabled))
             .ForMember(dest => dest.Volume, src => src.MapFrom(endpoint => endpoint.Volume))
+            .ForMember(dest => dest.Quality, src => src.MapFrom(endpoint => endpoint.Quality))
         .ReverseMap();
     }
 }

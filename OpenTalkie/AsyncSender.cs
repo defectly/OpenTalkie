@@ -20,6 +20,7 @@ public class AsyncSender : IDisposable
     private byte[]? _replicateBuffer;  // temp replicate back to original channels
     private byte[]? _volumeBuffer;
     private readonly AdaptCtx _adapt = new();
+    private const int VBanMaxSamplesPerPacket = 256; // PCM max samples per packet per VBAN spec
 
     public AsyncSender(IInputStream source, ObservableCollection<Endpoint> endpoints)
     {
@@ -152,7 +153,8 @@ public class AsyncSender : IDisposable
                     ApplyVolume16(sendMemory.Span, _volumeBuffer!.AsSpan(0, length), endpoint.Volume);
                     sendMemory = _volumeBuffer.AsMemory(0, length);
                 }
-                await SplitAndSendAsync(sendMemory, endpoint, outChannels, 2, 48000, VBanBitResolution.VBAN_BITFMT_16_INT, 256);
+                int denoisedSamplesPerChunk = ComputeSamplesPerChunk(endpoint.Quality, 2, outChannels);
+                await SplitAndSendAsync(sendMemory, endpoint, outChannels, 2, 48000, VBanBitResolution.VBAN_BITFMT_16_INT, denoisedSamplesPerChunk);
                 continue;
             }
             else
@@ -179,7 +181,7 @@ public class AsyncSender : IDisposable
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private async Task SplitAndSendAsync(ReadOnlyMemory<byte> buffer, Endpoint endpoint)
     {
-        const int samplesPerChunk = 256;
+        int samplesPerChunk = ComputeSamplesPerChunk(endpoint.Quality, _bytesPerSample, _waveFormat.Channels);
         int chunkSize = samplesPerChunk * _bytesPerSample * _waveFormat.Channels;
         int totalChunks = (buffer.Length + chunkSize - 1) / chunkSize;
 
@@ -189,6 +191,19 @@ public class AsyncSender : IDisposable
             int length = Math.Min(chunkSize, buffer.Length - start);
             await SendAsync(buffer.Slice(start, length), endpoint);
         }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static int ComputeSamplesPerChunk(VBanQuality quality, int bytesPerSample, int channels)
+    {
+        // Treat VBanQuality value as a reference bytes-per-packet at 16-bit stereo, then adapt.
+        // Clamp to [1..256] samples per VBAN PCM constraints.
+        int referenceBytesPerPacket = (int)quality; // 512, 1024, 2048, 4096, 8192
+        int bytesPerFrame = Math.Max(1, bytesPerSample * Math.Max(1, channels));
+        int desiredSamples = referenceBytesPerPacket / bytesPerFrame;
+        if (desiredSamples <= 0) desiredSamples = 128; // reasonable fallback
+        if (desiredSamples > VBanMaxSamplesPerPacket) desiredSamples = VBanMaxSamplesPerPacket;
+        return desiredSamples;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

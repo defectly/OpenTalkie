@@ -39,7 +39,9 @@ public class EndpointRepository : IEndpointRepository
             Hostname = endpointDto.Hostname,
             Port = endpointDto.Port,
             IsEnabled = endpointDto.IsEnabled,
-            IsDenoiseEnabled = endpointDto.IsDenoiseEnabled
+            IsDenoiseEnabled = endpointDto.IsDenoiseEnabled,
+            Quality = endpointDto.Quality,
+            Volume = endpointDto.Volume
         };
 
         Endpoints.Add(endpoint);
@@ -76,6 +78,8 @@ public class EndpointRepository : IEndpointRepository
         endpoint.Port = endpointDto.Port;
         endpoint.IsEnabled = endpointDto.IsEnabled;
         endpoint.IsDenoiseEnabled = endpointDto.IsDenoiseEnabled;
+        endpoint.Quality = endpointDto.Quality;
+        endpoint.Volume = endpointDto.Volume;
 
         await SaveAsync();
     }

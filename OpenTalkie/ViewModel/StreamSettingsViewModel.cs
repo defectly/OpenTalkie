@@ -2,13 +2,43 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using OpenTalkie.View.Popups;
+using OpenTalkie.VBAN;
 
 namespace OpenTalkie.ViewModel;
 
 public partial class StreamSettingsViewModel : ObservableObject
 {
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DisplayQuality))]
     private Endpoint? endpoint;
+
+    public string DisplayQuality => Endpoint?.Quality switch
+    {
+        VBanQuality.VBAN_QUALITY_OPTIMAL => "Optimal",
+        VBanQuality.VBAN_QUALITY_FAST => "Fast",
+        VBanQuality.VBAN_QUALITY_MEDIUM => "Medium",
+        VBanQuality.VBAN_QUALITY_SLOW => "Slow",
+        VBanQuality.VBAN_QUALITY_VERYSLOW => "Very Slow",
+        _ => string.Empty
+    };
+
+    partial void OnEndpointChanged(Endpoint? value)
+    {
+        if (value != null)
+        {
+            value.PropertyChanged -= EndpointOnPropertyChanged;
+            value.PropertyChanged += EndpointOnPropertyChanged;
+        }
+        OnPropertyChanged(nameof(DisplayQuality));
+    }
+
+    private void EndpointOnPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(Endpoint.Quality))
+        {
+            OnPropertyChanged(nameof(DisplayQuality));
+        }
+    }
 
     [RelayCommand]
     private async Task EditName()
@@ -92,6 +122,33 @@ public partial class StreamSettingsViewModel : ObservableObject
                         await Application.Current.MainPage.ShowPopupAsync(errorPopup);
                     }
                 }
+            });
+
+        await Application.Current.MainPage.ShowPopupAsync(popup);
+    }
+
+    [RelayCommand]
+    private async Task EditQuality()
+    {
+        if (Endpoint == null) return;
+
+        var options = new[] { "Optimal", "Fast", "Medium", "Slow", "Very Slow" };
+        var popup = new OptionsPopup(
+            "Select Net Quality",
+            options,
+            async (choice) =>
+            {
+                VBanQuality newQ = choice switch
+                {
+                    "Optimal" => VBanQuality.VBAN_QUALITY_OPTIMAL,
+                    "Fast" => VBanQuality.VBAN_QUALITY_FAST,
+                    "Medium" => VBanQuality.VBAN_QUALITY_MEDIUM,
+                    "Slow" => VBanQuality.VBAN_QUALITY_SLOW,
+                    "Very Slow" => VBanQuality.VBAN_QUALITY_VERYSLOW,
+                    _ => Endpoint.Quality
+                };
+                Endpoint.Quality = newQ;
+                OnPropertyChanged(nameof(DisplayQuality));
             });
 
         await Application.Current.MainPage.ShowPopupAsync(popup);

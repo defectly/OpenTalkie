@@ -7,7 +7,7 @@
     Title="stream settings"
     Padding="16">
     <ScrollView>
-        <Grid RowDefinitions="Auto,Auto,Auto,Auto,*" RowSpacing="16">
+        <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,*" RowSpacing="16">
 
             <!--  Name  -->
             <Frame
@@ -122,7 +122,7 @@
 
             <!--  Denoise Switch  -->
             <Frame
-                Grid.Row="3"
+                Grid.Row="4"
                 Padding="16"
                 BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceVariantLight}, Dark={StaticResource SurfaceVariantDark}}"
                 BorderColor="{AppThemeBinding Light={StaticResource OutlineLight}, Dark={StaticResource OutlineDark}}"
@@ -151,6 +151,43 @@
                             OnColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
                             ThumbColor="{AppThemeBinding Light={StaticResource OnPrimaryLight}, Dark={StaticResource PrimaryDarkText}}"
                             VerticalOptions="Center" />
+                    </Grid>
+                </HorizontalStackLayout>
+            </Frame>
+
+            <!--  Net Quality  -->
+            <Frame
+                Grid.Row="3"
+                Padding="16"
+                BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceVariantLight}, Dark={StaticResource SurfaceVariantDark}}"
+                BorderColor="{AppThemeBinding Light={StaticResource OutlineLight}, Dark={StaticResource OutlineDark}}"
+                CornerRadius="8"
+                Shadow="{StaticResource MaterialShadowDark}">
+                <HorizontalStackLayout Spacing="12">
+                    <HorizontalStackLayout.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding EditQualityCommand}" />
+                    </HorizontalStackLayout.GestureRecognizers>
+                    <Image
+                        HeightRequest="24"
+                        Source="quality_icon.png"
+                        VerticalOptions="Center"
+                        WidthRequest="24" />
+                    <Grid
+                        ColumnDefinitions="*"
+                        RowDefinitions="Auto,Auto"
+                        RowSpacing="4"
+                        VerticalOptions="Center">
+                        <Label
+                            Grid.Row="0"
+                            FontAttributes="Bold"
+                            FontSize="16"
+                            Text="Net Quality"
+                            TextColor="{AppThemeBinding Light={StaticResource OnSurfaceLight}, Dark={StaticResource OnSurfaceDark}}" />
+                        <Label
+                            Grid.Row="1"
+                            FontSize="14"
+                            Text="{Binding DisplayQuality}"
+                            TextColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" />
                     </Grid>
                 </HorizontalStackLayout>
             </Frame>

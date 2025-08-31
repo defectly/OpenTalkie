@@ -26,8 +26,7 @@ public class ReceiverService
     private const int MixChunkSamples = 480; // per channel (~10ms at 48k)
     private const int BytesPerSample = 2; // 16-bit
     private const int BytesPerChunk = MixChunkSamples * TargetChannels * BytesPerSample;
-    private const int MaxQueuedChunksPerStream = 10; // ~100ms max per-stream buffering
-    private const int MaxQueueBytesPerStream = BytesPerChunk * MaxQueuedChunksPerStream;
+    // Jitter buffer size is computed per stream from its selected Quality
 
     public ObservableCollection<Endpoint> Endpoints { get; }
     public bool ListeningState { get; private set; }
@@ -98,11 +97,21 @@ public class ReceiverService
         {
             if (!_buffers.TryGetValue(ep.Id, out var buf))
             {
-                buf = new StreamBuffer();
+                buf = new StreamBuffer(BytesPerChunk, ComputeMaxQueuedChunks(ep.Quality));
                 _buffers[ep.Id] = buf;
             }
             buf.Enqueue(pcm16);
         }
+    }
+
+    private static int ComputeMaxQueuedChunks(OpenTalkie.VBAN.VBanQuality quality)
+    {
+        // Interpret VBanQuality as reference samples per channel at 48kHz
+        int referenceSamples = (int)quality; // 512, 1024, 2048, 4096, 8192
+        int chunks = (int)Math.Ceiling(referenceSamples / (double)MixChunkSamples);
+        if (chunks < 1) chunks = 1;
+        if (chunks > 64) chunks = 64; // cap for sanity
+        return chunks;
     }
 
     private void EnsureOutput(int sampleRate, int channels)
@@ -202,6 +211,23 @@ public class ReceiverService
         private int _offset = 0;
         private readonly object _lock = new();
         private int _queuedBytes = 0;
+        private readonly int _bytesPerChunk;
+        private int _maxQueuedChunks;
+
+        public StreamBuffer(int bytesPerChunk, int maxQueuedChunks)
+        {
+            _bytesPerChunk = bytesPerChunk;
+            _maxQueuedChunks = Math.Max(1, maxQueuedChunks);
+        }
+
+        public void UpdateMaxQueuedChunks(int maxQueuedChunks)
+        {
+            lock (_lock)
+            {
+                _maxQueuedChunks = Math.Max(1, maxQueuedChunks);
+                TrimIfNeeded();
+            }
+        }
 
         public void Enqueue(byte[] data)
         {
@@ -210,7 +236,7 @@ public class ReceiverService
                 _queue.Enqueue(data);
                 _queuedBytes += data.Length;
                 // Trim oldest data if queue grows too large to limit latency
-                while (_queuedBytes > MaxQueueBytesPerStream && _queue.Count > 0)
+                while (_queuedBytes > (_bytesPerChunk * _maxQueuedChunks) && _queue.Count > 0)
                 {
                     var dropped = _queue.Dequeue();
                     _queuedBytes -= dropped.Length;
@@ -221,6 +247,16 @@ public class ReceiverService
                         _offset = 0;
                     }
                 }
+            }
+        }
+
+        private void TrimIfNeeded()
+        {
+            while (_queuedBytes > (_bytesPerChunk * _maxQueuedChunks) && _queue.Count > 0)
+            {
+                var dropped = _queue.Dequeue();
+                _queuedBytes -= dropped.Length;
+                if (_offset > 0) _offset = 0;
             }
         }
 
@@ -414,5 +450,15 @@ public class ReceiverService
         if (sender is not Endpoint endpoint) return;
         var dto = _mapper.Map<EndpointDto>(endpoint);
         _ = _endpointRepository.UpdateAsync(dto);
+        if (e.PropertyName == nameof(Endpoint.Quality))
+        {
+            lock (_buffers)
+            {
+                if (_buffers.TryGetValue(endpoint.Id, out var buf))
+                {
+                    buf.UpdateMaxQueuedChunks(ComputeMaxQueuedChunks(endpoint.Quality));
+                }
+            }
+        }
     }
 }

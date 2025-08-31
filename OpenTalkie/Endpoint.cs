@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using OpenTalkie.Common.Enums;
+using OpenTalkie.VBAN;
 using System.ComponentModel;
 using System.Net.Sockets;
 
@@ -21,6 +22,8 @@ public partial class Endpoint : ObservableObject, IDisposable
     private bool isDenoiseEnabled;
     [ObservableProperty]
     private float volume = 1f;
+    [ObservableProperty]
+    private VBanQuality quality = VBanQuality.VBAN_QUALITY_FAST;
     public UdpClient UdpClient { get; private set; }
     public Guid Id { get; set; }
     public uint FrameCount;
@@ -44,12 +47,14 @@ public partial class Endpoint : ObservableObject, IDisposable
         this.PropertyChanged += DestinationChanged;
         Connectivity.ConnectivityChanged += OnConnectivityChanged;
         IsDenoiseEnabled = denoise;
+        Quality = VBanQuality.VBAN_QUALITY_FAST;
     }
 
     public Endpoint()
     {
         this.PropertyChanged += DestinationChanged;
         Connectivity.ConnectivityChanged += OnConnectivityChanged;
+        Quality = VBanQuality.VBAN_QUALITY_FAST;
     }
 
     private void OnConnectivityChanged(object? sender, ConnectivityChangedEventArgs e)
