@@ -375,7 +375,8 @@ public class AsyncReceiver : IDisposable
         {
             return bits switch
             {
-                8 => (sbyte)buffer[offset],
+                // 8-bit PCM is typically unsigned; convert to signed centered at 0
+                8 => (int)buffer[offset] - 128,
                 16 => BitConverter.ToInt16(buffer, offset),
                 24 =>
                     ((buffer[offset] | (buffer[offset + 1] << 8) | (buffer[offset + 2] << 16))
