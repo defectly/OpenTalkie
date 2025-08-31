@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="OpenTalkie.View.ReceiverSettingsPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+    xmlns:viewmodel="clr-namespace:OpenTalkie.ViewModel"
+    Title="Receiver settings"
+    Padding="16"
+    x:DataType="viewmodel:ReceiverSettingsViewModel">
+    <ScrollView VerticalScrollBarVisibility="Never" HorizontalScrollBarVisibility="Never">
+        <Grid RowDefinitions="Auto,*" RowSpacing="16">
+
+            <!--  Global Volume  -->
+            <Frame
+                Grid.Row="0"
+                Padding="16"
+                BackgroundColor="{StaticResource CardBackground}"
+                BorderColor="{AppThemeBinding Light={StaticResource OutlineLight}, Dark={StaticResource OutlineDark}}"
+                CornerRadius="8"
+                Shadow="{StaticResource MaterialShadowDark}">
+                <VerticalStackLayout Spacing="12">
+                    <Grid Padding="5">
+                        <Image
+                            HeightRequest="24"
+                            Source="volume_icon.png"
+                            VerticalOptions="Center"
+                            WidthRequest="24" />
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Grid
+                                Grid.Column="0"
+                                ColumnDefinitions="*,Auto"
+                                RowDefinitions="Auto,Auto"
+                                RowSpacing="4">
+                                <Label
+                                    Grid.Row="0"
+                                    Grid.Column="0"
+                                    FontAttributes="Bold"
+                                    FontSize="16"
+                                    Text="Global Volume"
+                                    TextColor="{StaticResource OnSurfaceDark}" />
+                                <Label
+                                    Grid.Row="1"
+                                    Grid.Column="0"
+                                    FontSize="14"
+                                    Text="{Binding Volume, StringFormat='{0:F0}%'}"
+                                    TextColor="{StaticResource OnSurfaceVariantDark}" />
+                            </Grid>
+                            <Button Style="{StaticResource OutlinedButton}"
+                                Grid.Column="1"
+                                Padding="8"
+                                Command="{Binding ResetVolumeCommand}"
+                                CornerRadius="4"
+                                FontSize="14"
+                                Text="Reset"
+                                 />
+                        </Grid>
+                    </Grid>
+                    <Slider
+                        DragCompletedCommand="{Binding VolumeChangedCommand}"
+                        Maximum="400"
+                        MaximumTrackColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}"
+                        Minimum="0"
+                        MinimumTrackColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
+                        ThumbColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
+                        Value="{Binding Volume}" />
+                </VerticalStackLayout>
+            </Frame>
+        </Grid>
+    </ScrollView>
+
+    <ContentPage.Resources>
+        <Shadow
+            x:Key="MaterialShadowDark"
+            Brush="#80FFFFFF"
+            Opacity="0.2"
+            Radius="4"
+            Offset="0,2" />
+    </ContentPage.Resources>
+</ContentPage>
+

@@ -55,6 +55,7 @@ public static class MauiProgram
 #if ANDROID
         services.AddSingleton<IMicrophoneRepository, MicrophoneRepository>();
         services.AddSingleton<IPlaybackRepository, PlaybackRepository>();
+        services.AddSingleton<IReceiverRepository, ReceiverRepository>();
 #endif
         services.AddSingleton<IEndpointRepository, EndpointRepository>();
     }
@@ -80,6 +81,7 @@ public static class MauiProgram
         services.AddTransient<StreamSettingsViewModel>();
         services.AddTransient<MicSettingsViewModel>();
         services.AddTransient<PlaybackSettingsViewModel>();
+        services.AddTransient<ReceiverSettingsViewModel>();
         services.AddTransient<SettingsViewModel>();
         services.AddTransient<AddStreamViewModel>();
     }
@@ -92,6 +94,7 @@ public static class MauiProgram
         services.AddTransient<StreamSettingsPage>();
         services.AddTransient<MicSettingsPage>();
         services.AddTransient<PlaybackSettingsPage>();
+        services.AddTransient<ReceiverSettingsPage>();
         services.AddTransient<SettingsPage>();
         services.AddTransient<AddStreamPage>();
     }

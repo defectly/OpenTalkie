@@ -29,16 +29,21 @@ public class ReceiverService
     private const int BytesPerSample = 2; // 16-bit
     private const int BytesPerChunk = MixChunkSamples * TargetChannels * BytesPerSample;
     // Jitter buffer size is computed per stream from its selected Quality
+    private volatile float _globalVolume = 1f;
 
     public ObservableCollection<Endpoint> Endpoints { get; }
     public bool ListeningState { get; private set; }
     public Action<bool>? ListeningStateChanged;
 
-    public ReceiverService(IEndpointRepository endpointRepository, IMapper mapper, IAudioOutputService audioOutput)
+    public ReceiverService(IEndpointRepository endpointRepository, IMapper mapper, IAudioOutputService audioOutput, OpenTalkie.Common.Repositories.Interfaces.IReceiverRepository receiverRepository)
     {
         _endpointRepository = endpointRepository;
         _mapper = mapper;
         _audioOutput = audioOutput;
+
+        // Initialize global volume and subscribe for changes
+        _globalVolume = receiverRepository.GetSelectedVolume();
+        receiverRepository.VolumeChanged += (v) => _globalVolume = v;
 
         Endpoints = mapper.Map<ObservableCollection<Endpoint>>(
             _endpointRepository.List().Where(e => e.Type == EndpointType.Receiver));
@@ -207,8 +212,12 @@ public class ReceiverService
                 activeSources++;
             }
 
-            // serialize mixShorts to bytes and write (blocking write paces real time)
+            // serialize mixShorts to bytes and apply global volume
             Buffer.BlockCopy(mixShorts, 0, mixBytes, 0, mixBytes.Length);
+            if (Math.Abs(_globalVolume - 1f) > 0.0001f)
+            {
+                ApplyVolume16(mixBytes.AsSpan(), _globalVolume);
+            }
             _audioOutput.Write(mixBytes, 0, mixBytes.Length);
         }
     }

@@ -13,18 +13,21 @@ public partial class SettingsViewModel : ObservableObject
 {
     private readonly MicSettingsPage _micSettingsPage;
     private readonly PlaybackSettingsPage _playbackSettingsPage;
+    private readonly ReceiverSettingsPage _receiverSettingsPage;
 
     [ObservableProperty]
     private ObservableCollection<SettingsItem> settingsItems;
 
-    public SettingsViewModel(MicSettingsPage micSettingsPage, PlaybackSettingsPage playbackSettingsPage)
+    public SettingsViewModel(MicSettingsPage micSettingsPage, PlaybackSettingsPage playbackSettingsPage, ReceiverSettingsPage receiverSettingsPage)
     {
         _micSettingsPage = micSettingsPage;
         _playbackSettingsPage = playbackSettingsPage;
+        _receiverSettingsPage = receiverSettingsPage;
 
         SettingsItems = new ObservableCollection<SettingsItem>
         {
             new SettingsItem { Name = "Microphone Settings", PageType = "MicSettingsPage" },
+            new SettingsItem { Name = "Receiver Settings", PageType = "ReceiverSettingsPage" },
         };
 
         if (OperatingSystem.IsAndroidVersionAtLeast(29))
@@ -40,6 +43,7 @@ public partial class SettingsViewModel : ObservableObject
         {
             "MicSettingsPage" => _micSettingsPage,
             "PlaybackSettingsPage" => _playbackSettingsPage,
+            "ReceiverSettingsPage" => _receiverSettingsPage,
             _ => null
         };
 
