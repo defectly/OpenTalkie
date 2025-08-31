@@ -236,7 +236,7 @@
                                     Grid.Column="0"
                                     FontAttributes="Bold"
                                     FontSize="16"
-                                    Text="Volume"
+                                    Text="Global Volume"
                                     TextColor="{StaticResource OnSurfaceDark}" />
                                 <Label
                                     Grid.Row="1"
