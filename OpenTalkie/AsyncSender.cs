@@ -6,6 +6,9 @@ using System.Runtime.CompilerServices;
 using System.Buffers;
 using System.Numerics;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
+using System.Runtime.Intrinsics.Arm;
 
 namespace OpenTalkie;
 
@@ -248,10 +251,7 @@ public class AsyncSender : IDisposable
         InitializePacketHeader(sendBuffer.AsSpan(0, 28), _srIndex, _waveFormat.Channels, _bitResolution);
         FillPacketData(samples, sampleCount, sendBuffer);
 
-        string name = endpoint.Name;
-        int nameLen = Math.Min(16, name.Length);
-        for (int j = 0; j < nameLen; j++) sendBuffer[8 + j] = (byte)name[j];
-        for (int j = nameLen; j < 16; j++) sendBuffer[8 + j] = 0;
+        Buffer.BlockCopy(endpoint.NameBytes16, 0, sendBuffer, 8, 16);
 
         BitConverter.TryWriteBytes(sendBuffer.AsSpan(24, 4), endpoint.FrameCount);
 
@@ -279,10 +279,7 @@ public class AsyncSender : IDisposable
         InitializePacketHeader(sendBuffer.AsSpan(0, 28), srIdx, channels, bitRes);
         FillPacketData(samples, sampleCount, sendBuffer);
 
-        string name = endpoint.Name;
-        int nameLen = Math.Min(16, name.Length);
-        for (int j = 0; j < nameLen; j++) sendBuffer[8 + j] = (byte)name[j];
-        for (int j = nameLen; j < 16; j++) sendBuffer[8 + j] = 0;
+        Buffer.BlockCopy(endpoint.NameBytes16, 0, sendBuffer, 8, 16);
 
         BitConverter.TryWriteBytes(sendBuffer.AsSpan(24, 4), endpoint.FrameCount);
 
@@ -581,17 +578,30 @@ public class AsyncSender : IDisposable
 
         double step = (double)inRate / 48000.0;
         if (step <= 0) step = 1.0;
-        var outList = new List<short>(context.ResInCount);
-        while (context.ResInPos + 1.0 < context.ResInCount)
+
+        // calculate maximum number of output samples we can produce
+        int maxOut = 0;
+        if (context.ResInCount > 1 && context.ResInPos < context.ResInCount - 1)
         {
-            int i0 = (int)context.ResInPos;
-            double frac = context.ResInPos - i0;
+            maxOut = (int)Math.Floor(((context.ResInCount - 1) - context.ResInPos) / step);
+            if (maxOut < 0) maxOut = 0;
+        }
+        if (maxOut == 0) return Array.Empty<byte>();
+
+        var outShorts = new short[maxOut];
+        double pos = context.ResInPos;
+        for (int k = 0; k < maxOut; k++)
+        {
+            int i0 = (int)pos;
+            double frac = pos - i0;
             short s0 = context.ResIn[i0];
             short s1 = context.ResIn[i0 + 1];
             int interp = s0 + (int)((s1 - s0) * frac);
-            outList.Add((short)interp);
-            context.ResInPos += step;
+            outShorts[k] = (short)interp;
+            pos += step;
         }
+        context.ResInPos = pos;
+
         int consumed = Math.Max(0, (int)context.ResInPos);
         if (consumed > 0)
         {
@@ -600,9 +610,8 @@ public class AsyncSender : IDisposable
             context.ResInCount = remaining;
             context.ResInPos -= consumed;
         }
-        if (outList.Count == 0) return Array.Empty<byte>();
-        var outBytes = new byte[outList.Count * 2];
-        Buffer.BlockCopy(outList.ToArray(), 0, outBytes, 0, outBytes.Length);
+        var outBytes = new byte[outShorts.Length * 2];
+        Buffer.BlockCopy(outShorts, 0, outBytes, 0, outBytes.Length);
         return outBytes;
     }
 
@@ -678,17 +687,48 @@ public class AsyncSender : IDisposable
     private static void ReplicateMonoToChannels16(ReadOnlySpan<byte> mono, Span<byte> dst, int channels)
     {
         int frames = mono.Length / 2;
+        var src = MemoryMarshal.Cast<byte, short>(mono);
+        var outShorts = MemoryMarshal.Cast<byte, short>(dst);
+        if (channels == 2)
+        {
+            int i = 0;
+            if (Sse2.IsSupported)
+            {
+                unsafe
+                {
+                    fixed (short* sPtr = src)
+                    fixed (short* dPtr = outShorts)
+                    {
+                        int v = (frames / 8) * 8; // 8 shorts per 128-bit lane
+                        for (; i < v; i += 8)
+                        {
+                            var vIn = Sse2.LoadVector128(sPtr + i);
+                            var lo = Sse2.UnpackLow(vIn, vIn);  // s0 s0 s1 s1 s2 s2 s3 s3
+                            var hi = Sse2.UnpackHigh(vIn, vIn); // s4 s4 s5 s5 s6 s6 s7 s7
+                            int outBase = i * 2;
+                            Sse2.Store(dPtr + outBase, lo);
+                            Sse2.Store(dPtr + outBase + 8, hi);
+                        }
+                    }
+                }
+            }
+            // tail or non-SIMD
+            for (; i < frames; i++)
+            {
+                short s = src[i];
+                int outBase = i * 2;
+                outShorts[outBase] = s;
+                outShorts[outBase + 1] = s;
+            }
+            return;
+        }
+        // generic N-channel replicate
         for (int i = 0; i < frames; i++)
         {
-            byte lo = mono[i * 2];
-            byte hi = mono[i * 2 + 1];
-            int baseOff = i * channels * 2;
+            short s = src[i];
+            int baseOff = i * channels;
             for (int ch = 0; ch < channels; ch++)
-            {
-                int off = baseOff + ch * 2;
-                dst[off] = lo;
-                dst[off + 1] = hi;
-            }
+                outShorts[baseOff + ch] = s;
         }
     }
 }

@@ -27,6 +27,7 @@ public partial class Endpoint : ObservableObject, IDisposable
     public UdpClient UdpClient { get; private set; }
     public Guid Id { get; set; }
     public uint FrameCount;
+    internal readonly byte[] NameBytes16 = new byte[16];
 
     public Endpoint(EndpointType type, string name, string hostname, int port, bool denoise)
     {
@@ -48,6 +49,7 @@ public partial class Endpoint : ObservableObject, IDisposable
         Connectivity.ConnectivityChanged += OnConnectivityChanged;
         IsDenoiseEnabled = denoise;
         Quality = VBanQuality.VBAN_QUALITY_FAST;
+        UpdateNameBytes();
     }
 
     public Endpoint()
@@ -55,6 +57,7 @@ public partial class Endpoint : ObservableObject, IDisposable
         this.PropertyChanged += DestinationChanged;
         Connectivity.ConnectivityChanged += OnConnectivityChanged;
         Quality = VBanQuality.VBAN_QUALITY_FAST;
+        UpdateNameBytes();
     }
 
     private void OnConnectivityChanged(object? sender, ConnectivityChangedEventArgs e)
@@ -105,4 +108,15 @@ public partial class Endpoint : ObservableObject, IDisposable
 
         GC.SuppressFinalize(this);
     }
+
+    private void UpdateNameBytes()
+    {
+        var span = NameBytes16.AsSpan();
+        span.Clear();
+        var n = Name ?? string.Empty;
+        int len = Math.Min(16, n.Length);
+        for (int i = 0; i < len; i++) span[i] = (byte)n[i];
+    }
+
+    partial void OnNameChanged(string value) => UpdateNameBytes();
 }
