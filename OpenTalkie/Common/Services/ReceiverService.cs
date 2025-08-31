@@ -7,10 +7,12 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Threading;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using System.Runtime.Intrinsics.Arm;
 
 namespace OpenTalkie.Common.Services;
 
@@ -206,38 +208,69 @@ public class ReceiverService
                     Array.Clear(temp, read, BytesPerChunk - read);
                 }
                 // sum into mixShorts; prefer SIMD saturating add when available
-                unsafe
                 {
-                    fixed (short* dstPtr = mixShorts)
-                    fixed (byte* srcBytes = temp)
+                    var dst = mixShorts.AsSpan();
+                    var src = MemoryMarshal.Cast<byte, short>(temp.AsSpan(0, BytesPerChunk));
+
+                    if (Sse2.IsSupported)
                     {
-                        short* srcPtr = (short*)srcBytes;
-                        int samples = mixShorts.Length;
-                        if (Sse2.IsSupported)
+                        unsafe
                         {
-                            int v = (samples / 8) * 8; // 8 x int16 per 128-bit vector
-                            for (int s = 0; s < v; s += 8)
+                            fixed (short* dstPtr = dst)
+                            fixed (short* srcPtr = src)
                             {
-                                var a = Sse2.LoadVector128(dstPtr + s);
-                                var b = Sse2.LoadVector128(srcPtr + s);
-                                var sum = Sse2.AddSaturate(a, b);
-                                Sse2.Store(dstPtr + s, sum);
-                            }
-                            for (int s = v; s < samples; s++)
-                            {
-                                int sum = dstPtr[s] + srcPtr[s];
-                                if (sum > short.MaxValue) sum = short.MaxValue; else if (sum < short.MinValue) sum = short.MinValue;
-                                dstPtr[s] = (short)sum;
+                                int samples = dst.Length;
+                                int v = (samples / 8) * 8; // 8 x int16 per 128-bit vector
+                                for (int s = 0; s < v; s += 8)
+                                {
+                                    var a = Sse2.LoadVector128(dstPtr + s);
+                                    var b = Sse2.LoadVector128(srcPtr + s);
+                                    var sum = Sse2.AddSaturate(a, b);
+                                    Sse2.Store(dstPtr + s, sum);
+                                }
+                                for (int s = v; s < samples; s++)
+                                {
+                                    int sum = dstPtr[s] + srcPtr[s];
+                                    if (sum > short.MaxValue) sum = short.MaxValue; else if (sum < short.MinValue) sum = short.MinValue;
+                                    dstPtr[s] = (short)sum;
+                                }
                             }
                         }
-                        else
+                    }
+                    else if (AdvSimd.IsSupported || Vector.IsHardwareAccelerated)
+                    {
+                        int samples = dst.Length;
+                        int vsz = Vector<short>.Count;
+                        var minI = new Vector<int>(short.MinValue);
+                        var maxI = new Vector<int>(short.MaxValue);
+                        int v = (samples / vsz) * vsz;
+                        for (int s = 0; s < v; s += vsz)
                         {
-                            for (int s = 0; s < samples; s++)
-                            {
-                                int sum = dstPtr[s] + srcPtr[s];
-                                if (sum > short.MaxValue) sum = short.MaxValue; else if (sum < short.MinValue) sum = short.MinValue;
-                                dstPtr[s] = (short)sum;
-                            }
+                            var vd = new Vector<short>(dst.Slice(s));
+                            var vs = new Vector<short>(src.Slice(s));
+                            Vector.Widen(vd, out Vector<int> dLo, out Vector<int> dHi);
+                            Vector.Widen(vs, out Vector<int> sLo, out Vector<int> sHi);
+                            var lo = dLo + sLo;
+                            var hi = dHi + sHi;
+                            lo = Vector.Min(Vector.Max(lo, minI), maxI);
+                            hi = Vector.Min(Vector.Max(hi, minI), maxI);
+                            var packed = Vector.Narrow(lo, hi);
+                            packed.CopyTo(dst.Slice(s));
+                        }
+                        for (int s = v; s < samples; s++)
+                        {
+                            int sum = dst[s] + src[s];
+                            if (sum > short.MaxValue) sum = short.MaxValue; else if (sum < short.MinValue) sum = short.MinValue;
+                            dst[s] = (short)sum;
+                        }
+                    }
+                    else
+                    {
+                        for (int s = 0; s < dst.Length; s++)
+                        {
+                            int sum = dst[s] + src[s];
+                            if (sum > short.MaxValue) sum = short.MaxValue; else if (sum < short.MinValue) sum = short.MinValue;
+                            dst[s] = (short)sum;
                         }
                     }
                 }
@@ -448,16 +481,44 @@ public class ReceiverService
         if (Math.Abs(gain - 1f) < 0.0001f) return;
         int q15 = (int)Math.Round(gain * 32768.0f);
         int bias = (q15 >= 0 ? 16384 : -16384);
-        int samples = buffer.Length / 2;
-        for (int i = 0; i < samples; i++)
+        var s16 = MemoryMarshal.Cast<byte, short>(buffer);
+
+        if (Vector.IsHardwareAccelerated && s16.Length >= Vector<short>.Count)
         {
-            int off = i * 2;
-            int s = (short)(buffer[off] | (buffer[off + 1] << 8));
-            int scaled = (s * q15 + bias) >> 15;
-            if (scaled > short.MaxValue) scaled = short.MaxValue; else if (scaled < short.MinValue) scaled = short.MinValue;
-            short clamped = (short)scaled;
-            buffer[off] = (byte)(clamped & 0xFF);
-            buffer[off + 1] = (byte)((clamped >> 8) & 0xFF);
+            int vszShort = Vector<short>.Count;
+            int vszInt = Vector<int>.Count;
+            var qVec = new Vector<int>(q15);
+            var biasVec = new Vector<int>(bias);
+            var minI = new Vector<int>(short.MinValue);
+            var maxI = new Vector<int>(short.MaxValue);
+            int v = (s16.Length / vszShort) * vszShort;
+            for (int i = 0; i < v; i += vszShort)
+            {
+                var vS = new Vector<short>(s16.Slice(i));
+                Vector.Widen(vS, out Vector<int> lo, out Vector<int> hi);
+                lo = ((lo * qVec) + biasVec) >> 15;
+                hi = ((hi * qVec) + biasVec) >> 15;
+                lo = Vector.Min(Vector.Max(lo, minI), maxI);
+                hi = Vector.Min(Vector.Max(hi, minI), maxI);
+                var packed = Vector.Narrow(lo, hi);
+                packed.CopyTo(s16.Slice(i));
+            }
+            // tail
+            for (int i = v; i < s16.Length; i++)
+            {
+                int scaled = (s16[i] * q15 + bias) >> 15;
+                if (scaled > short.MaxValue) scaled = short.MaxValue; else if (scaled < short.MinValue) scaled = short.MinValue;
+                s16[i] = (short)scaled;
+            }
+        }
+        else
+        {
+            for (int i = 0; i < s16.Length; i++)
+            {
+                int scaled = (s16[i] * q15 + bias) >> 15;
+                if (scaled > short.MaxValue) scaled = short.MaxValue; else if (scaled < short.MinValue) scaled = short.MinValue;
+                s16[i] = (short)scaled;
+            }
         }
     }
 
