@@ -201,13 +201,21 @@ public class ReceiverService
                     // pad missing with zeros
                     Array.Clear(temp, read, BytesPerChunk - read);
                 }
-                // sum into mixShorts
-                for (int b = 0, s = 0; b < BytesPerChunk; b += 2, s++)
+                // sum into mixShorts (unsafe pointer loop to minimize overhead)
+                unsafe
                 {
-                    short sample = (short)(temp[b] | (temp[b + 1] << 8));
-                    int sum = mixShorts[s] + sample;
-                    if (sum > short.MaxValue) sum = short.MaxValue; else if (sum < short.MinValue) sum = short.MinValue;
-                    mixShorts[s] = (short)sum;
+                    fixed (short* dstPtr = mixShorts)
+                    fixed (byte* srcBytes = temp)
+                    {
+                        short* srcPtr = (short*)srcBytes;
+                        int samples = mixShorts.Length;
+                        for (int s = 0; s < samples; s++)
+                        {
+                            int sum = dstPtr[s] + srcPtr[s];
+                            if (sum > short.MaxValue) sum = short.MaxValue; else if (sum < short.MinValue) sum = short.MinValue;
+                            dstPtr[s] = (short)sum;
+                        }
+                    }
                 }
                 activeSources++;
             }

@@ -424,19 +424,29 @@ public class AsyncReceiver : IDisposable
 
             double step = (double)inRate / 48000.0;
             if (step <= 0) step = 1.0;
-            var outList = new List<short>(ctx.ResInCount);
 
-            // Generate while two points are available for interpolation
-            while (ctx.ResPos + 1.0 < ctx.ResInCount)
+            // Pre-size output to avoid List allocations
+            int maxOut = 0;
+            if (ctx.ResInCount > 1 && ctx.ResPos < ctx.ResInCount - 1)
             {
-                int i0 = (int)ctx.ResPos;
-                double frac = ctx.ResPos - i0;
+                maxOut = (int)Math.Floor(((ctx.ResInCount - 1) - ctx.ResPos) / step);
+                if (maxOut < 0) maxOut = 0;
+            }
+            if (maxOut == 0) return Array.Empty<byte>();
+
+            var outShorts = new short[maxOut];
+            double pos = ctx.ResPos;
+            for (int k = 0; k < maxOut; k++)
+            {
+                int i0 = (int)pos;
+                double frac = pos - i0;
                 short s0 = ctx.ResIn[i0];
                 short s1 = ctx.ResIn[i0 + 1];
                 int interp = s0 + (int)((s1 - s0) * frac);
-                outList.Add((short)interp);
-                ctx.ResPos += step;
+                outShorts[k] = (short)interp;
+                pos += step;
             }
+            ctx.ResPos = pos;
 
             // Discard consumed input samples
             int consumed = Math.Max(0, (int)ctx.ResPos);
@@ -449,11 +459,9 @@ public class AsyncReceiver : IDisposable
                 ctx.ResPos -= consumed;
             }
 
-            if (outList.Count == 0) return Array.Empty<byte>();
-
             // Convert to bytes LE
-            var outBytes = new byte[outList.Count * 2];
-            Buffer.BlockCopy(outList.ToArray(), 0, outBytes, 0, outBytes.Length);
+            var outBytes = new byte[outShorts.Length * 2];
+            Buffer.BlockCopy(outShorts, 0, outBytes, 0, outBytes.Length);
             return outBytes;
         }
     }
