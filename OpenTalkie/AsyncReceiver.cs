@@ -167,6 +167,13 @@ public class AsyncReceiver : IDisposable
         {
             if (_udp != null) return;
             _udp = new UdpClient(new IPEndPoint(IPAddress.Any, _port));
+            try
+            {
+                var sock = _udp.Client;
+                sock.ReceiveBufferSize = Math.Max(sock.ReceiveBufferSize, 1 << 20);
+                try { sock.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true); } catch { }
+            }
+            catch { }
             _cts = new CancellationTokenSource();
             _ = Task.Run(() => LoopAsync(_cts.Token));
         }

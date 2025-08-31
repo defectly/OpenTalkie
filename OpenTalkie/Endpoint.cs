@@ -39,6 +39,7 @@ public partial class Endpoint : ObservableObject, IDisposable
         try
         {
             UdpClient = new(Hostname, Port);
+            ConfigureUdpClient(UdpClient);
         }
         catch (SocketException ex)
         {
@@ -68,6 +69,7 @@ public partial class Endpoint : ObservableObject, IDisposable
             try
             {
                 UdpClient = new(Hostname, Port);
+                ConfigureUdpClient(UdpClient);
             }
             catch (SocketException ex)
             {
@@ -94,6 +96,7 @@ public partial class Endpoint : ObservableObject, IDisposable
         try
         {
             UdpClient = new(Hostname, Port);
+            ConfigureUdpClient(UdpClient);
         }
         catch (SocketException ex)
         {
@@ -107,6 +110,24 @@ public partial class Endpoint : ObservableObject, IDisposable
         UdpClient.Dispose();
 
         GC.SuppressFinalize(this);
+    }
+
+    private static void ConfigureUdpClient(UdpClient client)
+    {
+        try
+        {
+            var sock = client.Client;
+            // Larger buffers to avoid drops under burst
+            sock.SendBufferSize = Math.Max(sock.SendBufferSize, 1 << 20);
+            sock.ReceiveBufferSize = Math.Max(sock.ReceiveBufferSize, 1 << 20);
+            // Prefer not fragmenting VBAN packets (IPv4)
+            sock.DontFragment = true;
+            // Hint QoS: Expedited Forwarding (DSCP 46 -> TOS 0xB8)
+            try { sock.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.TypeOfService, 0xB8); } catch { }
+            // Allow quick rebinding if needed
+            try { sock.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true); } catch { }
+        }
+        catch { }
     }
 
     private void UpdateNameBytes()

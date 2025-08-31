@@ -223,6 +223,14 @@ public class AsyncSender : IDisposable
         int desiredSamples = referenceBytesPerPacket / bytesPerFrame;
         if (desiredSamples <= 0) desiredSamples = 128; // reasonable fallback
         if (desiredSamples > VBanMaxSamplesPerPacket) desiredSamples = VBanMaxSamplesPerPacket;
+        // Align to a multiple to favor SIMD/vectorized loops (e.g., 32 samples)
+        const int align = 32;
+        int rem = desiredSamples % align;
+        if (rem != 0)
+        {
+            int aligned = desiredSamples + (align - rem);
+            desiredSamples = Math.Min(aligned, VBanMaxSamplesPerPacket);
+        }
         return desiredSamples;
     }
 
