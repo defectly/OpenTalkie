@@ -177,9 +177,10 @@ public class ReceiverService
             int activeSources = 0;
             lock (_buffers)
             {
-                foreach (var kv in _buffers)
+                var entries = _buffers.ToArray();
+                for (int i = 0; i < entries.Length; i++)
                 {
-                    var buf = kv.Value;
+                    var buf = entries[i].Value;
                     int read = buf.Read(temp);
                     if (read <= 0) continue;
                     if (read < BytesPerChunk)
@@ -188,9 +189,9 @@ public class ReceiverService
                         Array.Clear(temp, read, BytesPerChunk - read);
                     }
                     // sum into mixShorts
-                    for (int i = 0, s = 0; i < BytesPerChunk; i += 2, s++)
+                    for (int b = 0, s = 0; b < BytesPerChunk; b += 2, s++)
                     {
-                        short sample = (short)(temp[i] | (temp[i + 1] << 8));
+                        short sample = (short)(temp[b] | (temp[b + 1] << 8));
                         int sum = mixShorts[s] + sample;
                         if (sum > short.MaxValue) sum = short.MaxValue; else if (sum < short.MinValue) sum = short.MinValue;
                         mixShorts[s] = (short)sum;
