@@ -7,6 +7,10 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Threading;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 
 namespace OpenTalkie.Common.Services;
 
@@ -201,7 +205,7 @@ public class ReceiverService
                     // pad missing with zeros
                     Array.Clear(temp, read, BytesPerChunk - read);
                 }
-                // sum into mixShorts (unsafe pointer loop to minimize overhead)
+                // sum into mixShorts; prefer SIMD saturating add when available
                 unsafe
                 {
                     fixed (short* dstPtr = mixShorts)
@@ -209,11 +213,31 @@ public class ReceiverService
                     {
                         short* srcPtr = (short*)srcBytes;
                         int samples = mixShorts.Length;
-                        for (int s = 0; s < samples; s++)
+                        if (Sse2.IsSupported)
                         {
-                            int sum = dstPtr[s] + srcPtr[s];
-                            if (sum > short.MaxValue) sum = short.MaxValue; else if (sum < short.MinValue) sum = short.MinValue;
-                            dstPtr[s] = (short)sum;
+                            int v = (samples / 8) * 8; // 8 x int16 per 128-bit vector
+                            for (int s = 0; s < v; s += 8)
+                            {
+                                var a = Sse2.LoadVector128(dstPtr + s);
+                                var b = Sse2.LoadVector128(srcPtr + s);
+                                var sum = Sse2.AddSaturate(a, b);
+                                Sse2.Store(dstPtr + s, sum);
+                            }
+                            for (int s = v; s < samples; s++)
+                            {
+                                int sum = dstPtr[s] + srcPtr[s];
+                                if (sum > short.MaxValue) sum = short.MaxValue; else if (sum < short.MinValue) sum = short.MinValue;
+                                dstPtr[s] = (short)sum;
+                            }
+                        }
+                        else
+                        {
+                            for (int s = 0; s < samples; s++)
+                            {
+                                int sum = dstPtr[s] + srcPtr[s];
+                                if (sum > short.MaxValue) sum = short.MaxValue; else if (sum < short.MinValue) sum = short.MinValue;
+                                dstPtr[s] = (short)sum;
+                            }
                         }
                     }
                 }
