@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8" ?>
+﻿<?xml version="1.0" encoding="utf-8" ?>
 <ContentPage
     x:Class="OpenTalkie.View.HomePage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
@@ -23,7 +23,14 @@
                 HeightRequest="56"
                 Shadow="{StaticResource MaterialShadowDark}"
                 Text="{Binding MicrophoneBroadcastButtonText}"
-                TextColor="{AppThemeBinding Light={StaticResource OnPrimaryLight}, Dark={StaticResource PrimaryDarkText}}" />
+                TextColor="{AppThemeBinding Light={StaticResource OnPrimaryLight}, Dark={StaticResource PrimaryDarkText}}">
+                <Button.Triggers>
+                    <DataTrigger TargetType="Button" Binding="{Binding IsMicrophoneActive}" Value="True">
+                        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource ServiceRunningLight}, Dark={StaticResource ServiceRunningDark}}" />
+                        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource OnServiceRunningLight}, Dark={StaticResource OnServiceRunningDark}}" />
+                    </DataTrigger>
+                </Button.Triggers>
+            </Button>
 
             <!--  playback service button  -->
             <Button
@@ -39,7 +46,14 @@
                 HeightRequest="56"
                 Shadow="{StaticResource MaterialShadowDark}"
                 Text="{Binding PlaybackBroadcastButtonText}"
-                TextColor="{AppThemeBinding Light={StaticResource OnPrimaryLight}, Dark={StaticResource PrimaryDarkText}}" />
+                TextColor="{AppThemeBinding Light={StaticResource OnPrimaryLight}, Dark={StaticResource PrimaryDarkText}}">
+                <Button.Triggers>
+                    <DataTrigger TargetType="Button" Binding="{Binding IsPlaybackActive}" Value="True">
+                        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource ServiceRunningLight}, Dark={StaticResource ServiceRunningDark}}" />
+                        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource OnServiceRunningLight}, Dark={StaticResource OnServiceRunningDark}}" />
+                    </DataTrigger>
+                </Button.Triggers>
+            </Button>
 
             <!--  receiver button  -->
             <Button
@@ -54,7 +68,14 @@
                 HeightRequest="56"
                 Shadow="{StaticResource MaterialShadowDark}"
                 Text="{Binding ReceiverButtonText}"
-                TextColor="{AppThemeBinding Light={StaticResource OnPrimaryLight}, Dark={StaticResource PrimaryDarkText}}" />
+                TextColor="{AppThemeBinding Light={StaticResource OnPrimaryLight}, Dark={StaticResource PrimaryDarkText}}">
+                <Button.Triggers>
+                    <DataTrigger TargetType="Button" Binding="{Binding IsReceiverActive}" Value="True">
+                        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource ServiceRunningLight}, Dark={StaticResource ServiceRunningDark}}" />
+                        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource OnServiceRunningLight}, Dark={StaticResource OnServiceRunningDark}}" />
+                    </DataTrigger>
+                </Button.Triggers>
+            </Button>
 
             <!--  ip addresses  -->
             <Grid
@@ -77,12 +98,12 @@
                             <Frame
                                 Margin="0,4"
                                 Padding="12"
-                                BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceVariantLight}, Dark={StaticResource SurfaceVariantDark}}"
+                                BackgroundColor="{StaticResource CardBackground}"
                                 CornerRadius="8">
                                 <Label
                                     FontSize="14"
                                     Text="{Binding .}"
-                                    TextColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" />
+                                    TextColor="{StaticResource OnSurfaceVariantDark}" />
                             </Frame>
                         </DataTemplate>
                     </CollectionView.ItemTemplate>

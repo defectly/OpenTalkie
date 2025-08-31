@@ -13,7 +13,7 @@
             <Frame
                 Grid.Row="0"
                 Padding="16"
-                BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceVariantLight}, Dark={StaticResource SurfaceVariantDark}}"
+                BackgroundColor="{StaticResource CardBackground}"
                 BorderColor="{AppThemeBinding Light={StaticResource OutlineLight}, Dark={StaticResource OutlineDark}}"
                 CornerRadius="8"
                 Shadow="{StaticResource MaterialShadowDark}">
@@ -36,12 +36,12 @@
                             FontAttributes="Bold"
                             FontSize="16"
                             Text="Name"
-                            TextColor="{AppThemeBinding Light={StaticResource OnSurfaceLight}, Dark={StaticResource OnSurfaceDark}}" />
+                            TextColor="{StaticResource OnSurfaceDark}" />
                         <Label
                             Grid.Row="1"
                             FontSize="14"
                             Text="{Binding Endpoint.Name}"
-                            TextColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" />
+                            TextColor="{StaticResource OnSurfaceVariantDark}" />
                     </Grid>
                 </HorizontalStackLayout>
             </Frame>
@@ -50,7 +50,7 @@
             <Frame
                 Grid.Row="1"
                 Padding="16"
-                BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceVariantLight}, Dark={StaticResource SurfaceVariantDark}}"
+                BackgroundColor="{StaticResource CardBackground}"
                 BorderColor="{AppThemeBinding Light={StaticResource OutlineLight}, Dark={StaticResource OutlineDark}}"
                 CornerRadius="8"
                 Shadow="{StaticResource MaterialShadowDark}">
@@ -73,12 +73,12 @@
                             FontAttributes="Bold"
                             FontSize="16"
                             Text="Hostname"
-                            TextColor="{AppThemeBinding Light={StaticResource OnSurfaceLight}, Dark={StaticResource OnSurfaceDark}}" />
+                            TextColor="{StaticResource OnSurfaceDark}" />
                         <Label
                             Grid.Row="1"
                             FontSize="14"
                             Text="{Binding Endpoint.Hostname}"
-                            TextColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" />
+                            TextColor="{StaticResource OnSurfaceVariantDark}" />
                     </Grid>
                 </HorizontalStackLayout>
             </Frame>
@@ -87,7 +87,7 @@
             <Frame
                 Grid.Row="2"
                 Padding="16"
-                BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceVariantLight}, Dark={StaticResource SurfaceVariantDark}}"
+                BackgroundColor="{StaticResource CardBackground}"
                 BorderColor="{AppThemeBinding Light={StaticResource OutlineLight}, Dark={StaticResource OutlineDark}}"
                 CornerRadius="8"
                 Shadow="{StaticResource MaterialShadowDark}">
@@ -110,12 +110,12 @@
                             FontAttributes="Bold"
                             FontSize="16"
                             Text="Port"
-                            TextColor="{AppThemeBinding Light={StaticResource OnSurfaceLight}, Dark={StaticResource OnSurfaceDark}}" />
+                            TextColor="{StaticResource OnSurfaceDark}" />
                         <Label
                             Grid.Row="1"
                             FontSize="14"
                             Text="{Binding Endpoint.Port}"
-                            TextColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" />
+                            TextColor="{StaticResource OnSurfaceVariantDark}" />
                     </Grid>
                 </HorizontalStackLayout>
             </Frame>
@@ -124,7 +124,7 @@
             <Frame
                 Grid.Row="4"
                 Padding="16"
-                BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceVariantLight}, Dark={StaticResource SurfaceVariantDark}}"
+                BackgroundColor="{StaticResource CardBackground}"
                 BorderColor="{AppThemeBinding Light={StaticResource OutlineLight}, Dark={StaticResource OutlineDark}}"
                 CornerRadius="8"
                 Shadow="{StaticResource MaterialShadowDark}">
@@ -143,7 +143,7 @@
                             FontAttributes="Bold"
                             FontSize="16"
                             Text="Denoise"
-                            TextColor="{AppThemeBinding Light={StaticResource OnSurfaceLight}, Dark={StaticResource OnSurfaceDark}}"
+                            TextColor="{StaticResource OnSurfaceDark}"
                             VerticalOptions="Center" />
                         <Switch
                             Grid.Column="1"
@@ -159,7 +159,7 @@
             <Frame
                 Grid.Row="3"
                 Padding="16"
-                BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceVariantLight}, Dark={StaticResource SurfaceVariantDark}}"
+                BackgroundColor="{StaticResource CardBackground}"
                 BorderColor="{AppThemeBinding Light={StaticResource OutlineLight}, Dark={StaticResource OutlineDark}}"
                 CornerRadius="8"
                 Shadow="{StaticResource MaterialShadowDark}">
@@ -182,12 +182,12 @@
                             FontAttributes="Bold"
                             FontSize="16"
                             Text="Net Quality"
-                            TextColor="{AppThemeBinding Light={StaticResource OnSurfaceLight}, Dark={StaticResource OnSurfaceDark}}" />
+                            TextColor="{StaticResource OnSurfaceDark}" />
                         <Label
                             Grid.Row="1"
                             FontSize="14"
                             Text="{Binding DisplayQuality}"
-                            TextColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" />
+                            TextColor="{StaticResource OnSurfaceVariantDark}" />
                     </Grid>
                 </HorizontalStackLayout>
             </Frame>

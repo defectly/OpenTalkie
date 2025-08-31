@@ -12,21 +12,21 @@
             ItemsSource="{Binding Endpoints}">
             <CollectionView.ItemTemplate>
                 <DataTemplate>
-                    <Frame Margin="0,8" BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceVariantLight}, Dark={StaticResource SurfaceVariantDark}}" CornerRadius="8" Shadow="{StaticResource MaterialShadowDark}">
+                    <Frame Margin="0,8" BackgroundColor="{StaticResource CardBackground}" CornerRadius="8" Shadow="{StaticResource MaterialShadowDark}">
                         <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto" RowSpacing="16">
                             <Grid Grid.Row="0" Grid.Column="0" RowDefinitions="*,Auto">
-                                <Label Grid.Row="0" FontAttributes="Bold" FontSize="16" Text="{Binding Name}" TextColor="{AppThemeBinding Light={StaticResource OnSurfaceLight}, Dark={StaticResource OnSurfaceDark}}" />
+                                <Label Grid.Row="0" FontAttributes="Bold" FontSize="16" Text="{Binding Name}" TextColor="{StaticResource OnSurfaceDark}" />
                                 <Grid Grid.Row="1" ColumnDefinitions="Auto,Auto">
-                                    <Label Grid.Column="0" FontSize="14" Text="{Binding Hostname}" TextColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" />
-                                    <Label Grid.Column="1" FontSize="14" Text="{Binding Port, StringFormat=':{0}'}" TextColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" />
+                                    <Label Grid.Column="0" FontSize="14" Text="{Binding Hostname}" TextColor="{StaticResource OnSurfaceVariantDark}" />
+                                    <Label Grid.Column="1" FontSize="14" Text="{Binding Port, StringFormat=':{0}'}" TextColor="{StaticResource OnSurfaceVariantDark}" />
                                 </Grid>
                             </Grid>
                             <Switch Grid.Column="1" IsToggled="{Binding IsEnabled}" OnColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" ThumbColor="{AppThemeBinding Light={StaticResource OnPrimaryLight}, Dark={StaticResource PrimaryDarkText}}" />
                             <!-- Volume slider -->
                             <Grid Grid.Row="1" Grid.Column="0" ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10">
-                                <Label Text="Vol" TextColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" VerticalOptions="Center"/>
+                                <Label Text="Vol" TextColor="{StaticResource OnSurfaceVariantDark}" VerticalOptions="Center"/>
                                 <Slider Grid.Column="1" Minimum="0" Maximum="4" Value="{Binding Volume, Mode=TwoWay}"/>
-                                <Label Grid.Column="2" Text="{Binding Volume, StringFormat='x{0:F2}'}" TextColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" VerticalOptions="Center"/>
+                                <Label Grid.Column="2" Text="{Binding Volume, StringFormat='x{0:F2}'}" TextColor="{StaticResource OnSurfaceVariantDark}" VerticalOptions="Center"/>
                             </Grid>
                             <Grid Grid.Row="1" Grid.Column="1" ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10">
                                 <Button Grid.Column="3" Text="Reset" Command="{Binding BindingContext.ResetVolumeCommand, Source={RelativeSource AncestorType={x:Type ContentPage}}}" CommandParameter="{Binding}" BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceVariantLight}, Dark={StaticResource SurfaceVariantDark}}" TextColor="{AppThemeBinding Light={StaticResource OnSurfaceLight}, Dark={StaticResource OnSurfaceDark}}"/>

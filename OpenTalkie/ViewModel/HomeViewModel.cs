@@ -24,6 +24,14 @@ public partial class HomeViewModel : ObservableObject
     [ObservableProperty]
     private bool isPlaybackAvailable;
 
+    // Indicates whether each service is currently active (for UI coloring)
+    [ObservableProperty]
+    private bool isMicrophoneActive;
+    [ObservableProperty]
+    private bool isPlaybackActive;
+    [ObservableProperty]
+    private bool isReceiverActive;
+
     public MicrophoneBroadcastService MicrophoneBroadcastService { get; set; }
     public PlaybackBroadcastService PlaybackBroadcastService { get; set; }
     public ReceiverService ReceiverService { get; set; }
@@ -41,8 +49,8 @@ public partial class HomeViewModel : ObservableObject
         PlaybackBroadcastService = playbackBroadcastService;
         ReceiverService = receiverService;
         OnMicrophoneServiceStateChange(microphoneBroadcastService.BroadcastState);
-        PlaybackBroadcastButtonText = "start cast service";
-        ReceiverButtonText = "start receiver service";
+        OnPlaybackServiceStateChange(playbackBroadcastService.BroadcastState);
+        OnReceiverStateChange(receiverService.ListeningState);
         NetworkAddresses = [];
         LoadNetworkAddresses();
 
@@ -53,6 +61,7 @@ public partial class HomeViewModel : ObservableObject
 
     private void OnMicrophoneServiceStateChange(bool isActive)
     {
+        IsMicrophoneActive = isActive;
         if (isActive)
             MicrophoneBroadcastButtonText = "stop microphone service";
         else
@@ -61,6 +70,7 @@ public partial class HomeViewModel : ObservableObject
 
     private void OnPlaybackServiceStateChange(bool isActive)
     {
+        IsPlaybackActive = isActive;
         if (isActive)
             PlaybackBroadcastButtonText = "stop cast service";
         else
@@ -69,6 +79,7 @@ public partial class HomeViewModel : ObservableObject
 
     private void OnReceiverStateChange(bool isActive)
     {
+        IsReceiverActive = isActive;
         ReceiverButtonText = isActive ? "stop receiver service" : "start receiver service";
     }
 

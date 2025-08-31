@@ -88,4 +88,14 @@
     <SolidColorBrush x:Key="PrimaryContainerBrush" Color="{AppThemeBinding Light={StaticResource PrimaryContainerLight}, Dark={StaticResource PrimaryContainerDark}}"/>
     <SolidColorBrush x:Key="SecondaryContainerBrush" Color="{AppThemeBinding Light={StaticResource SecondaryContainerLight}, Dark={StaticResource SecondaryContainerDark}}"/>
     <SolidColorBrush x:Key="OnSecondaryBrush" Color="{AppThemeBinding Light={StaticResource OnSecondaryLight}, Dark={StaticResource OnSecondaryDark}}"/>
+
+    <!-- App custom surfaces -->
+    <Color x:Key="CardBackground">#292929</Color>
+    <SolidColorBrush x:Key="CardBackgroundBrush" Color="{StaticResource CardBackground}"/>
+
+    <!-- Service running state colors -->
+    <Color x:Key="ServiceRunningLight">#2E7D32</Color>
+    <Color x:Key="ServiceRunningDark">#81C784</Color>
+    <Color x:Key="OnServiceRunningLight">#FFFFFF</Color>
+    <Color x:Key="OnServiceRunningDark">#1C1B1F</Color>
 </ResourceDictionary>

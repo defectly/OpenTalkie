@@ -10,7 +10,7 @@
                 <Frame
                     Margin="0,8"
                     Padding="16"
-                    BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceVariantLight}, Dark={StaticResource SurfaceVariantDark}}"
+                    BackgroundColor="{StaticResource CardBackground}"
                     CornerRadius="8"
                     Shadow="{StaticResource MaterialShadowDark}">
                     <Frame.GestureRecognizers>
@@ -20,7 +20,7 @@
                         FontAttributes="Bold"
                         FontSize="16"
                         Text="{Binding Name}"
-                        TextColor="{AppThemeBinding Light={StaticResource OnSurfaceLight}, Dark={StaticResource OnSurfaceDark}}" />
+                        TextColor="{StaticResource OnSurfaceDark}" />
                 </Frame>
             </DataTemplate>
         </CollectionView.ItemTemplate>
