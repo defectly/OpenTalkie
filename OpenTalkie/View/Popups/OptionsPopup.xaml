@@ -40,7 +40,7 @@
                             <Button
                                 Margin="8"
                                 Padding="12"
-                                BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceLight}, Dark={StaticResource SurfaceDark}}"
+                                BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceVariantLight}, Dark={StaticResource SurfaceVariantDark}}"
                                 Command="{Binding BindingContext.SelectOptionCommand, Source={RelativeSource AncestorType={x:Type toolkit:Popup}}}"
                                 CommandParameter="{Binding}"
                                 CornerRadius="8"

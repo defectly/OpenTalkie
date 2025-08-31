@@ -90,12 +90,15 @@
                     </Frame>
                 </DataTemplate>
             </CollectionView.ItemTemplate>
+            <CollectionView.Footer>
+                <Grid HeightRequest="100"/>
+            </CollectionView.Footer>
         </CollectionView>
 
         <Button
             AbsoluteLayout.LayoutBounds="0.95,0.95,AutoSize,AutoSize"
             AbsoluteLayout.LayoutFlags="PositionProportional"
-            BackgroundColor="{AppThemeBinding Light={StaticResource SecondaryContainerLight}, Dark={StaticResource SecondaryContainerDark}}"
+            BackgroundColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
             Command="{Binding AddStreamCommand}"
             CornerRadius="25"
             FontAttributes="Bold"
@@ -103,7 +106,7 @@
             HeightRequest="50"
             Shadow="{StaticResource MaterialShadowDark}"
             Text="+"
-            TextColor="{AppThemeBinding Light={StaticResource OnSecondaryLight}, Dark={StaticResource OnSecondaryDark}}"
+            TextColor="{AppThemeBinding Light={StaticResource OnPrimaryLight}, Dark={StaticResource OnPrimaryDark}}"
             WidthRequest="50" />
     </AbsoluteLayout>
 

@@ -28,7 +28,8 @@
     <Color x:Key="BackgroundDark">#1C1B1F</Color>
     <Color x:Key="SurfaceLight">#FFFBFE</Color>
     <Color x:Key="SurfaceDark">#1C1B1F</Color>
-    <Color x:Key="SurfaceVariantLight">#E7E0EC</Color>
+    <!-- Darker surface variant to make cards/options/networks less bright -->
+    <Color x:Key="SurfaceVariantLight">#C8C2D8</Color>
     <Color x:Key="SurfaceVariantDark">#49454F</Color>
     <Color x:Key="OnSurfaceLight">#1C1B1F</Color>
     <Color x:Key="OnSurfaceDark">#E6E1E5</Color>
