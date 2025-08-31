@@ -359,35 +359,89 @@ public class AsyncSender : IDisposable
         }
         if (bps == 3)
         {
+            int q15 = (int)Math.Round(gain * 32768.0f);
+            int bias = (q15 >= 0 ? 16384 : -16384);
             int samples = src.Length / 3;
             for (int i = 0; i < samples; i++)
             {
                 int off = i * 3;
                 int val = src[off] | (src[off + 1] << 8) | (src[off + 2] << 16);
                 if ((src[off + 2] & 0x80) != 0) val |= unchecked((int)0xFF000000);
-                float amplified = val * gain;
-                int clamped = amplified > 0x7FFFFF ? 0x7FFFFF : amplified < unchecked((int)0xFF800000) ? unchecked((int)0xFF800000) : (int)amplified;
-                dst[off] = (byte)(clamped & 0xFF);
-                dst[off + 1] = (byte)((clamped >> 8) & 0xFF);
-                dst[off + 2] = (byte)((clamped >> 16) & 0xFF);
+                int scaled = (val * q15 + bias) >> 15;
+                if (scaled > 0x7FFFFF) scaled = 0x7FFFFF; else if (scaled < unchecked((int)0xFF800000)) scaled = unchecked((int)0xFF800000);
+                dst[off] = (byte)(scaled & 0xFF);
+                dst[off + 1] = (byte)((scaled >> 8) & 0xFF);
+                dst[off + 2] = (byte)((scaled >> 16) & 0xFF);
             }
             return;
         }
         if (bps == 4)
         {
             int samples = src.Length / 4;
-            for (int i = 0; i < samples; i++)
+            if (Sse2.IsSupported && samples >= 4)
             {
-                int off = i * 4;
-                int val = src[off] | (src[off + 1] << 8) | (src[off + 2] << 16) | (src[off + 3] << 24);
-                float amplified = val * gain;
-                int clamped = amplified > int.MaxValue ? int.MaxValue : amplified < int.MinValue ? int.MinValue : (int)amplified;
-                dst[off] = (byte)(clamped & 0xFF);
-                dst[off + 1] = (byte)((clamped >> 8) & 0xFF);
-                dst[off + 2] = (byte)((clamped >> 16) & 0xFF);
-                dst[off + 3] = (byte)((clamped >> 24) & 0xFF);
+                var gainVec = Vector128.Create(gain);
+                int v = (samples / 4) * 4;
+                for (int i = 0; i < v; i += 4)
+                {
+                    int off = i * 4;
+                    int a0 = src[off] | (src[off + 1] << 8) | (src[off + 2] << 16) | (src[off + 3] << 24);
+                    int a1 = src[off + 4] | (src[off + 5] << 8) | (src[off + 6] << 16) | (src[off + 7] << 24);
+                    int a2 = src[off + 8] | (src[off + 9] << 8) | (src[off + 10] << 16) | (src[off + 11] << 24);
+                    int a3 = src[off + 12] | (src[off + 13] << 8) | (src[off + 14] << 16) | (src[off + 15] << 24);
+                    var vi = Vector128.Create(a0, a1, a2, a3);
+                    var vf = Sse2.ConvertToVector128Single(vi);
+                    vf = Sse.Multiply(vf, gainVec);
+                    var vout = Sse2.ConvertToVector128Int32(vf); // truncates toward zero
+                    int r0 = vout.GetElement(0);
+                    int r1 = vout.GetElement(1);
+                    int r2 = vout.GetElement(2);
+                    int r3 = vout.GetElement(3);
+                    dst[off] = (byte)(r0 & 0xFF);
+                    dst[off + 1] = (byte)((r0 >> 8) & 0xFF);
+                    dst[off + 2] = (byte)((r0 >> 16) & 0xFF);
+                    dst[off + 3] = (byte)((r0 >> 24) & 0xFF);
+                    dst[off + 4] = (byte)(r1 & 0xFF);
+                    dst[off + 5] = (byte)((r1 >> 8) & 0xFF);
+                    dst[off + 6] = (byte)((r1 >> 16) & 0xFF);
+                    dst[off + 7] = (byte)((r1 >> 24) & 0xFF);
+                    dst[off + 8] = (byte)(r2 & 0xFF);
+                    dst[off + 9] = (byte)((r2 >> 8) & 0xFF);
+                    dst[off + 10] = (byte)((r2 >> 16) & 0xFF);
+                    dst[off + 11] = (byte)((r2 >> 24) & 0xFF);
+                    dst[off + 12] = (byte)(r3 & 0xFF);
+                    dst[off + 13] = (byte)((r3 >> 8) & 0xFF);
+                    dst[off + 14] = (byte)((r3 >> 16) & 0xFF);
+                    dst[off + 15] = (byte)((r3 >> 24) & 0xFF);
+                }
+                for (int i = v; i < samples; i++)
+                {
+                    int off = i * 4;
+                    int val = src[off] | (src[off + 1] << 8) | (src[off + 2] << 16) | (src[off + 3] << 24);
+                    float amplified = val * gain;
+                    int clamped = amplified > int.MaxValue ? int.MaxValue : amplified < int.MinValue ? int.MinValue : (int)amplified;
+                    dst[off] = (byte)(clamped & 0xFF);
+                    dst[off + 1] = (byte)((clamped >> 8) & 0xFF);
+                    dst[off + 2] = (byte)((clamped >> 16) & 0xFF);
+                    dst[off + 3] = (byte)((clamped >> 24) & 0xFF);
+                }
+                return;
             }
-            return;
+            else
+            {
+                for (int i = 0; i < samples; i++)
+                {
+                    int off = i * 4;
+                    int val = src[off] | (src[off + 1] << 8) | (src[off + 2] << 16) | (src[off + 3] << 24);
+                    float amplified = val * gain;
+                    int clamped = amplified > int.MaxValue ? int.MaxValue : amplified < int.MinValue ? int.MinValue : (int)amplified;
+                    dst[off] = (byte)(clamped & 0xFF);
+                    dst[off + 1] = (byte)((clamped >> 8) & 0xFF);
+                    dst[off + 2] = (byte)((clamped >> 16) & 0xFF);
+                    dst[off + 3] = (byte)((clamped >> 24) & 0xFF);
+                }
+                return;
+            }
         }
         // Fallback copy
         src.CopyTo(dst);
