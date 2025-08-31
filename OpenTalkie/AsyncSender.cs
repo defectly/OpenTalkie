@@ -3,6 +3,7 @@ using OpenTalkie.RNNoise;
 using OpenTalkie.VBAN;
 using System.Collections.ObjectModel;
 using System.Runtime.CompilerServices;
+using System.Buffers;
 
 namespace OpenTalkie;
 
@@ -20,6 +21,11 @@ public class AsyncSender : IDisposable
     private byte[]? _replicateBuffer;  // temp replicate back to original channels
     private byte[]? _volumeBuffer;
     private readonly AdaptCtx _adapt = new();
+    private readonly ArrayPool<byte> _pool = ArrayPool<byte>.Shared;
+    private byte[]? _packetScratch;
+    private int _packetScratchCapacity;
+    private readonly int _srIndex;
+    private readonly int _srIndex48;
     private const int VBanMaxSamplesPerPacket = 256; // PCM max samples per packet per VBAN spec
 
     public AsyncSender(IInputStream source, ObservableCollection<Endpoint> endpoints)
@@ -38,11 +44,18 @@ public class AsyncSender : IDisposable
         };
 
         _bytesPerSample = _waveFormat.BitsPerSample / 8;
+        _srIndex = Array.IndexOf(VBANConsts.SAMPLERATES, _waveFormat.SampleRate);
+        _srIndex48 = Array.IndexOf(VBANConsts.SAMPLERATES, 48000);
     }
 
     public void Dispose()
     {
         _denoiser.Dispose();
+        ReturnPooled(ref _denoiseBuffer);
+        ReturnPooled(ref _denoisePending);
+        ReturnPooled(ref _replicateBuffer);
+        ReturnPooled(ref _volumeBuffer);
+        ReturnPooled(ref _packetScratch);
         GC.SuppressFinalize(this);
     }
 
@@ -57,6 +70,7 @@ public class AsyncSender : IDisposable
         // Optional denoise (streaming, only if source is RNNoise-compatible)
         byte[] processedBuffer = buffer;
         ReadOnlyMemory<byte> denoisedOut = ReadOnlyMemory<byte>.Empty;
+        int denoisedOutLen = 0;
         bool anyDenoise = false;
         for (int endpointIndex = 0; endpointIndex < _endpoints.Count; endpointIndex++)
         {
@@ -69,7 +83,7 @@ public class AsyncSender : IDisposable
             if (_waveFormat.BitsPerSample == 16 && _waveFormat.SampleRate == 48000 && _waveFormat.Channels == 1)
             {
                 // Fast path: already mono/48k/16
-                EnsureCapacity(ref _denoisePending, _denoiseCount + bytesRead);
+                EnsurePooledCapacity(ref _denoisePending, _denoiseCount + bytesRead);
                 Buffer.BlockCopy(buffer, offset, _denoisePending!, _denoiseCount, bytesRead);
                 _denoiseCount += bytesRead;
             }
@@ -91,7 +105,7 @@ public class AsyncSender : IDisposable
                 }
                 if (mono48Bytes.Length > 0)
                 {
-                    EnsureCapacity(ref _denoisePending, _denoiseCount + mono48Bytes.Length);
+                    EnsurePooledCapacity(ref _denoisePending, _denoiseCount + mono48Bytes.Length);
                     Buffer.BlockCopy(mono48Bytes, 0, _denoisePending!, _denoiseCount, mono48Bytes.Length);
                     _denoiseCount += mono48Bytes.Length;
                 }
@@ -102,21 +116,14 @@ public class AsyncSender : IDisposable
             int framesReady = _denoiseCount / frameBytes;
             if (framesReady > 0)
             {
-                int outLen48 = framesReady * frameBytes; // mono 16-bit 48k
-                EnsureCapacity(ref _denoiseBuffer, outLen48);
+                denoisedOutLen = framesReady * frameBytes; // mono 16-bit 48k
                 for (int i = 0; i < framesReady; i++)
                 {
                     int off = i * frameBytes;
                     _denoiser.Denoise(_denoisePending!, off, frameBytes, false);
-                    Buffer.BlockCopy(_denoisePending!, off, _denoiseBuffer!, off, frameBytes);
                 }
-                int remain = _denoiseCount - outLen48;
-                if (remain > 0)
-                    Buffer.BlockCopy(_denoisePending!, outLen48, _denoisePending!, 0, remain);
-                _denoiseCount = remain;
-
-                // After denoise, DO NOT adapt back. Send as-is: 48k / 16-bit / mono
-                denoisedOut = _denoiseBuffer.AsMemory(0, outLen48);
+                // After denoise, DO NOT adapt back. Send as-is: 48k / 16-bit / mono (read from pending buffer)
+                denoisedOut = _denoisePending.AsMemory(0, denoisedOutLen);
             }
             else
             {
@@ -138,7 +145,7 @@ public class AsyncSender : IDisposable
                 if (outChannels == 2)
                 {
                     int stereoLen = denoisedOut.Length * 2;
-                    EnsureCapacity(ref _replicateBuffer, stereoLen);
+                    EnsurePooledCapacity(ref _replicateBuffer, stereoLen);
                     ReplicateMonoToChannels16(denoisedOut.Span, _replicateBuffer.AsSpan(0, stereoLen), 2);
                     sendMemory = _replicateBuffer.AsMemory(0, stereoLen);
                 }
@@ -149,8 +156,8 @@ public class AsyncSender : IDisposable
                 if (endpoint.Volume != 1f)
                 {
                     int length = sendMemory.Length;
-                    EnsureCapacity(ref _volumeBuffer, length);
-                    ApplyVolume16(sendMemory.Span, _volumeBuffer!.AsSpan(0, length), endpoint.Volume);
+                    EnsurePooledCapacity(ref _volumeBuffer, length);
+                    ApplyVolume16_Fixed(sendMemory.Span, _volumeBuffer!.AsSpan(0, length), endpoint.Volume);
                     sendMemory = _volumeBuffer.AsMemory(0, length);
                 }
                 int denoisedSamplesPerChunk = ComputeSamplesPerChunk(endpoint.Quality, 2, outChannels);
@@ -168,12 +175,20 @@ public class AsyncSender : IDisposable
             if (endpoint.Volume != 1f)
             {
                 int length = sendMemory.Length;
-                EnsureCapacity(ref _volumeBuffer, length);
+                EnsurePooledCapacity(ref _volumeBuffer, length);
                 ApplyVolume(sendMemory.Span, _volumeBuffer!.AsSpan(0, length), endpoint.Volume);
                 sendMemory = _volumeBuffer.AsMemory(0, length);
             }
 
             await SplitAndSendAsync(sendMemory, endpoint);
+        }
+        // After sends, shift RNNoise pending remainder if any
+        if (denoisedOutLen > 0)
+        {
+            int remain = _denoiseCount - denoisedOutLen;
+            if (remain > 0)
+                Buffer.BlockCopy(_denoisePending!, denoisedOutLen, _denoisePending!, 0, remain);
+            _denoiseCount = remain;
         }
         return bytesRead;
     }
@@ -227,23 +242,22 @@ public class AsyncSender : IDisposable
         int dataLength = samples.Length;
 
         int packetLength = 28 + dataLength;
-        var packetBuffer = new byte[packetLength];
-
-        InitializePacketHeader(packetBuffer);
-        FillPacketData(samples, sampleCount, packetBuffer);
+        byte[] sendBuffer = RentPacket(packetLength);
+        InitializePacketHeader(sendBuffer.AsSpan(0, 28), _srIndex, _waveFormat.Channels, _bitResolution);
+        FillPacketData(samples, sampleCount, sendBuffer);
 
         string name = endpoint.Name;
-        for (int j = 0; j < name.Length && j < 16; j++)
-            packetBuffer[j + 8] = (byte)name[j];
+        int nameLen = Math.Min(16, name.Length);
+        for (int j = 0; j < nameLen; j++) sendBuffer[8 + j] = (byte)name[j];
+        for (int j = nameLen; j < 16; j++) sendBuffer[8 + j] = 0;
 
-        BitConverter.TryWriteBytes(packetBuffer.AsSpan(24, 4), endpoint.FrameCount);
-        var sendBuffer = packetBuffer; // already dedicated per send
+        BitConverter.TryWriteBytes(sendBuffer.AsSpan(24, 4), endpoint.FrameCount);
 
         try
         {
             var udpClient = endpoint.UdpClient;
             if (udpClient != null)
-                await udpClient.SendAsync(sendBuffer, sendBuffer.Length);
+                await udpClient.SendAsync(sendBuffer, packetLength);
         }
         catch
         {
@@ -258,23 +272,23 @@ public class AsyncSender : IDisposable
         int dataLength = samples.Length;
 
         int packetLength = 28 + dataLength;
-        var packetBuffer = new byte[packetLength];
-
-        InitializePacketHeader(packetBuffer, sampleRate, channels, bitRes);
-        FillPacketData(samples, sampleCount, packetBuffer);
+        byte[] sendBuffer = RentPacket(packetLength);
+        int srIdx = sampleRate == 48000 ? _srIndex48 : Array.IndexOf(VBANConsts.SAMPLERATES, sampleRate);
+        InitializePacketHeader(sendBuffer.AsSpan(0, 28), srIdx, channels, bitRes);
+        FillPacketData(samples, sampleCount, sendBuffer);
 
         string name = endpoint.Name;
-        for (int j = 0; j < name.Length && j < 16; j++)
-            packetBuffer[j + 8] = (byte)name[j];
+        int nameLen = Math.Min(16, name.Length);
+        for (int j = 0; j < nameLen; j++) sendBuffer[8 + j] = (byte)name[j];
+        for (int j = nameLen; j < 16; j++) sendBuffer[8 + j] = 0;
 
-        BitConverter.TryWriteBytes(packetBuffer.AsSpan(24, 4), endpoint.FrameCount);
-        var sendBuffer = packetBuffer; // already dedicated per send
+        BitConverter.TryWriteBytes(sendBuffer.AsSpan(24, 4), endpoint.FrameCount);
 
         try
         {
             var udpClient = endpoint.UdpClient;
             if (udpClient != null)
-                await udpClient.SendAsync(sendBuffer, sendBuffer.Length);
+                await udpClient.SendAsync(sendBuffer, packetLength);
         }
         catch
         {
@@ -291,11 +305,14 @@ public class AsyncSender : IDisposable
         {
             // 16-bit LE
             int samples = src.Length / 2;
+            int q15 = (int)Math.Round(gain * 32768.0f);
+            int bias = (q15 >= 0 ? 16384 : -16384);
             for (int i = 0; i < samples; i++)
             {
-                short s = (short)(src[i * 2] | (src[i * 2 + 1] << 8));
-                float amplified = s * gain;
-                short clamped = amplified > short.MaxValue ? short.MaxValue : amplified < short.MinValue ? short.MinValue : (short)amplified;
+                int s = (short)(src[i * 2] | (src[i * 2 + 1] << 8));
+                int scaled = (s * q15 + bias) >> 15;
+                if (scaled > short.MaxValue) scaled = short.MaxValue; else if (scaled < short.MinValue) scaled = short.MinValue;
+                short clamped = (short)scaled;
                 dst[i * 2] = (byte)(clamped & 0xFF);
                 dst[i * 2 + 1] = (byte)((clamped >> 8) & 0xFF);
             }
@@ -352,16 +369,23 @@ public class AsyncSender : IDisposable
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void ApplyVolume16(ReadOnlySpan<byte> src, Span<byte> dst, float gain)
     {
+        int q15 = (int)Math.Round(gain * 32768.0f);
+        int bias = (q15 >= 0 ? 16384 : -16384);
         int samples = src.Length / 2;
         for (int i = 0; i < samples; i++)
         {
-            short s = (short)(src[i * 2] | (src[i * 2 + 1] << 8));
-            float amplified = s * gain;
-            short clamped = amplified > short.MaxValue ? short.MaxValue : amplified < short.MinValue ? short.MinValue : (short)amplified;
+            int s = (short)(src[i * 2] | (src[i * 2 + 1] << 8));
+            int scaled = (s * q15 + bias) >> 15;
+            if (scaled > short.MaxValue) scaled = short.MaxValue; else if (scaled < short.MinValue) scaled = short.MinValue;
+            short clamped = (short)scaled;
             dst[i * 2] = (byte)(clamped & 0xFF);
             dst[i * 2 + 1] = (byte)((clamped >> 8) & 0xFF);
         }
     }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void ApplyVolume16_Fixed(ReadOnlySpan<byte> src, Span<byte> dst, float gain)
+        => ApplyVolume16(src, dst, gain);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void FillPacketData(ReadOnlyMemory<byte> samples, int sampleCount, byte[] packetBuffer)
@@ -371,32 +395,55 @@ public class AsyncSender : IDisposable
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void InitializePacketHeader(byte[] packetBuffer)
+    private void InitializePacketHeader(Span<byte> header, int srIndex, int channels, VBanBitResolution bitRes)
     {
-        packetBuffer[0] = (byte)'V';
-        packetBuffer[1] = (byte)'B';
-        packetBuffer[2] = (byte)'A';
-        packetBuffer[3] = (byte)'N';
-        packetBuffer[4] = (byte)((int)VBanProtocol.VBAN_PROTOCOL_AUDIO << 5 | Array.IndexOf(VBANConsts.SAMPLERATES, _waveFormat.SampleRate));
-        packetBuffer[6] = (byte)(_waveFormat.Channels - 1);
-        packetBuffer[7] = (byte)((int)VBanCodec.VBAN_CODEC_PCM << 5 | (byte)_bitResolution);
+        header[0] = (byte)'V';
+        header[1] = (byte)'B';
+        header[2] = (byte)'A';
+        header[3] = (byte)'N';
+        header[4] = (byte)(((int)VBanProtocol.VBAN_PROTOCOL_AUDIO & 0xE0) | (srIndex & 0x1F));
+        header[6] = (byte)(Math.Max(1, channels) - 1);
+        header[7] = (byte)(((int)VBanCodec.VBAN_CODEC_PCM & 0xE0) | ((int)bitRes & 0x1F));
     }
     private void InitializePacketHeader(byte[] packetBuffer, int sampleRate, int channels, VBanBitResolution bitRes)
+        => InitializePacketHeader(packetBuffer.AsSpan(0, 28), Array.IndexOf(VBANConsts.SAMPLERATES, sampleRate), channels, bitRes);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void EnsurePooledCapacity(ref byte[]? buffer, int size)
     {
-        packetBuffer[0] = (byte)'V';
-        packetBuffer[1] = (byte)'B';
-        packetBuffer[2] = (byte)'A';
-        packetBuffer[3] = (byte)'N';
-        packetBuffer[4] = (byte)((int)VBanProtocol.VBAN_PROTOCOL_AUDIO << 5 | Array.IndexOf(VBANConsts.SAMPLERATES, sampleRate));
-        packetBuffer[6] = (byte)(channels - 1);
-        packetBuffer[7] = (byte)((int)VBanCodec.VBAN_CODEC_PCM << 5 | (byte)bitRes);
+        if (buffer == null)
+        {
+            buffer = _pool.Rent(size);
+            return;
+        }
+        if (buffer.Length < size)
+        {
+            var old = buffer;
+            buffer = _pool.Rent(size);
+            _pool.Return(old);
+        }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void EnsureCapacity(ref byte[]? buffer, int size)
+    private void ReturnPooled(ref byte[]? buffer)
     {
-        if (buffer == null || buffer.Length < size)
-            buffer = new byte[size];
+        if (buffer != null)
+        {
+            _pool.Return(buffer);
+            buffer = null;
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private byte[] RentPacket(int size)
+    {
+        if (_packetScratch == null || _packetScratchCapacity < size)
+        {
+            if (_packetScratch != null) _pool.Return(_packetScratch);
+            _packetScratch = _pool.Rent(size);
+            _packetScratchCapacity = _packetScratch.Length;
+        }
+        return _packetScratch;
     }
 
     private sealed class AdaptCtx

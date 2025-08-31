@@ -414,13 +414,16 @@ public class ReceiverService
     private static void ApplyVolume16(Span<byte> buffer, float gain)
     {
         if (Math.Abs(gain - 1f) < 0.0001f) return;
+        int q15 = (int)Math.Round(gain * 32768.0f);
+        int bias = (q15 >= 0 ? 16384 : -16384);
         int samples = buffer.Length / 2;
         for (int i = 0; i < samples; i++)
         {
             int off = i * 2;
-            short s = (short)(buffer[off] | (buffer[off + 1] << 8));
-            float amplified = s * gain;
-            short clamped = amplified > short.MaxValue ? short.MaxValue : amplified < short.MinValue ? short.MinValue : (short)amplified;
+            int s = (short)(buffer[off] | (buffer[off + 1] << 8));
+            int scaled = (s * q15 + bias) >> 15;
+            if (scaled > short.MaxValue) scaled = short.MaxValue; else if (scaled < short.MinValue) scaled = short.MinValue;
+            short clamped = (short)scaled;
             buffer[off] = (byte)(clamped & 0xFF);
             buffer[off + 1] = (byte)((clamped >> 8) & 0xFF);
         }

@@ -71,20 +71,24 @@ public static class MicrophoneAudioRecord
 
         int read = await _audioRecord.ReadAsync(buffer, offset, count);
 
-        ChangeVolume(buffer, _volume);
+        if (read > 0)
+            ChangeVolume(buffer, offset, read, _volume);
 
         return read;
     }
 
-    public static unsafe void ChangeVolume(byte[] audioBytes, float gain)
+    public static unsafe void ChangeVolume(byte[] audioBytes, int offset, int length, float gain)
     {
-        if (audioBytes == null || audioBytes.Length % 2 != 0)
+        if (audioBytes == null || length % 2 != 0)
             throw new ArgumentException("Incorrect audio data format");
 
-        fixed (byte* ptr = audioBytes)
+        if (Math.Abs(gain - 1f) < 0.0001f) return;
+
+        fixed (byte* basePtr = audioBytes)
         {
+            byte* ptr = basePtr + offset;
             short* samples = (short*)ptr;
-            int sampleCount = audioBytes.Length / 2;
+            int sampleCount = length / 2;
 
             for (int i = 0; i < sampleCount; i++)
             {
