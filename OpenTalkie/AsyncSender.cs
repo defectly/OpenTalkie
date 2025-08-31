@@ -4,6 +4,8 @@ using OpenTalkie.VBAN;
 using System.Collections.ObjectModel;
 using System.Runtime.CompilerServices;
 using System.Buffers;
+using System.Numerics;
+using System.Runtime.InteropServices;
 
 namespace OpenTalkie;
 
@@ -304,17 +306,45 @@ public class AsyncSender : IDisposable
         if (bps == 2)
         {
             // 16-bit LE
-            int samples = src.Length / 2;
+            var s16 = MemoryMarshal.Cast<byte, short>(src);
+            var d16 = MemoryMarshal.Cast<byte, short>(dst);
             int q15 = (int)Math.Round(gain * 32768.0f);
             int bias = (q15 >= 0 ? 16384 : -16384);
-            for (int i = 0; i < samples; i++)
+            if (Vector.IsHardwareAccelerated && s16.Length >= Vector<short>.Count)
             {
-                int s = (short)(src[i * 2] | (src[i * 2 + 1] << 8));
-                int scaled = (s * q15 + bias) >> 15;
-                if (scaled > short.MaxValue) scaled = short.MaxValue; else if (scaled < short.MinValue) scaled = short.MinValue;
-                short clamped = (short)scaled;
-                dst[i * 2] = (byte)(clamped & 0xFF);
-                dst[i * 2 + 1] = (byte)((clamped >> 8) & 0xFF);
+                int vszShort = Vector<short>.Count;
+                var qVec = new Vector<int>(q15);
+                var biasVec = new Vector<int>(bias);
+                var minI = new Vector<int>(short.MinValue);
+                var maxI = new Vector<int>(short.MaxValue);
+                int v = (s16.Length / vszShort) * vszShort;
+                for (int i = 0; i < v; i += vszShort)
+                {
+                    var vS = new Vector<short>(s16.Slice(i));
+                    Vector.Widen(vS, out Vector<int> lo, out Vector<int> hi);
+                    lo = ((lo * qVec) + biasVec) >> 15;
+                    hi = ((hi * qVec) + biasVec) >> 15;
+                    lo = Vector.Min(Vector.Max(lo, minI), maxI);
+                    hi = Vector.Min(Vector.Max(hi, minI), maxI);
+                    var packed = Vector.Narrow(lo, hi);
+                    packed.CopyTo(d16.Slice(i));
+                }
+                for (int i = v; i < s16.Length; i++)
+                {
+                    int scaled = (s16[i] * q15 + bias) >> 15;
+                    if (scaled > short.MaxValue) scaled = short.MaxValue; else if (scaled < short.MinValue) scaled = short.MinValue;
+                    d16[i] = (short)scaled;
+                }
+            }
+            else
+            {
+                int samples = s16.Length;
+                for (int i = 0; i < samples; i++)
+                {
+                    int scaled = (s16[i] * q15 + bias) >> 15;
+                    if (scaled > short.MaxValue) scaled = short.MaxValue; else if (scaled < short.MinValue) scaled = short.MinValue;
+                    d16[i] = (short)scaled;
+                }
             }
             return;
         }
@@ -371,15 +401,42 @@ public class AsyncSender : IDisposable
     {
         int q15 = (int)Math.Round(gain * 32768.0f);
         int bias = (q15 >= 0 ? 16384 : -16384);
-        int samples = src.Length / 2;
-        for (int i = 0; i < samples; i++)
+        var s16 = MemoryMarshal.Cast<byte, short>(src);
+        var d16 = MemoryMarshal.Cast<byte, short>(dst);
+        if (Vector.IsHardwareAccelerated && s16.Length >= Vector<short>.Count)
         {
-            int s = (short)(src[i * 2] | (src[i * 2 + 1] << 8));
-            int scaled = (s * q15 + bias) >> 15;
-            if (scaled > short.MaxValue) scaled = short.MaxValue; else if (scaled < short.MinValue) scaled = short.MinValue;
-            short clamped = (short)scaled;
-            dst[i * 2] = (byte)(clamped & 0xFF);
-            dst[i * 2 + 1] = (byte)((clamped >> 8) & 0xFF);
+            int vszShort = Vector<short>.Count;
+            var qVec = new Vector<int>(q15);
+            var biasVec = new Vector<int>(bias);
+            var minI = new Vector<int>(short.MinValue);
+            var maxI = new Vector<int>(short.MaxValue);
+            int v = (s16.Length / vszShort) * vszShort;
+            for (int i = 0; i < v; i += vszShort)
+            {
+                var vS = new Vector<short>(s16.Slice(i));
+                Vector.Widen(vS, out Vector<int> lo, out Vector<int> hi);
+                lo = ((lo * qVec) + biasVec) >> 15;
+                hi = ((hi * qVec) + biasVec) >> 15;
+                lo = Vector.Min(Vector.Max(lo, minI), maxI);
+                hi = Vector.Min(Vector.Max(hi, minI), maxI);
+                var packed = Vector.Narrow(lo, hi);
+                packed.CopyTo(d16.Slice(i));
+            }
+            for (int i = v; i < s16.Length; i++)
+            {
+                int scaled = (s16[i] * q15 + bias) >> 15;
+                if (scaled > short.MaxValue) scaled = short.MaxValue; else if (scaled < short.MinValue) scaled = short.MinValue;
+                d16[i] = (short)scaled;
+            }
+        }
+        else
+        {
+            for (int i = 0; i < s16.Length; i++)
+            {
+                int scaled = (s16[i] * q15 + bias) >> 15;
+                if (scaled > short.MaxValue) scaled = short.MaxValue; else if (scaled < short.MinValue) scaled = short.MinValue;
+                d16[i] = (short)scaled;
+            }
         }
     }
 

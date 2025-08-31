@@ -377,17 +377,18 @@ public class ReceiverService
 
             int frames = input.Length / (inCh * 2);
             byte[] outBuf = new byte[frames * outCh * 2];
+            var inShorts = MemoryMarshal.Cast<byte, short>(input.AsSpan());
+            var outShorts = MemoryMarshal.Cast<byte, short>(outBuf.AsSpan());
 
             if (outCh == 1)
             {
                 // Downmix to mono: average first two channels (or duplicate mono)
                 for (int f = 0; f < frames; f++)
                 {
-                    int inBase = f * inCh * 2;
-                    short l = BitConverter.ToInt16(input, inBase);
-                    short r = inCh >= 2 ? BitConverter.ToInt16(input, inBase + 2) : l;
-                    short m = (short)((l + r) / 2);
-                    Buffer.BlockCopy(BitConverter.GetBytes(m), 0, outBuf, f * 2, 2);
+                    int baseIn = f * inCh;
+                    short l = inShorts[baseIn];
+                    short r = inCh >= 2 ? inShorts[baseIn + 1] : l;
+                    outShorts[f] = (short)((l + r) / 2);
                 }
             }
             else // outCh == 2
@@ -397,10 +398,10 @@ public class ReceiverService
                     // Upmix mono to stereo
                     for (int f = 0; f < frames; f++)
                     {
-                        short s = BitConverter.ToInt16(input, f * 2);
-                        int outBase = f * 4;
-                        Buffer.BlockCopy(BitConverter.GetBytes(s), 0, outBuf, outBase, 2);
-                        Buffer.BlockCopy(BitConverter.GetBytes(s), 0, outBuf, outBase + 2, 2);
+                        short s = inShorts[f];
+                        int outBase = f * 2;
+                        outShorts[outBase] = s;
+                        outShorts[outBase + 1] = s;
                     }
                 }
                 else
@@ -408,12 +409,10 @@ public class ReceiverService
                     // Take first two channels from multichannel
                     for (int f = 0; f < frames; f++)
                     {
-                        int inBase = f * inCh * 2;
-                        int outBase = f * 4;
-                        outBuf[outBase + 0] = input[inBase + 0];
-                        outBuf[outBase + 1] = input[inBase + 1];
-                        outBuf[outBase + 2] = input[inBase + 2];
-                        outBuf[outBase + 3] = input[inBase + 3];
+                        int baseIn = f * inCh;
+                        int outBase = f * 2;
+                        outShorts[outBase] = inShorts[baseIn];
+                        outShorts[outBase + 1] = inShorts[baseIn + 1];
                     }
                 }
             }
