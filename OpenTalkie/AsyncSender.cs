@@ -19,8 +19,6 @@ public class AsyncSender : IDisposable
     private int _denoiseCount;
     private byte[]? _replicateBuffer;  // temp replicate back to original channels
     private byte[]? _volumeBuffer;
-    private byte[]? _packetBuffer;
-    private int _packetCapacity;
     private readonly AdaptCtx _adapt = new();
 
     public AsyncSender(IInputStream source, ObservableCollection<Endpoint> endpoints)
@@ -386,17 +384,6 @@ public class AsyncSender : IDisposable
             buffer = new byte[size];
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void EnsurePacketCapacity(int size)
-    {
-        if (_packetBuffer == null || _packetCapacity < size)
-        {
-            _packetCapacity = Math.Max(size, _packetCapacity * 2);
-            if (_packetCapacity == 0) _packetCapacity = size;
-            _packetBuffer = new byte[_packetCapacity];
-        }
-    }
-
     private sealed class AdaptCtx
     {
         public short[] ResIn = Array.Empty<short>();
@@ -500,48 +487,6 @@ public class AsyncSender : IDisposable
         return outBytes;
     }
 
-    private static short[] ResampleFrom48k(byte[] mono48kBytes, int outRate, AdaptCtx context)
-    {
-        if (mono48kBytes.Length == 0 || outRate <= 0) return Array.Empty<short>();
-        if (context.LastOutRate != outRate)
-        {
-            context.LastOutRate = outRate;
-            context.ResOutInCount = 0; context.ResOutPos = 0;
-        }
-        int frames = mono48kBytes.Length / 2;
-        int required = context.ResOutInCount + frames;
-        if (context.ResOutIn.Length < required)
-        {
-            var newBuffer = new short[Math.Max(required, context.ResOutIn.Length == 0 ? frames * 2 : context.ResOutIn.Length * 2)];
-            if (context.ResOutInCount > 0) Array.Copy(context.ResOutIn, 0, newBuffer, 0, context.ResOutInCount);
-            context.ResOutIn = newBuffer;
-        }
-        Buffer.BlockCopy(mono48kBytes, 0, context.ResOutIn, context.ResOutInCount * 2, mono48kBytes.Length);
-        context.ResOutInCount += frames;
-
-        double step = 48000.0 / (double)outRate;
-        var outList = new List<short>(context.ResOutInCount);
-        while (context.ResOutPos + 1.0 < context.ResOutInCount)
-        {
-            int i0 = (int)context.ResOutPos;
-            double frac = context.ResOutPos - i0;
-            short s0 = context.ResOutIn[i0];
-            short s1 = context.ResOutIn[i0 + 1];
-            int interp = s0 + (int)((s1 - s0) * frac);
-            outList.Add((short)interp);
-            context.ResOutPos += step;
-        }
-        int consumed = Math.Max(0, (int)context.ResOutPos);
-        if (consumed > 0)
-        {
-            int remaining = context.ResOutInCount - consumed;
-            if (remaining > 0) Array.Copy(context.ResOutIn, consumed, context.ResOutIn, 0, remaining);
-            context.ResOutInCount = remaining;
-            context.ResOutPos -= consumed;
-        }
-        return outList.ToArray();
-    }
-
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void PackMonoToFormat(ReadOnlySpan<short> mono, Span<byte> dst, int channels, int bits)
     {
@@ -608,26 +553,6 @@ public class AsyncSender : IDisposable
             return;
         }
         PackMonoToFormat(mono, dst, channels, 16);
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void DownmixToMono16(ReadOnlySpan<byte> src, Span<byte> dstMono, int channels)
-    {
-        int frames = src.Length / (channels * 2);
-        for (int i = 0; i < frames; i++)
-        {
-            int inBase = i * channels * 2;
-            int sum = 0;
-            for (int ch = 0; ch < channels; ch++)
-            {
-                short s = (short)(src[inBase + ch * 2] | (src[inBase + ch * 2 + 1] << 8));
-                sum += s;
-            }
-            short m = (short)(sum / channels);
-            int outOff = i * 2;
-            dstMono[outOff] = (byte)(m & 0xFF);
-            dstMono[outOff + 1] = (byte)((m >> 8) & 0xFF);
-        }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
