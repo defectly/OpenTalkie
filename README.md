@@ -11,6 +11,7 @@
 ## Note
 
 - Currently latest 2.0.0 release can receive sound without lags only at "Very Slow" "Net Quality" setting
+- Receiving sound in 8-bit encoding is corrupted
 
 ## Thanks
 
