@@ -155,6 +155,7 @@ public class AsyncReceiver : IDisposable
         }
 
         private readonly Dictionary<Guid, DenoiseCtx> _denoisers = new();
+        private readonly Dictionary<Guid, uint> _lastFrame = new();
 
         public Listener(int port, List<Endpoint> endpoints, Action<Endpoint, byte[], int, int, int> onPayload)
         {
@@ -247,77 +248,25 @@ public class AsyncReceiver : IDisposable
                     }
 
                     int header = 28;
+                    // Drop out-of-order/duplicate frames using VBAN frame counter (little-endian)
+                    uint frame = BitConverter.ToUInt32(buf, 24);
+                    if (_lastFrame.TryGetValue(ep.Id, out var last))
+                    {
+                        // if not newer (with wrap-around aware compare), skip
+                        if ((int)(frame - last) <= 0) continue;
+                    }
+                    _lastFrame[ep.Id] = frame;
                     int payloadBytes = buf.Length - header;
                     if (payloadBytes <= 0) continue;
                     int bps = bitsPerSample / 8;
-                    if (payloadBytes < samplesPerFrame * channels * bps && payloadBytes % (channels * bps) != 0) continue;
+                    // accept any integer number of sample-frames; derive actual count from payload
+                    if ((payloadBytes % (channels * bps)) != 0) continue;
 
                     var payload = new byte[payloadBytes];
                     Buffer.BlockCopy(buf, header, payload, 0, payloadBytes);
 
-                    if (ep.IsDenoiseEnabled)
-                    {
-                        // Convert any format to 48kHz, mono, 16-bit for RNNoise, then denoise
-                        if (!_denoisers.TryGetValue(ep.Id, out var ctx))
-                        {
-                            ctx = new DenoiseCtx();
-                            _denoisers[ep.Id] = ctx;
-                        }
-
-                        // 1) Convert to mono 16-bit at source rate
-                        var mono16 = ConvertToMono16(payload, bitsPerSample, channels);
-
-                        // 2) Resample to 48k mono 16-bit
-                        var res48 = ResampleTo48k(mono16, sampleRate, ctx);
-
-                        // 3) Accumulate to 480-sample blocks and denoise
-                        int frameBytes = 480 * 2;
-                        if (res48.Length > 0)
-                        {
-                            int addBytes = res48.Length; // res48 already in bytes (16-bit LE)
-                            int need = ctx.PendingCount + addBytes;
-                            if (ctx.Pending.Length < need)
-                            {
-                                int newCap = Math.Max(need, ctx.Pending.Length == 0 ? 4096 : ctx.Pending.Length * 2);
-                                var nb = new byte[newCap];
-                                if (ctx.PendingCount > 0) Buffer.BlockCopy(ctx.Pending, 0, nb, 0, ctx.PendingCount);
-                                ctx.Pending = nb;
-                            }
-                            Buffer.BlockCopy(res48, 0, ctx.Pending, ctx.PendingCount, addBytes);
-                            ctx.PendingCount += addBytes;
-
-                            int frames = ctx.PendingCount / frameBytes;
-                            if (frames > 0)
-                            {
-                                int outLen = frames * frameBytes;
-                                var outBuf = new byte[outLen];
-                                for (int i = 0; i < frames; i++)
-                                {
-                                    int off = i * frameBytes;
-                                    // Denoise in place on pending buffer to avoid per-frame allocations
-                                    ctx.Dn.Denoise(ctx.Pending, off, frameBytes, false);
-                                    Buffer.BlockCopy(ctx.Pending, off, outBuf, off, frameBytes);
-                                }
-
-                                int remain = ctx.PendingCount - outLen;
-                                if (remain > 0) Buffer.BlockCopy(ctx.Pending, outLen, ctx.Pending, 0, remain);
-                                ctx.PendingCount = remain;
-
-                                try { _onPayload(ep, outBuf, 1, 16, 48000); } catch { }
-                                continue;
-                            }
-                            else
-                            {
-                                continue; // not enough for a full denoise frame yet
-                            }
-                        }
-                        else
-                        {
-                            continue; // no samples after conversion/resample yet
-                        }
-                    }
-
-                    // Denoise disabled -> clear any accumulators and pass original
+                    // Always emit raw payload quickly; denoise, resample and format conversions
+                    // are handled off the UDP thread in ReceiverService to avoid drops.
                     if (_denoisers.TryGetValue(ep.Id, out var ctx2))
                     {
                         ctx2.ClearPending();

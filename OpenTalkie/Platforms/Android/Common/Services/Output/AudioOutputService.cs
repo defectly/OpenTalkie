@@ -40,11 +40,17 @@ public class AudioOutputService : IAudioOutputService
             .SetChannelMask(channelOut)
             .Build();
 
-        _track = new AudioTrack.Builder()
+        var builder = new AudioTrack.Builder()
             .SetAudioAttributes(attrs)
             .SetAudioFormat(format)
-            .SetBufferSizeInBytes(minBuf * 2)
-            .Build();
+            .SetBufferSizeInBytes(minBuf);
+        try
+        {
+            // Hint ultra low-latency path when available
+            builder = builder.SetPerformanceMode(AudioTrackPerformanceMode.LowLatency);
+        }
+        catch { }
+        _track = builder.Build();
 
         _sampleRate = sampleRate;
         _channels = channels;

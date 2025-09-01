@@ -24,14 +24,19 @@ public class ReceiverService
     private AsyncReceiver? _receiver;
     private CancellationTokenSource? _mixCts;
     private Task? _mixTask;
+    private readonly System.Collections.Concurrent.ConcurrentQueue<(Endpoint ep, byte[] payload, WaveFormat wf)> _incoming = new();
+    private readonly SemaphoreSlim _incomingSignal = new(0);
+    private CancellationTokenSource? _procCts;
+    private Task? _procTask;
     private readonly Dictionary<Guid, StreamBuffer> _buffers = new();
     private volatile StreamBuffer[] _activeBuffers = Array.Empty<StreamBuffer>();
+    private readonly Dictionary<Guid, DenoiseCtx> _denoisers = new();
     private readonly object _outputLock = new();
     private int _currentSampleRate;
     private int _currentChannels;
     private const int TargetSampleRate = 48000;
     private const int TargetChannels = 2;
-    private const int MixChunkSamples = 480; // per channel (~10ms at 48k)
+    private const int MixChunkSamples = 240; // per channel (~5ms at 48k)
     private const int BytesPerSample = 2; // 16-bit
     private const int BytesPerChunk = MixChunkSamples * TargetChannels * BytesPerSample;
     // Jitter buffer size is computed per stream from its selected Quality
@@ -70,6 +75,9 @@ public class ReceiverService
         EnsureOutput(TargetSampleRate, TargetChannels);
         _mixCts = new CancellationTokenSource();
         _mixTask = Task.Run(() => MixLoopAsync(_mixCts.Token));
+        // Start frame processing worker (decouples UDP receive from conversion)
+        _procCts = new CancellationTokenSource();
+        _procTask = Task.Run(() => ProcessIncomingLoopAsync(_procCts.Token));
         ListeningStateChanged?.Invoke(true);
     }
 
@@ -82,10 +90,16 @@ public class ReceiverService
         _mixCts?.Cancel();
         try { _mixTask?.Wait(500); } catch { }
         _audioOutput.Stop();
+        _procCts?.Cancel();
+        try { _procTask?.Wait(500); } catch { }
         lock (_buffers)
         {
             _buffers.Clear();
         }
+        // Dispose denoise contexts
+        var dvals = _denoisers.Values.ToList();
+        for (int i = 0; i < dvals.Count; i++) try { dvals[i].Dn.Dispose(); } catch { }
+        _denoisers.Clear();
         Volatile.Write(ref _activeBuffers, Array.Empty<StreamBuffer>());
         ListeningStateChanged?.Invoke(false);
     }
@@ -97,43 +111,24 @@ public class ReceiverService
 
     private void OnFrameReceived(Endpoint ep, byte[] payload, WaveFormat wf)
     {
-        // Convert to target format and enqueue for mixing
-        byte[] pcm16 = ConvertToPcm16Interleaved(payload, wf.BitsPerSample, wf.Channels, TargetChannels);
-        if (wf.SampleRate != TargetSampleRate)
-        {
-            pcm16 = ResamplePcm16Interleaved(pcm16, wf.SampleRate, TargetSampleRate, TargetChannels);
-        }
-        if (ep.Volume != 1f)
-        {
-            ApplyVolume16(pcm16.AsSpan(), ep.Volume);
-        }
-        bool added = false;
-        lock (_buffers)
-        {
-            if (!_buffers.TryGetValue(ep.Id, out var buf))
-            {
-                buf = new StreamBuffer(BytesPerChunk, ComputeMaxQueuedChunks(ep.Quality));
-                _buffers[ep.Id] = buf;
-                added = true;
-            }
-            _buffers[ep.Id].Enqueue(pcm16);
-            if (added)
-            {
-                var snap = _buffers.Values.ToArray();
-                Volatile.Write(ref _activeBuffers, snap);
-            }
-        }
+        // Offload heavy conversion to background processor to avoid blocking UDP receive loop
+        _incoming.Enqueue((ep, payload, wf));
+        _incomingSignal.Release();
     }
 
     private static int ComputeMaxQueuedChunks(OpenTalkie.VBAN.VBanQuality quality)
     {
         // Interpret VBanQuality as reference samples per channel at 48kHz
-        int referenceSamples = (int)quality; // 512, 1024, 2048, 4096, 8192
+        // 512,1024,2048,4096,8192 -> base chunks: ceil(val/480)
+        int referenceSamples = (int)quality;
         int chunks = (int)Math.Ceiling(referenceSamples / (double)MixChunkSamples);
-        if (chunks < 1) chunks = 1;
+        // Ensure a small safety window to ride out micro-jitter without prebuffering
+        if (chunks < 6) chunks = 6;
         if (chunks > 64) chunks = 64; // cap for sanity
         return chunks;
     }
+
+    private static int ComputeMinReadyChunks(OpenTalkie.VBAN.VBanQuality quality) => 1; // avoid added latency
 
     private void EnsureOutput(int sampleRate, int channels)
     {
@@ -148,6 +143,253 @@ public class ReceiverService
             }
             // Do not restart to minimize glitches; keep current output format.
         }
+    }
+
+    private async Task ProcessIncomingLoopAsync(CancellationToken ct)
+    {
+        while (!ct.IsCancellationRequested)
+        {
+            try { await _incomingSignal.WaitAsync(ct); }
+            catch (OperationCanceledException) { break; }
+            catch { continue; }
+
+            // Drain as much as possible to batch work
+            for (int i = 0; i < 32; i++)
+            {
+                if (!_incoming.TryDequeue(out var item)) break;
+                var ep = item.ep;
+                var wf = item.wf;
+                var payload = item.payload;
+
+                // Optional RNNoise on receive (off UDP thread)
+                if (ep.IsDenoiseEnabled)
+                {
+                    if (!_denoisers.TryGetValue(ep.Id, out var dctx))
+                    {
+                        dctx = new DenoiseCtx();
+                        _denoisers[ep.Id] = dctx;
+                    }
+                    var mono16 = ConvertToMono16ForDn(payload, wf.BitsPerSample, wf.Channels);
+                    var res48 = ResampleTo48kForDn(mono16, wf.SampleRate, dctx);
+                    if (res48.Length > 0)
+                    {
+                        int frameBytes = 480 * 2;
+                        int need = dctx.PendingCount + res48.Length;
+                        if (dctx.Pending.Length < need)
+                        {
+                            int newCap = Math.Max(need, dctx.Pending.Length == 0 ? 4096 : dctx.Pending.Length * 2);
+                            var nb = new byte[newCap];
+                            if (dctx.PendingCount > 0) Buffer.BlockCopy(dctx.Pending, 0, nb, 0, dctx.PendingCount);
+                            dctx.Pending = nb;
+                        }
+                        Buffer.BlockCopy(res48, 0, dctx.Pending, dctx.PendingCount, res48.Length);
+                        dctx.PendingCount += res48.Length;
+
+                        int frames = dctx.PendingCount / frameBytes;
+                        if (frames > 0)
+                        {
+                            int outLen = frames * frameBytes;
+                            var outBufMono = new byte[outLen];
+                            for (int fi = 0; fi < frames; fi++)
+                            {
+                                int off = fi * frameBytes;
+                                dctx.Dn.Denoise(dctx.Pending, off, frameBytes, false);
+                                Buffer.BlockCopy(dctx.Pending, off, outBufMono, off, frameBytes);
+                            }
+                            int remain = dctx.PendingCount - outLen;
+                            if (remain > 0) Buffer.BlockCopy(dctx.Pending, outLen, dctx.Pending, 0, remain);
+                            dctx.PendingCount = remain;
+
+                            // Upmix mono->stereo for mixing
+                            int framesOut = outLen / 2; // samples mono
+                            byte[] stereo = new byte[framesOut * 4];
+                            var srcS = MemoryMarshal.Cast<byte, short>(outBufMono.AsSpan());
+                            var dstS = MemoryMarshal.Cast<byte, short>(stereo.AsSpan());
+                            for (int f = 0; f < framesOut; f++) { short s = srcS[f]; int o = f * 2; dstS[o] = s; dstS[o + 1] = s; }
+
+                            bool added2 = false;
+                            lock (_buffers)
+                            {
+                                if (!_buffers.TryGetValue(ep.Id, out var buf2))
+                                {
+                                    buf2 = new StreamBuffer(BytesPerChunk, ComputeMaxQueuedChunks(ep.Quality), ComputeMinReadyChunks(ep.Quality)) { Volume = ep.Volume };
+                                    _buffers[ep.Id] = buf2;
+                                    added2 = true;
+                                }
+                                _buffers[ep.Id].Enqueue(stereo);
+                                if (added2)
+                                {
+                                    var snap2 = _buffers.Values.ToArray();
+                                    Volatile.Write(ref _activeBuffers, snap2);
+                                }
+                            }
+                            continue; // handled via denoise path
+                        }
+                        else
+                        {
+                            continue; // wait for full denoise frame
+                        }
+                    }
+                    else
+                    {
+                        continue; // no samples from conversion yet
+                    }
+                }
+
+                // Convert to target format with fast-path for 48k/16-bit
+                byte[] pcm16;
+                if (wf.BitsPerSample == 16 && wf.SampleRate == TargetSampleRate)
+                {
+                    if (wf.Channels == 2)
+                    {
+                        // Exact target format; enqueue as-is (volume applied at mix time)
+                        pcm16 = payload;
+                    }
+                    else if (wf.Channels == 1)
+                    {
+                        // Upmix mono to stereo cheaply
+                        int frames = payload.Length / 2;
+                        pcm16 = new byte[frames * 4];
+                        var src = MemoryMarshal.Cast<byte, short>(payload.AsSpan());
+                        var dst = MemoryMarshal.Cast<byte, short>(pcm16.AsSpan());
+                        for (int f = 0; f < frames; f++)
+                        {
+                            short s = src[f];
+                            int o = f * 2;
+                            dst[o] = s; dst[o + 1] = s;
+                        }
+                    }
+                    else
+                    {
+                        // Take first two channels
+                        pcm16 = ConvertToPcm16Interleaved(payload, 16, wf.Channels, TargetChannels);
+                    }
+                }
+                else
+                {
+                    // Generic path
+                    pcm16 = ConvertToPcm16Interleaved(payload, wf.BitsPerSample, wf.Channels, TargetChannels);
+                    if (wf.SampleRate != TargetSampleRate)
+                    {
+                        pcm16 = ResamplePcm16Interleaved(pcm16, wf.SampleRate, TargetSampleRate, TargetChannels);
+                    }
+                }
+
+                bool added = false;
+                lock (_buffers)
+                {
+                    if (!_buffers.TryGetValue(ep.Id, out var buf))
+                    {
+                        buf = new StreamBuffer(BytesPerChunk, ComputeMaxQueuedChunks(ep.Quality), ComputeMinReadyChunks(ep.Quality));
+                        buf.Volume = ep.Volume;
+                        _buffers[ep.Id] = buf;
+                        added = true;
+                    }
+                    _buffers[ep.Id].Enqueue(pcm16);
+                    if (added)
+                    {
+                        var snap = _buffers.Values.ToArray();
+                        Volatile.Write(ref _activeBuffers, snap);
+                    }
+                }
+            }
+        }
+    }
+
+    // ---------- Receive-side denoise helpers (moved off UDP thread) ----------
+    private sealed class DenoiseCtx
+    {
+        public OpenTalkie.RNNoise.Denoiser Dn = new();
+        public byte[] Pending = Array.Empty<byte>();
+        public int PendingCount;
+        public short[] ResIn = Array.Empty<short>();
+        public int ResInCount;
+        public double ResPos;
+        public int LastInRate = 48000;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static short[] ConvertToMono16ForDn(byte[] input, int bits, int channels)
+    {
+        int inBps = bits / 8;
+        if (inBps <= 0 || channels <= 0) return Array.Empty<short>();
+        int frames = input.Length / (inBps * channels);
+        if (frames <= 0) return Array.Empty<short>();
+        var mono = new short[frames];
+        for (int f = 0; f < frames; f++)
+        {
+            int baseIdx = f * inBps * channels;
+            int acc = 0;
+            for (int ch = 0; ch < channels; ch++)
+            {
+                int s = ReadSampleAsInt(input, baseIdx + ch * inBps, bits);
+                short s16 = ToInt16(s, bits);
+                acc += s16;
+            }
+            mono[f] = (short)(acc / channels);
+        }
+        return mono;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static byte[] ResampleTo48kForDn(short[] mono16, int inRate, DenoiseCtx ctx)
+    {
+        if (mono16.Length == 0) return Array.Empty<byte>();
+        if (inRate <= 0) return Array.Empty<byte>();
+        if (ctx.LastInRate != inRate)
+        {
+            ctx.LastInRate = inRate;
+            ctx.ResInCount = 0;
+            ctx.ResPos = 0;
+        }
+        int need = ctx.ResInCount + mono16.Length;
+        if (ctx.ResIn.Length < need)
+        {
+            int newCap = Math.Max(need, ctx.ResIn.Length == 0 ? mono16.Length * 2 : ctx.ResIn.Length * 2);
+            var nb = new short[newCap];
+            if (ctx.ResInCount > 0) Array.Copy(ctx.ResIn, 0, nb, 0, ctx.ResInCount);
+            ctx.ResIn = nb;
+        }
+        Array.Copy(mono16, 0, ctx.ResIn, ctx.ResInCount, mono16.Length);
+        ctx.ResInCount += mono16.Length;
+
+        double step = (double)inRate / 48000.0;
+        if (step <= 0) step = 1.0;
+
+        int maxOut = 0;
+        if (ctx.ResInCount > 1 && ctx.ResPos < ctx.ResInCount - 1)
+        {
+            maxOut = (int)Math.Floor(((ctx.ResInCount - 1) - ctx.ResPos) / step);
+            if (maxOut < 0) maxOut = 0;
+        }
+        if (maxOut == 0) return Array.Empty<byte>();
+
+        var outShorts = new short[maxOut];
+        double pos = ctx.ResPos;
+        for (int k = 0; k < maxOut; k++)
+        {
+            int i0 = (int)pos;
+            double frac = pos - i0;
+            short s0 = ctx.ResIn[i0];
+            short s1 = ctx.ResIn[i0 + 1];
+            int interp = s0 + (int)((s1 - s0) * frac);
+            outShorts[k] = (short)interp;
+            pos += step;
+        }
+        ctx.ResPos = pos;
+
+        int consumed = Math.Max(0, (int)ctx.ResPos);
+        if (consumed > 0)
+        {
+            int keep = ctx.ResInCount - consumed;
+            if (keep > 0) Array.Copy(ctx.ResIn, consumed, ctx.ResIn, 0, keep);
+            ctx.ResInCount = keep;
+            ctx.ResPos -= consumed;
+        }
+
+        var outBytes = new byte[outShorts.Length * 2];
+        Buffer.BlockCopy(outShorts, 0, outBytes, 0, outBytes.Length);
+        return outBytes;
     }
 
     private static byte[] ResamplePcm16Interleaved(byte[] input, int inRate, int outRate, int channels)
@@ -188,29 +430,64 @@ public class ReceiverService
 
     private async Task MixLoopAsync(CancellationToken ct)
     {
-        byte[] mixBytes = new byte[BytesPerChunk];
-        short[] mixShorts = new short[MixChunkSamples * TargetChannels];
-        byte[] temp = new byte[BytesPerChunk];
+        int currChunkBytes = BytesPerChunk;
+        byte[] mixBytes = new byte[currChunkBytes];
+        short[] mixShorts = new short[currChunkBytes / 2];
+        byte[] temp = new byte[currChunkBytes];
 
         while (!ct.IsCancellationRequested)
         {
+            var buffers = Volatile.Read(ref _activeBuffers);
+
+            // Pick a chunk size aligned to VBAN frame sizes to avoid splitting too often
+            int chosen = DetermineMixChunkBytes(buffers, currChunkBytes);
+            if (chosen != currChunkBytes)
+            {
+                currChunkBytes = chosen;
+                mixBytes = new byte[currChunkBytes];
+                mixShorts = new short[currChunkBytes / 2];
+                temp = new byte[currChunkBytes];
+            }
+
             Array.Clear(mixShorts, 0, mixShorts.Length);
             int activeSources = 0;
-            var buffers = Volatile.Read(ref _activeBuffers);
             for (int i = 0; i < buffers.Length; i++)
             {
                 var buf = buffers[i];
-                int read = buf.Read(temp);
+                int read = buf.Read(temp.AsSpan(0, currChunkBytes));
                 if (read <= 0) continue;
-                if (read < BytesPerChunk)
+                if (read < currChunkBytes)
                 {
-                    // pad missing with zeros
-                    Array.Clear(temp, read, BytesPerChunk - read);
+                    // micro-wait to accumulate remainder (up to ~1ms) to avoid padding zeros
+                    var startTicks = System.Diagnostics.Stopwatch.GetTimestamp();
+                    long freq = System.Diagnostics.Stopwatch.Frequency;
+                    while (read < currChunkBytes)
+                    {
+                        Thread.SpinWait(2000);
+                        int add = buf.Read(temp.AsSpan(read, currChunkBytes - read));
+                        if (add > 0)
+                        {
+                            read += add;
+                            continue;
+                        }
+                        long elapsedTicks = System.Diagnostics.Stopwatch.GetTimestamp() - startTicks;
+                        if ((elapsedTicks * 1000) / freq >= 1)
+                            break;
+                    }
+                    if (read < currChunkBytes)
+                    {
+                        Array.Clear(temp, read, currChunkBytes - read);
+                    }
                 }
-                // sum into mixShorts; prefer SIMD saturating add when available
+                // Apply per-stream volume at mix time, then sum with saturation
                 {
                     var dst = mixShorts.AsSpan();
-                    var src = MemoryMarshal.Cast<byte, short>(temp.AsSpan(0, BytesPerChunk));
+                    var tmpSpan = temp.AsSpan(0, currChunkBytes);
+                    if (Math.Abs(buf.Volume - 1f) > 0.0001f)
+                    {
+                        ApplyVolume16(tmpSpan, buf.Volume);
+                    }
+                    var src = MemoryMarshal.Cast<byte, short>(tmpSpan);
 
                     if (Sse2.IsSupported)
                     {
@@ -277,14 +554,36 @@ public class ReceiverService
                 activeSources++;
             }
 
+            if (activeSources == 0)
+            {
+                // No data ready; avoid pushing zeros proactively. Briefly yield and retry.
+                Thread.Sleep(1);
+                continue;
+            }
+
             // serialize mixShorts to bytes and apply global volume
-            Buffer.BlockCopy(mixShorts, 0, mixBytes, 0, mixBytes.Length);
+            Buffer.BlockCopy(mixShorts, 0, mixBytes, 0, currChunkBytes);
             if (Math.Abs(_globalVolume - 1f) > 0.0001f)
             {
-                ApplyVolume16(mixBytes.AsSpan(), _globalVolume);
+                ApplyVolume16(mixBytes.AsSpan(0, currChunkBytes), _globalVolume);
             }
-            _audioOutput.Write(mixBytes, 0, mixBytes.Length);
+            _audioOutput.Write(mixBytes, 0, currChunkBytes);
         }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static int DetermineMixChunkBytes(StreamBuffer[] buffers, int fallback)
+    {
+        int min = int.MaxValue;
+        for (int i = 0; i < buffers.Length; i++)
+        {
+            int fb = buffers[i].GetFrameBytes();
+            if (fb > 0 && fb < min) min = fb;
+        }
+        if (min == int.MaxValue) return fallback;
+        if ((min % 4) != 0) min -= (min % 4);
+        if (min < 4) min = 4;
+        return min;
     }
 
     private sealed class StreamBuffer
@@ -295,11 +594,15 @@ public class ReceiverService
         private int _queuedBytes = 0;
         private readonly int _bytesPerChunk;
         private int _maxQueuedChunks;
+        private int _minReadyChunks;
+        public float Volume = 1f;
+        private int _frameBytes;
 
-        public StreamBuffer(int bytesPerChunk, int maxQueuedChunks)
+        public StreamBuffer(int bytesPerChunk, int maxQueuedChunks, int minReadyChunks = 1)
         {
             _bytesPerChunk = bytesPerChunk;
             _maxQueuedChunks = Math.Max(1, maxQueuedChunks);
+            _minReadyChunks = Math.Max(1, Math.Min(_maxQueuedChunks, minReadyChunks));
         }
 
         public void UpdateMaxQueuedChunks(int maxQueuedChunks)
@@ -307,7 +610,17 @@ public class ReceiverService
             lock (_lock)
             {
                 _maxQueuedChunks = Math.Max(1, maxQueuedChunks);
+                if (_minReadyChunks > _maxQueuedChunks)
+                    _minReadyChunks = _maxQueuedChunks;
                 TrimIfNeeded();
+            }
+        }
+
+        public void UpdateMinReadyChunks(int minReadyChunks)
+        {
+            lock (_lock)
+            {
+                _minReadyChunks = Math.Max(1, Math.Min(_maxQueuedChunks, minReadyChunks));
             }
         }
 
@@ -317,6 +630,7 @@ public class ReceiverService
             {
                 _queue.Enqueue(data);
                 _queuedBytes += data.Length;
+                _frameBytes = data.Length;
                 // Trim oldest data if queue grows too large to limit latency
                 while (_queuedBytes > (_bytesPerChunk * _maxQueuedChunks) && _queue.Count > 0)
                 {
@@ -347,6 +661,7 @@ public class ReceiverService
             int copied = 0;
             lock (_lock)
             {
+                // No prebuffering to avoid extra latency
                 while (copied < destination.Length && _queue.Count > 0)
                 {
                     var current = _queue.Peek();
@@ -364,6 +679,11 @@ public class ReceiverService
                 }
             }
             return copied;
+        }
+
+        public int GetFrameBytes()
+        {
+            lock (_lock) { return _frameBytes; }
         }
     }
 
@@ -569,7 +889,26 @@ public class ReceiverService
                 if (_buffers.TryGetValue(endpoint.Id, out var buf))
                 {
                     buf.UpdateMaxQueuedChunks(ComputeMaxQueuedChunks(endpoint.Quality));
+                    buf.UpdateMinReadyChunks(ComputeMinReadyChunks(endpoint.Quality));
                 }
+            }
+        }
+        else if (e.PropertyName == nameof(Endpoint.Volume))
+        {
+            lock (_buffers)
+            {
+                if (_buffers.TryGetValue(endpoint.Id, out var buf))
+                {
+                    buf.Volume = endpoint.Volume;
+                }
+            }
+        }
+        else if (e.PropertyName == nameof(Endpoint.IsDenoiseEnabled) && !endpoint.IsDenoiseEnabled)
+        {
+            // Clear denoise accumulators when turning off
+            if (_denoisers.TryGetValue(endpoint.Id, out var d))
+            {
+                d.PendingCount = 0; d.ResInCount = 0; d.ResPos = 0;
             }
         }
     }
