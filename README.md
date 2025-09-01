@@ -10,7 +10,8 @@
 
 ## Note
 
-- Currently receiving sound in 8-bit encoding is corrupted
+- Currently, receiving sound in 8-bit encoding is corrupted
+- Currently, changing the "Network Quality" setting on the sender ceases the receiving stream
 
 ## Thanks
 
