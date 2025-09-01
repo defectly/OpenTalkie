@@ -18,6 +18,7 @@ namespace OpenTalkie.Common.Services;
 
 public class ReceiverService
 {
+    private const bool StrictLowLatency = true; // disable micro-waiting to shave ~1ms
     private readonly IMapper _mapper;
     private readonly IEndpointRepository _endpointRepository;
     private readonly IAudioOutputService _audioOutput;
@@ -458,21 +459,24 @@ public class ReceiverService
                 if (read <= 0) continue;
                 if (read < currChunkBytes)
                 {
-                    // micro-wait to accumulate remainder (up to ~1ms) to avoid padding zeros
-                    var startTicks = System.Diagnostics.Stopwatch.GetTimestamp();
-                    long freq = System.Diagnostics.Stopwatch.Frequency;
-                    while (read < currChunkBytes)
+                    if (!StrictLowLatency)
                     {
-                        Thread.SpinWait(2000);
-                        int add = buf.Read(temp.AsSpan(read, currChunkBytes - read));
-                        if (add > 0)
+                        // optional micro-wait to accumulate remainder (up to ~1ms)
+                        var startTicks = System.Diagnostics.Stopwatch.GetTimestamp();
+                        long freq = System.Diagnostics.Stopwatch.Frequency;
+                        while (read < currChunkBytes)
                         {
-                            read += add;
-                            continue;
+                            Thread.SpinWait(2000);
+                            int add = buf.Read(temp.AsSpan(read, currChunkBytes - read));
+                            if (add > 0)
+                            {
+                                read += add;
+                                continue;
+                            }
+                            long elapsedTicks = System.Diagnostics.Stopwatch.GetTimestamp() - startTicks;
+                            if ((elapsedTicks * 1000) / freq >= 1)
+                                break;
                         }
-                        long elapsedTicks = System.Diagnostics.Stopwatch.GetTimestamp() - startTicks;
-                        if ((elapsedTicks * 1000) / freq >= 1)
-                            break;
                     }
                     if (read < currChunkBytes)
                     {
@@ -556,8 +560,15 @@ public class ReceiverService
 
             if (activeSources == 0)
             {
-                // No data ready; avoid pushing zeros proactively. Briefly yield and retry.
-                Thread.Sleep(1);
+                // No data ready; avoid pushing zeros. Yield very briefly.
+                if (StrictLowLatency)
+                {
+                    Thread.SpinWait(5000);
+                }
+                else
+                {
+                    Thread.Sleep(1);
+                }
                 continue;
             }
 
