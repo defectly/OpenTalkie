@@ -8,6 +8,10 @@
   <img src="https://github.com/user-attachments/assets/7d6c3ed6-fe6f-4b72-827e-bbc381de6f55" alt="Settings page" width="20%">
 </p>
 
+## Note
+
+- Currently latest 2.0.0 release can receive sound without lags only at "Very Slow" "Net Quality" setting
+
 ## Thanks
 
 - **VB-Audio** — for the open VBAN Protocol specification.  
