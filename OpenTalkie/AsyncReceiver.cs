@@ -156,6 +156,19 @@ public class AsyncReceiver : IDisposable
 
         private readonly Dictionary<Guid, DenoiseCtx> _denoisers = new();
         private readonly Dictionary<Guid, uint> _lastFrame = new();
+        private readonly Dictionary<Guid, HeaderSig> _lastHeader = new();
+
+        private readonly struct HeaderSig
+        {
+            public readonly int SampleRate;
+            public readonly int Channels;
+            public readonly int BitsPerSample;
+            public readonly int SamplesPerFrame;
+            public HeaderSig(int sr, int ch, int bps, int spf)
+            {
+                SampleRate = sr; Channels = ch; BitsPerSample = bps; SamplesPerFrame = spf;
+            }
+        }
 
         public Listener(int port, List<Endpoint> endpoints, Action<Endpoint, byte[], int, int, int> onPayload)
         {
@@ -194,6 +207,25 @@ public class AsyncReceiver : IDisposable
                     _denoisers.Remove(key);
                 }
             }
+            // Clean up frame/header tracking for removed endpoints
+            var __fkeys = _lastFrame.Keys.ToList();
+            for (int i = 0; i < __fkeys.Count; i++)
+            {
+                var key = __fkeys[i];
+                if (!active.Contains(key))
+                {
+                    _lastFrame.Remove(key);
+                }
+            }
+            var __hkeys = _lastHeader.Keys.ToList();
+            for (int i = 0; i < __hkeys.Count; i++)
+            {
+                var key = __hkeys[i];
+                if (!active.Contains(key))
+                {
+                    _lastHeader.Remove(key);
+                }
+            }
         }
 
         private async Task LoopAsync(CancellationToken ct)
@@ -217,8 +249,8 @@ public class AsyncReceiver : IDisposable
                 if (srIdx < 0 || srIdx >= VBANConsts.SAMPLERATES.Length) continue;
                 int sampleRate = VBANConsts.SAMPLERATES[srIdx];
 
-                int samplesPerFrame = (buf[5] & 0xFF) + 1;
-                int channels = (buf[6] & 0xFF) + 1;
+                    int samplesPerFrame = (buf[5] & 0xFF) + 1;
+                    int channels = (buf[6] & 0xFF) + 1;
 
                 byte b7 = buf[7];
                 if (((VBanCodec)(b7 & 0xE0)) != VBanCodec.VBAN_CODEC_PCM) continue;
@@ -248,14 +280,56 @@ public class AsyncReceiver : IDisposable
                     }
 
                     int header = 28;
-                    // Drop out-of-order/duplicate frames using VBAN frame counter (little-endian)
+                    // Drop out-of-order/duplicate frames, but allow header reconfiguration and counter resets.
                     uint frame = BitConverter.ToUInt32(buf, 24);
-                    if (_lastFrame.TryGetValue(ep.Id, out var last))
+                    bool headerChanged = false;
+                    var currHdr = new HeaderSig(sampleRate, channels, bitsPerSample, samplesPerFrame);
+                    if (_lastHeader.TryGetValue(ep.Id, out var prevHdr))
                     {
-                        // if not newer (with wrap-around aware compare), skip
-                        if ((int)(frame - last) <= 0) continue;
+                        if (prevHdr.SampleRate != currHdr.SampleRate ||
+                            prevHdr.Channels != currHdr.Channels ||
+                            prevHdr.BitsPerSample != currHdr.BitsPerSample ||
+                            prevHdr.SamplesPerFrame != currHdr.SamplesPerFrame)
+                        {
+                            headerChanged = true;
+                        }
                     }
-                    _lastFrame[ep.Id] = frame;
+
+                    if (headerChanged)
+                    {
+                        _lastHeader[ep.Id] = currHdr;
+                        _lastFrame[ep.Id] = frame; // accept first packet after reconfig
+                    }
+                    else
+                    {
+                        _lastHeader[ep.Id] = currHdr;
+                        if (_lastFrame.TryGetValue(ep.Id, out var last))
+                        {
+                            int diff = unchecked((int)(frame - last));
+                            // If diff <= 0, it could be out-of-order or a sender reset.
+                            // Heuristic: allow a reset when the new frame is very small and last was large.
+                            if (diff <= 0)
+                            {
+                                // treat as reset if last is far from zero (e.g., > 10k) and frame is small
+                                if (last > 10000 && frame < 1000)
+                                {
+                                    _lastFrame[ep.Id] = frame; // accept reset
+                                }
+                                else
+                                {
+                                    continue; // drop duplicate/out-of-order
+                                }
+                            }
+                            else
+                            {
+                                _lastFrame[ep.Id] = frame;
+                            }
+                        }
+                        else
+                        {
+                            _lastFrame[ep.Id] = frame; // first time seeing this stream
+                        }
+                    }
                     int payloadBytes = buf.Length - header;
                     if (payloadBytes <= 0) continue;
                     int bps = bitsPerSample / 8;
@@ -267,10 +341,14 @@ public class AsyncReceiver : IDisposable
 
                     // Always emit raw payload quickly; denoise, resample and format conversions
                     // are handled off the UDP thread in ReceiverService to avoid drops.
-                    if (_denoisers.TryGetValue(ep.Id, out var ctx2))
+                    // If header changed, clear per-EP aux state (if any existed in this class).
+                    if (headerChanged)
                     {
-                        ctx2.ClearPending();
-                        ctx2.ClearResampler();
+                        if (_denoisers.TryGetValue(ep.Id, out var ctx2))
+                        {
+                            ctx2.ClearPending();
+                            ctx2.ClearResampler();
+                        }
                     }
                     try { _onPayload(ep, payload, channels, bitsPerSample, sampleRate); }
                     catch { }
