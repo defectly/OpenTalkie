@@ -72,6 +72,14 @@ public class ReceiverService
         _receiver ??= new AsyncReceiver(Endpoints);
         _receiver.FrameReceived += OnFrameReceived;
         _receiver.Start();
+        // Ensure Android keeps our process alive while receiving audio
+#if ANDROID
+        try
+        {
+            OpenTalkie.Platforms.Android.Common.Services.Receiver.ReceiverForegroundServiceManager.StartForegroundService();
+        }
+        catch { }
+#endif
         // Start output once at target format and begin mixer loop
         EnsureOutput(TargetSampleRate, TargetChannels);
         _mixCts = new CancellationTokenSource();
@@ -102,6 +110,13 @@ public class ReceiverService
         for (int i = 0; i < dvals.Count; i++) try { dvals[i].Dn.Dispose(); } catch { }
         _denoisers.Clear();
         Volatile.Write(ref _activeBuffers, Array.Empty<StreamBuffer>());
+#if ANDROID
+        try
+        {
+            OpenTalkie.Platforms.Android.Common.Services.Receiver.ReceiverForegroundServiceManager.StopForegroundService();
+        }
+        catch { }
+#endif
         ListeningStateChanged?.Invoke(false);
     }
 
