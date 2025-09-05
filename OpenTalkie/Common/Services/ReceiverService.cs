@@ -805,8 +805,8 @@ public class ReceiverService
     {
         return bits switch
         {
-            // 8-bit PCM: assume signed [-128..127]
-            8 => (sbyte)buffer[offset],
+            // 8-bit PCM is typically unsigned; convert to signed centered at 0
+            8 => (int)buffer[offset] - 128,
             // 16-bit PCM LE
             16 => BitConverter.ToInt16(buffer, offset),
             // 24-bit PCM LE: sign-extend to 32-bit
