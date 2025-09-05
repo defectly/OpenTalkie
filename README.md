@@ -10,7 +10,9 @@
 
 ## Note
 
-- Currently latest 2.0.0 release can receive sound without lags only at "Very Slow" "Net Quality" setting
+- Currently, receiving sound in 8-bit encoding is corrupted
+- Currently, changing the "Network Quality" setting on the sender ceases the receiving stream
+- Currently, Android can shutdown receiver service due to lack of foreground service
 
 ## Thanks
 
