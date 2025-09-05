@@ -9,10 +9,8 @@
 </p>
 
 ## Note
-
-- Currently, receiving sound in 8-bit encoding is corrupted
-- Currently, changing the "Network Quality" setting on the sender ceases the receiving stream
-- Currently, Android can shutdown receiver service due to lack of foreground service
+- I always set "Net Quality" to "Optimal" for outgoing streams
+- For some devices, “Optimal” works well for incoming streams; for others, you can test all variants
 
 ## Thanks
 
