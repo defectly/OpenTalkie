@@ -38,7 +38,7 @@ public class MicrophoneBroadcastService
         BroadcastStateChanged += OnBroadcastStateChange;
     }
 
-    public async Task<bool> Switch()
+    public async Task Switch()
     {
         if (BroadcastState)
         {
@@ -46,22 +46,19 @@ public class MicrophoneBroadcastService
             BroadcastStateChanged?.Invoke(!BroadcastState);
             _microphoneService.Stop();
             _asyncSender = null;
-            return true;
+            return;
         }
         else
         {
             try
             {
-                bool isPermissionGranted = await _microphoneService.StartAsync();
-
-                if (!isPermissionGranted)
-                    return false;
+                await _microphoneService.StartAsync();
             }
             catch (Exception ex)
             {
                 var errorPopup = new ErrorPopup(ex.Message);
-                _ = Application.Current.MainPage.ShowPopupAsync(errorPopup);
-                return false;
+                _ = Application.Current?.MainPage?.ShowPopupAsync(errorPopup);
+                return;
             }
 
             _cancellationTokenSource = new();
@@ -75,7 +72,7 @@ public class MicrophoneBroadcastService
 
             BroadcastStateChanged?.Invoke(!BroadcastState);
 
-            return true;
+            return;
         }
     }
 

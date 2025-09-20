@@ -1,7 +1,9 @@
+using CommunityToolkit.Maui.Views;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using OpenTalkie.Common.Services;
 using OpenTalkie.Platforms.Android.Common;
+using OpenTalkie.View.Popups;
 using System.Collections.ObjectModel;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
@@ -84,15 +86,32 @@ public partial class HomeViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task SwitchMicrophoneBroadcast() => await MicrophoneBroadcastService.Switch();
+    private async Task SwitchMicrophoneBroadcast()
+    {
+        if (!MicrophoneBroadcastService.BroadcastState)
+        {
+            if (!await RequestMicrophonePermissionAsync())
+            {
+                var errorPopup = new ErrorPopup("Microphone permission denied");
+                _ = Application.Current?.MainPage?.ShowPopupAsync(errorPopup);
+                return;
+            }
+        }
+
+        await MicrophoneBroadcastService.Switch();
+    }
 
     [RelayCommand]
     private async Task SwitchPlaybackBroadcast()
     {
         if (!PlaybackBroadcastService.BroadcastState)
         {
-            if (!await RequestkMicrophonePermissionAsync())
+            if (!await RequestMicrophonePermissionAsync())
+            {
+                var errorPopup = new ErrorPopup("Microphone permission denied");
+                _ = Application.Current?.MainPage?.ShowPopupAsync(errorPopup);
                 return;
+            }
 
             if (!await PlaybackBroadcastService.RequestPermissionAsync())
                 return;
@@ -110,9 +129,8 @@ public partial class HomeViewModel : ObservableObject
     [RelayCommand]
     private void SwitchReceiver() => ReceiverService.Switch();
 
-    private async Task<bool> RequestkMicrophonePermissionAsync()
+    private static async Task<bool> RequestMicrophonePermissionAsync()
     {
-        // Just request and return the permission status; do not show UI alert.
         bool permissionStatus = await PermissionManager.RequestMicrophonePermissionAsync();
         return permissionStatus;
     }

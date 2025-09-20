@@ -3,7 +3,7 @@
 public interface IMicrophoneCapturingService : IInputStream
 {
     Action<bool>? OnServiceStateChange { get; set; }
-    Task<bool> StartAsync();
+    Task StartAsync();
     void Stop();
     int GetBufferSize();
 }

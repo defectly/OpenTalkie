@@ -6,12 +6,8 @@ public class MicrophoneCapturingService : IMicrophoneCapturingService
 {
     public Action<bool>? OnServiceStateChange { get; set; }
 
-    public async Task<bool> StartAsync()
+    public async Task StartAsync()
     {
-        bool isPermissionGranted = await PermissionManager.RequestMicrophonePermissionAsync();
-        if (!isPermissionGranted)
-            return false;
-
         await MicrophoneForegroundServiceManager.StartForegroundServiceAsync();
 
         try
@@ -28,8 +24,6 @@ public class MicrophoneCapturingService : IMicrophoneCapturingService
         }
 
         OnServiceStateChange?.Invoke(true);
-
-        return true;
     }
 
     public void Stop()
