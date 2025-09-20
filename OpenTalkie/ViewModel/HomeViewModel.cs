@@ -91,7 +91,9 @@ public partial class HomeViewModel : ObservableObject
     {
         if (!PlaybackBroadcastService.BroadcastState)
         {
-            // Only request the required cast permission; microphone permission is not needed here.
+            if (!await RequestkMicrophonePermissionAsync())
+                return;
+
             if (!await PlaybackBroadcastService.RequestPermissionAsync())
                 return;
         }
@@ -108,7 +110,7 @@ public partial class HomeViewModel : ObservableObject
     [RelayCommand]
     private void SwitchReceiver() => ReceiverService.Switch();
 
-    private async Task<bool> CheckMicrophonePermissionAsync()
+    private async Task<bool> RequestkMicrophonePermissionAsync()
     {
         // Just request and return the permission status; do not show UI alert.
         bool permissionStatus = await PermissionManager.RequestMicrophonePermissionAsync();
