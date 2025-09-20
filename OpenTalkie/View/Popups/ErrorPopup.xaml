@@ -4,24 +4,14 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
-    Color="{AppThemeBinding Light={StaticResource SurfaceLight}, Dark={StaticResource SurfaceDark}}">
+    Color="Transparent">
     <Grid HorizontalOptions="Fill" VerticalOptions="Fill" Padding="24">
-        <Grid.Resources>
-            <Shadow
-                x:Key="MaterialShadowDark"
-                Brush="#80000000"
-                Opacity="0.3"
-                Radius="12"
-                Offset="0,4" />
-        </Grid.Resources>
 
         <Frame
             HorizontalOptions="Center"
             VerticalOptions="Center"
             Padding="20"
             CornerRadius="12"
-            HasShadow="True"
-            Shadow="{StaticResource MaterialShadowDark}"
             BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceLight}, Dark={StaticResource SurfaceDark}}">
             <Grid RowDefinitions="Auto,Auto" RowSpacing="16" MaximumWidthRequest="360">
                 <Label
