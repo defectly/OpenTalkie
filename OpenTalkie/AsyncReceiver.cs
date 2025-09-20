@@ -1,11 +1,11 @@
+using OpenTalkie.RNNoise;
+using OpenTalkie.VBAN;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
-using OpenTalkie.VBAN;
-using OpenTalkie.RNNoise;
 
 namespace OpenTalkie;
 
@@ -249,8 +249,8 @@ public class AsyncReceiver : IDisposable
                 if (srIdx < 0 || srIdx >= VBANConsts.SAMPLERATES.Length) continue;
                 int sampleRate = VBANConsts.SAMPLERATES[srIdx];
 
-                    int samplesPerFrame = (buf[5] & 0xFF) + 1;
-                    int channels = (buf[6] & 0xFF) + 1;
+                int samplesPerFrame = (buf[5] & 0xFF) + 1;
+                int channels = (buf[6] & 0xFF) + 1;
 
                 byte b7 = buf[7];
                 if (((VBanCodec)(b7 & 0xE0)) != VBanCodec.VBAN_CODEC_PCM) continue;

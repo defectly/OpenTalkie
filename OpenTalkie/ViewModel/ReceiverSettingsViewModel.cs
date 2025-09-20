@@ -1,8 +1,6 @@
-using CommunityToolkit.Maui.Views;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using OpenTalkie.Common.Repositories.Interfaces;
-using OpenTalkie.View.Popups;
 
 namespace OpenTalkie.ViewModel;
 

@@ -2,8 +2,8 @@ using CommunityToolkit.Maui.Views; // For ShowPopupAsync
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using OpenTalkie.Common.Enums;
-using OpenTalkie.View.Popups; // For EditFieldPopup and ErrorPopup
 using OpenTalkie.VBAN;
+using OpenTalkie.View.Popups; // For EditFieldPopup and ErrorPopup
 
 namespace OpenTalkie.ViewModel;
 

@@ -1,14 +1,13 @@
 using OpenTalkie.Common.Services.Interfaces;
 using OpenTalkie.RNNoise;
 using OpenTalkie.VBAN;
-using System.Collections.ObjectModel;
-using System.Runtime.CompilerServices;
 using System.Buffers;
+using System.Collections.ObjectModel;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
-using System.Runtime.Intrinsics.Arm;
 
 namespace OpenTalkie;
 
