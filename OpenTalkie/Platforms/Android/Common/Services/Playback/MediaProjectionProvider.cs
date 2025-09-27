@@ -52,6 +52,7 @@ public partial class MediaProjectionProvider : MediaProjection.Callback, IScreen
 
         var context = Platform.AppContext;
         context.StopService(new Intent(context, typeof(MediaProjectionForegroundService)));
+        ForegroundServiceWatcher.NotifyServiceState(nameof(MediaProjectionForegroundService), false);
     }
 
     internal void OnScreenCapturePermissionDenied()
@@ -93,6 +94,8 @@ public partial class MediaProjectionProvider : MediaProjection.Callback, IScreen
             context.StartForegroundService(beginRecording);
         else
             context.StartService(beginRecording);
+
+        ForegroundServiceWatcher.NotifyServiceState(nameof(MediaProjectionForegroundService), true);
 
         recordingStartAwaiter?.TrySetResult(true);
     }

@@ -20,12 +20,15 @@ internal static class ReceiverForegroundServiceManager
             context.StartForegroundService(notificationSetup);
         else
             context.StartService(notificationSetup);
+
+        ForegroundServiceWatcher.NotifyServiceState(nameof(ReceiverForegroundService), true);
     }
 
     public static void StopForegroundService()
     {
         var context = Platform.AppContext;
         context.StopService(new Intent(context, typeof(ReceiverForegroundService)));
+        ForegroundServiceWatcher.NotifyServiceState(nameof(ReceiverForegroundService), false);
     }
 }
 
