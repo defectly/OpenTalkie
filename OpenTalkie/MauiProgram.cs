@@ -9,10 +9,7 @@ using System.Reflection;
 using OpenTalkie.Platforms.Android.Common.Services.Microphone;
 using OpenTalkie.Platforms.Android.Common.Services.Playback;
 using OpenTalkie.Platforms.Android.Common.Services;
-
-
-
-
+using Microsoft.Extensions.Logging;
 
 #if ANDROID
 using OpenTalkie.Platforms.Android.Common.Repositories;

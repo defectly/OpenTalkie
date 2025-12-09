@@ -1,9 +1,11 @@
+using Android.Content;
 using global::Android.Media;
+using OpenTalkie.Common.Repositories.Interfaces;
 using OpenTalkie.Common.Services.Interfaces;
 
 namespace OpenTalkie.Platforms.Android.Common.Services.Output;
 
-public class AudioOutputService : IAudioOutputService
+public class AudioOutputService(IReceiverRepository receiverRepository) : IAudioOutputService
 {
     private AudioTrack? _track;
     private int _sampleRate;
@@ -54,6 +56,12 @@ public class AudioOutputService : IAudioOutputService
 
         _sampleRate = sampleRate;
         _channels = channels;
+
+        var prefferedOutputAudioDevice = receiverRepository.GetPrefferedDevice();
+
+        if (!string.IsNullOrWhiteSpace(prefferedOutputAudioDevice))
+            SetPrefferedAudioDevice(receiverRepository.GetPrefferedDevice()!);
+
         _track.Play();
     }
 
@@ -70,5 +78,50 @@ public class AudioOutputService : IAudioOutputService
     {
         if (_track == null) return;
         try { _track.Write(buffer, offset, count, WriteMode.Blocking); } catch { }
+    }
+
+    public void SetPrefferedAudioDevice(string prefferedDevice)
+    {
+        if (!OperatingSystem.IsAndroidVersionAtLeast(23))
+            return;
+
+        if(string.IsNullOrWhiteSpace(prefferedDevice) || _track is null)
+            return;
+
+        if(prefferedDevice == "Default")
+        {
+            _track.SetPreferredDevice(null);
+            return;
+        }
+
+        bool parsedSuccessfully = Enum.TryParse(prefferedDevice, out AudioDeviceType audioDeviceType);
+
+        if (!parsedSuccessfully)
+            return;
+
+        if (_track is null)
+            return;
+
+        try
+        {
+            var context = Platform.AppContext;
+            var audioManager = (AudioManager?)context.GetSystemService(Context.AudioService);
+            if (audioManager == null)
+                return;
+
+            var devices = audioManager.GetDevices(GetDevicesTargets.Outputs);
+            if (devices is null)
+                return;
+
+            var foundPrefferedDevice = devices.FirstOrDefault(d => d.Type == audioDeviceType);
+
+            if (foundPrefferedDevice == null)
+                return;
+
+            _track.SetPreferredDevice(foundPrefferedDevice);
+        }
+        catch
+        {
+        }
     }
 }

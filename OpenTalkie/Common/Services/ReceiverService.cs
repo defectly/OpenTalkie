@@ -54,6 +54,10 @@ public class ReceiverService
         // Initialize global volume and subscribe for changes
         _globalVolume = receiverRepository.GetSelectedVolume();
         receiverRepository.VolumeChanged += (v) => _globalVolume = v;
+        receiverRepository.PrefferedAudioOutputDeviceChanged += (audioDevice) =>
+        {
+            _audioOutput.SetPrefferedAudioDevice(audioDevice);
+        };
 
         Endpoints = mapper.Map<ObservableCollection<Endpoint>>(
             _endpointRepository.List().Where(e => e.Type == EndpointType.Receiver));
