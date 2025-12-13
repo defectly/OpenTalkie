@@ -80,48 +80,75 @@ public class AudioOutputService(IReceiverRepository receiverRepository) : IAudio
         try { _track.Write(buffer, offset, count, WriteMode.Blocking); } catch { }
     }
 
-    public void SetPrefferedAudioDevice(string prefferedDevice)
+    public void SetPrefferedAudioDevice(string prefferedDevice) => SetPreferredAudioDevice(prefferedDevice);
+
+    private bool SetPreferredAudioDevice(string preferredDevice)
     {
         if (!OperatingSystem.IsAndroidVersionAtLeast(23))
-            return;
+            return false;
 
-        if(string.IsNullOrWhiteSpace(prefferedDevice) || _track is null)
-            return;
+        var context = Platform.AppContext;
+        var audioManager = (AudioManager?)context.GetSystemService(Context.AudioService);
+        if (audioManager is null)
+            return false;
 
-        if(prefferedDevice == "Default")
+        if (preferredDevice.Equals("default", StringComparison.OrdinalIgnoreCase))
         {
-            _track.SetPreferredDevice(null);
-            return;
+            _track?.SetPreferredDevice(null);
+
+            if (OperatingSystem.IsAndroidVersionAtLeast(31))
+            {
+                audioManager.ClearCommunicationDevice();
+            }
+            else
+            {
+                audioManager.BluetoothScoOn = false;
+                audioManager.StopBluetoothSco();
+            }
+
+            audioManager.Mode = Mode.Normal;
+            return true;
         }
 
-        bool parsedSuccessfully = Enum.TryParse(prefferedDevice, out AudioDeviceType audioDeviceType);
+        if (!Enum.TryParse<AudioDeviceType>(preferredDevice, ignoreCase: true, out var wantedType))
+            return false;
 
-        if (!parsedSuccessfully)
-            return;
+        audioManager.Mode = Mode.InCommunication;
 
-        if (_track is null)
-            return;
+        AudioDeviceInfo? target = null;
 
-        try
+        if (OperatingSystem.IsAndroidVersionAtLeast(31))
         {
-            var context = Platform.AppContext;
-            var audioManager = (AudioManager?)context.GetSystemService(Context.AudioService);
-            if (audioManager == null)
-                return;
+            var commDevices = audioManager.AvailableCommunicationDevices;
+            target = commDevices?.FirstOrDefault(d => d.Type == wantedType);
+            if (target is null)
+                return false;
 
-            var devices = audioManager.GetDevices(GetDevicesTargets.Outputs);
-            if (devices is null)
-                return;
-
-            var foundPrefferedDevice = devices.FirstOrDefault(d => d.Type == audioDeviceType);
-
-            if (foundPrefferedDevice == null)
-                return;
-
-            _track.SetPreferredDevice(foundPrefferedDevice);
+            var ok = audioManager.SetCommunicationDevice(target);
+            if (!ok)
+                return false;
         }
-        catch
+        else
         {
+            var inputs = audioManager.GetDevices(GetDevicesTargets.Outputs);
+            target = inputs?.FirstOrDefault(d => d.Type == wantedType);
+            if (target is null)
+                return false;
+
+            if (wantedType == AudioDeviceType.BluetoothSco)
+            {
+                audioManager.StartBluetoothSco();
+                audioManager.BluetoothScoOn = true;
+            }
+            else
+            {
+                audioManager.BluetoothScoOn = false;
+                audioManager.StopBluetoothSco();
+            }
         }
+
+        _track?.SetPreferredDevice(target);
+        return true;
     }
+
 }
