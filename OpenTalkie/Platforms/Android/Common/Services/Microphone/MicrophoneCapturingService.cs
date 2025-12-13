@@ -1,10 +1,16 @@
-﻿using OpenTalkie.Common.Services.Interfaces;
+﻿using OpenTalkie.Common.Repositories.Interfaces;
+using OpenTalkie.Common.Services.Interfaces;
 
 namespace OpenTalkie.Platforms.Android.Common.Services.Microphone;
 
 public class MicrophoneCapturingService : IMicrophoneCapturingService
 {
     public Action<bool>? OnServiceStateChange { get; set; }
+
+    public MicrophoneCapturingService(IMicrophoneRepository microphoneRepository)
+    {
+        microphoneRepository.PrefferedAudioInputDeviceChanged += MicrophoneAudioRecord.SetPrefferedAudioDevice;
+    }
 
     public async Task StartAsync()
     {

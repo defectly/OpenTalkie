@@ -47,7 +47,7 @@ public partial class ReceiverSettingsViewModel : ObservableObject
 
         string currentValue = fieldName switch
         {
-            "PrefferedAudioOutputDevice" => _receiverRepository.GetPrefferedDevice() ?? string.Empty,
+            "PrefferedAudioOutputDevice" => _receiverRepository.GetPrefferedDevice(),
             _ => string.Empty
         };
 
@@ -62,7 +62,7 @@ public partial class ReceiverSettingsViewModel : ObservableObject
                     {
                         case "PrefferedAudioOutputDevice":
                             _receiverRepository.SetPrefferedDevice(result);
-                            PrefferedAudioOutputDevice = _receiverRepository.GetPrefferedDevice() ?? string.Empty;
+                            PrefferedAudioOutputDevice = _receiverRepository.GetPrefferedDevice();
                             break;
                     }
                 }

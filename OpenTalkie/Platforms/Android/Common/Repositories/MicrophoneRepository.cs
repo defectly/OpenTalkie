@@ -1,4 +1,5 @@
-﻿using Android.Media;
+﻿using Android.Content;
+using Android.Media;
 using OpenTalkie.Common.Repositories.Interfaces;
 using OpenTalkie.VBAN;
 
@@ -7,6 +8,7 @@ namespace OpenTalkie.Platforms.Android.Common.Repositories;
 public class MicrophoneRepository : IMicrophoneRepository
 {
     public Action<float> VolumeChanged { get; set; }
+    public Action<string> PrefferedAudioInputDeviceChanged { get; set; }
 
     public List<string> GetSampleRates()
     {
@@ -110,6 +112,7 @@ public class MicrophoneRepository : IMicrophoneRepository
             _ => throw new NotSupportedException($"No such encoding supported: {encoding}")
         };
     }
+
     private static Encoding MapToAndroidEncoding(int encoding)
     {
         return encoding switch
@@ -131,5 +134,40 @@ public class MicrophoneRepository : IMicrophoneRepository
     {
         Preferences.Set("MicrophoneVolume", gain);
         VolumeChanged?.Invoke(gain);
+    }
+
+    public string[] GetAvailableAudioInputDevices()
+    {
+        if (!OperatingSystem.IsAndroidVersionAtLeast(23))
+            return ["Default"];
+
+        var context = Platform.AppContext;
+        var audioManager = (AudioManager?)context.GetSystemService(Context.AudioService);
+        if (audioManager == null)
+            return ["Default"];
+
+        var devices = audioManager.GetDevices(GetDevicesTargets.Inputs);
+        if (devices is null)
+            return ["Default"];
+
+        return [.. Enumerable.Concat(["Default"], devices.Select(d => d.Type.ToString()))];
+    }
+
+    public void SetPrefferedDevice(string prefferedDevice)
+    {
+        if (string.IsNullOrWhiteSpace(prefferedDevice))
+            return;
+
+        if (prefferedDevice == "Default")
+            Preferences.Set("MicrophonePrefferedAudioInputDevice", "Default");
+        else
+            Preferences.Set("MicrophonePrefferedAudioInputDevice", prefferedDevice);
+
+        PrefferedAudioInputDeviceChanged?.Invoke(prefferedDevice);
+    }
+
+    public string GetPrefferedDevice()
+    {
+        return Preferences.Get("MicrophonePrefferedAudioInputDevice", "Default");
     }
 }

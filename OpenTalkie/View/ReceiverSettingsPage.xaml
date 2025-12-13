@@ -11,9 +11,48 @@
     <ScrollView VerticalScrollBarVisibility="Never" HorizontalScrollBarVisibility="Never">
         <Grid RowDefinitions="Auto,Auto" RowSpacing="16">
 
-            <!--  Global Volume  -->
+            <!--  Output device  -->
             <Frame
                 Grid.Row="0"
+                Padding="16"
+                BackgroundColor="{StaticResource CardBackground}"
+                BorderColor="{AppThemeBinding Light={StaticResource OutlineLight}, Dark={StaticResource OutlineDark}}"
+                CornerRadius="8"
+                Shadow="{StaticResource MaterialShadowDark}">
+                <Grid Padding="5">
+                    <Grid.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding EditFieldCommand}" CommandParameter="PrefferedAudioOutputDevice" />
+                    </Grid.GestureRecognizers>
+                    <Image
+                        HeightRequest="24"
+                        Source="channel_icon.png"
+                        VerticalOptions="Center"
+                        WidthRequest="24" />
+                    <Grid
+                        ColumnDefinitions="*"
+                        RowDefinitions="Auto,Auto"
+                        RowSpacing="4"
+                        VerticalOptions="Center">
+                        <Label
+                            Grid.Row="0">
+                            <Label.FormattedText>
+                                <FormattedString>
+                                    <Span Text="Output device" TextColor="{StaticResource OnSurfaceDark}" FontAttributes="Bold" FontSize="16" />
+                                </FormattedString>
+                            </Label.FormattedText>
+                        </Label>
+                        <Label
+                            Grid.Row="1"
+                            FontSize="14"
+                            Text="{Binding PrefferedAudioOutputDevice}"
+                            TextColor="{StaticResource OnSurfaceVariantDark}" />
+                    </Grid>
+                </Grid>
+            </Frame>
+
+            <!--  Global Volume  -->
+            <Frame
+                Grid.Row="1"
                 Padding="16"
                 BackgroundColor="{StaticResource CardBackground}"
                 BorderColor="{AppThemeBinding Light={StaticResource OutlineLight}, Dark={StaticResource OutlineDark}}"
@@ -65,45 +104,6 @@
                         ThumbColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
                         Value="{Binding Volume}" />
                 </VerticalStackLayout>
-            </Frame>
-
-            <!--  Output device  -->
-            <Frame
-                Grid.Row="1"
-                Padding="16"
-                BackgroundColor="{StaticResource CardBackground}"
-                BorderColor="{AppThemeBinding Light={StaticResource OutlineLight}, Dark={StaticResource OutlineDark}}"
-                CornerRadius="8"
-                Shadow="{StaticResource MaterialShadowDark}">
-                <Grid Padding="5">
-                    <Grid.GestureRecognizers>
-                        <TapGestureRecognizer Command="{Binding EditFieldCommand}" CommandParameter="PrefferedAudioOutputDevice" />
-                    </Grid.GestureRecognizers>
-                    <Image
-                        HeightRequest="24"
-                        Source="channel_icon.png"
-                        VerticalOptions="Center"
-                        WidthRequest="24" />
-                    <Grid
-                        ColumnDefinitions="*"
-                        RowDefinitions="Auto,Auto"
-                        RowSpacing="4"
-                        VerticalOptions="Center">
-                        <Label
-                            Grid.Row="0">
-                            <Label.FormattedText>
-                                <FormattedString>
-                                    <Span Text="Output device " TextColor="{StaticResource OnSurfaceDark}" FontAttributes="Bold" FontSize="16" />
-                                </FormattedString>
-                            </Label.FormattedText>
-                        </Label>
-                        <Label
-                            Grid.Row="1"
-                            FontSize="14"
-                            Text="{Binding PrefferedAudioOutputDevice}"
-                            TextColor="{StaticResource OnSurfaceVariantDark}" />
-                    </Grid>
-                </Grid>
             </Frame>
         </Grid>
     </ScrollView>

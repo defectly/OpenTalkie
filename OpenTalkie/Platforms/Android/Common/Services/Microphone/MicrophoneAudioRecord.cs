@@ -1,4 +1,5 @@
-﻿using Android.Media;
+﻿using Android.Content;
+using Android.Media;
 using OpenTalkie.Common.Repositories.Interfaces;
 
 namespace OpenTalkie.Platforms.Android.Common.Services.Microphone;
@@ -36,6 +37,11 @@ public static class MicrophoneAudioRecord
             _audioRecord = null;
             throw new Exception("Can't initialize audio record.. Selected parameters may be not supported");
         }
+
+        var prefferedOutputAudioDevice = microphoneRepository.GetPrefferedDevice();
+
+        if (!string.IsNullOrWhiteSpace(prefferedOutputAudioDevice))
+            SetPrefferedAudioDevice(microphoneRepository.GetPrefferedDevice()!);
 
         _audioRecord.StartRecording();
     }
@@ -131,5 +137,76 @@ public static class MicrophoneAudioRecord
     private static void OnVolumeChange(float gain)
     {
         _volume = gain;
+    }
+
+    public static void SetPrefferedAudioDevice(string prefferedDevice) => SetPreferredAudioDevice(prefferedDevice);
+
+    private static bool SetPreferredAudioDevice(string preferredDevice)
+    {
+        if (!OperatingSystem.IsAndroidVersionAtLeast(23))
+            return false;
+
+        var context = Platform.AppContext;
+        var audioManager = (AudioManager?)context.GetSystemService(Context.AudioService);
+        if (audioManager is null)
+            return false;
+
+        if (preferredDevice.Equals("default", StringComparison.OrdinalIgnoreCase))
+        {
+            _audioRecord?.SetPreferredDevice(null);
+
+            if (OperatingSystem.IsAndroidVersionAtLeast(31))
+            {
+                audioManager.ClearCommunicationDevice();
+            }
+            else
+            {
+                audioManager.BluetoothScoOn = false;
+                audioManager.StopBluetoothSco();
+            }
+
+            audioManager.Mode = Mode.Normal;
+            return true;
+        }
+
+        if (!Enum.TryParse<AudioDeviceType>(preferredDevice, ignoreCase: true, out var wantedType))
+            return false;
+
+        audioManager.Mode = Mode.InCommunication;
+
+        AudioDeviceInfo? target = null;
+
+        if (OperatingSystem.IsAndroidVersionAtLeast(31))
+        {
+            var commDevices = audioManager.AvailableCommunicationDevices;
+            target = commDevices?.FirstOrDefault(d => d.Type == wantedType);
+            if (target is null)
+                return false;
+
+            var ok = audioManager.SetCommunicationDevice(target);
+            if (!ok)
+                return false;
+        }
+        else
+        {
+            var inputs = audioManager.GetDevices(GetDevicesTargets.Inputs);
+            target = inputs?.FirstOrDefault(d => d.Type == wantedType);
+            if (target is null)
+                return false;
+
+            if (wantedType == AudioDeviceType.BluetoothSco)
+            {
+                audioManager.StartBluetoothSco();
+                audioManager.BluetoothScoOn = true;
+            }
+            else
+            {
+                audioManager.BluetoothScoOn = false;
+                audioManager.StopBluetoothSco();
+            }
+        }
+
+        _audioRecord?.SetPreferredDevice(target);
+        return true;
     }
 }

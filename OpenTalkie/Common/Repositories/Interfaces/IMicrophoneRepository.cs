@@ -3,6 +3,8 @@
 public interface IMicrophoneRepository
 {
     Action<float> VolumeChanged { get; set; }
+    Action<string> PrefferedAudioInputDeviceChanged { get; set; }
+
     List<string> GetAudioSources();
     List<string> GetInputChannels();
     List<string> GetSampleRates();
@@ -19,4 +21,7 @@ public interface IMicrophoneRepository
     void SetSelectedSampleRate(string sampleRate);
     void SetSelectedEncoding(string encoding);
     void SetSelectedVolume(float gain);
+    string[] GetAvailableAudioInputDevices();
+    void SetPrefferedDevice(string prefferedDevice);
+    string GetPrefferedDevice();
 }

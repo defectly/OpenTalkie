@@ -2,6 +2,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using OpenTalkie.Common.Repositories.Interfaces;
+using OpenTalkie.Platforms.Android.Common.Repositories;
 using OpenTalkie.View.Popups;
 
 namespace OpenTalkie.ViewModel;
@@ -28,6 +29,9 @@ public partial class MicSettingsViewModel : ObservableObject
     [ObservableProperty]
     private float volume;
 
+    [ObservableProperty]
+    private string prefferedAudioInputDevice;
+
     public MicSettingsViewModel(IMicrophoneRepository microphoneRepository)
     {
         _microphoneRepository = microphoneRepository;
@@ -38,6 +42,7 @@ public partial class MicSettingsViewModel : ObservableObject
         SelectedEncoding = _microphoneRepository.GetSelectedEncoding();
         SelectedBufferSize = _microphoneRepository.GetSelectedBufferSize();
         Volume = _microphoneRepository.GetSelectedVolume() * 100;
+        PrefferedAudioInputDevice = _microphoneRepository.GetPrefferedDevice();
     }
 
     [RelayCommand]
@@ -55,6 +60,7 @@ public partial class MicSettingsViewModel : ObservableObject
             "InputChannel" => [.. _microphoneRepository.GetInputChannels()],
             "SampleRate" => [.. _microphoneRepository.GetSampleRates()],
             "Encoding" => [.. _microphoneRepository.GetEncodings()],
+            "PrefferedAudioInputDevice" => [.. _microphoneRepository.GetAvailableAudioInputDevices()],
             _ => []
         };
 
@@ -64,7 +70,8 @@ public partial class MicSettingsViewModel : ObservableObject
             "InputChannel" => SelectedInputChannel,
             "SampleRate" => SelectedSampleRate,
             "Encoding" => SelectedEncoding,
-            _ => ""
+            "PrefferedAudioInputDevice" => _microphoneRepository.GetPrefferedDevice(),
+            _ => string.Empty
         };
 
         var popup = new OptionsPopup(
@@ -91,6 +98,10 @@ public partial class MicSettingsViewModel : ObservableObject
                         case "Encoding":
                             SelectedEncoding = result;
                             _microphoneRepository.SetSelectedEncoding(result);
+                            break;
+                        case "PrefferedAudioInputDevice":
+                            _microphoneRepository.SetPrefferedDevice(result);
+                            PrefferedAudioInputDevice = _microphoneRepository.GetPrefferedDevice();
                             break;
                     }
                 }
