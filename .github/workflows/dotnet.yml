@@ -1,53 +1,83 @@
-# This workflow will build a .NET project with .NET 9
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
-
+# Builds one signed APK per ABI and uploads artifacts named by architecture.
 name: Build
 
 on:
   push:
-    branches: "master"
+    branches: ["master"]
 
 jobs:
   build:
     runs-on: windows-latest
     strategy:
+      fail-fast: false
       matrix:
-        runtime: [android-arm, android-arm64, android-x86, android-x64]
+        include:
+          - rid: android-arm
+            abi: armeabi-v7a
+            arch_name: arm32
+          - rid: android-arm64
+            abi: arm64-v8a
+            arch_name: arm64
+          - rid: android-x86
+            abi: x86
+            arch_name: x86
+          - rid: android-x64
+            abi: x86_64
+            arch_name: x64
+
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 9.0.x
-      
+
       - name: Install .NET MAUI
         run: dotnet workload install maui
-      
+
       - name: Restore dependencies
         run: dotnet restore
-      
+
       - name: Restore KeyStore
+        shell: bash
         env:
           KEYSTORE: ${{ secrets.AndroidSigningKeyStore }}
-        shell: bash
         run: |
-          echo $KEYSTORE | base64 -d > OpenTalkie.keystore
-      
-      - name: Build with KeyStore for ${{ matrix.runtime }}
+          echo "$KEYSTORE" | base64 -d > OpenTalkie.keystore
+
+      - name: Publish (signed APK) for ${{ matrix.arch_name }}
+        shell: pwsh
         env:
           KEYSTORE_ALIAS: ${{ secrets.AndroidSigningKeyAlias }}
           KEYSTORE_PASS: ${{ secrets.AndroidSigningKeyPassword }}
         run: |
-          dotnet publish OpenTalkie/OpenTalkie.csproj -c Release -f net9.0-android -r ${{ matrix.runtime }} --no-restore -p:AndroidPackageFormats=apk `
-          -p:AndroidKeyStore=true `
-          -p:AndroidSigningKeyAlias=${{ env.KEYSTORE_ALIAS }} `
-          -p:AndroidSigningKeyPass=env:KEYSTORE_PASS `
-          -p:AndroidSigningKeyStore=${{ github.workspace }}/OpenTalkie.keystore `
-          -p:AndroidSigningStorePass=env:KEYSTORE_PASS
-      
-      - name: Upload APK Artifact for ${{ matrix.runtime }}
+          dotnet publish OpenTalkie/OpenTalkie.csproj `
+            -c Release `
+            -f net9.0-android `
+            -r ${{ matrix.rid }} `
+            --no-restore `
+            -p:AndroidPackageFormats=apk `
+            -p:AndroidCreatePackagePerAbi=true `
+            -p:AndroidSupportedAbis=${{ matrix.abi }} `
+            -p:AndroidKeyStore=true `
+            -p:AndroidSigningKeyAlias="${{ env.KEYSTORE_ALIAS }}" `
+            -p:AndroidSigningKeyPass=env:KEYSTORE_PASS `
+            -p:AndroidSigningKeyStore="${{ github.workspace }}\OpenTalkie.keystore" `
+            -p:AndroidSigningStorePass=env:KEYSTORE_PASS
+
+      - name: Rename APK to include architecture
+        shell: pwsh
+        run: |
+          $outDir = "OpenTalkie\bin\Release\net9.0-android\${{ matrix.rid }}\publish"
+          $apk = Get-ChildItem -Path $outDir -Filter "*.apk" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+          if (-not $apk) { throw "No APK found in $outDir" }
+
+          $newName = "OpenTalkie-${{ matrix.arch_name }}.apk"
+          Rename-Item -Path $apk.FullName -NewName $newName -Force
+
+      - name: Upload APK Artifact (${{ matrix.arch_name }})
         uses: actions/upload-artifact@v4
         with:
-          name: OpenTalkie-${{ matrix.runtime }}
-          path: OpenTalkie/bin/Release/net9.0-android/${{ matrix.runtime }}/publish/io.github.defectly.opentalkie-Signed.apk
+          name: OpenTalkie-${{ matrix.arch_name }}
+          path: OpenTalkie/bin/Release/net9.0-android/${{ matrix.rid }}/publish/OpenTalkie-${{ matrix.arch_name }}.apk
