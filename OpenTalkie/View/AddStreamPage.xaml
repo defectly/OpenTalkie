@@ -119,6 +119,13 @@
 
             <Frame>
                 <Grid ColumnDefinitions="*,Auto">
+                    <Label Grid.Column="0" Text="Enable On Mobile Data" Style="{StaticResource SectionLabelStyle}"/>
+                    <Switch Grid.Column="1" IsToggled="{Binding AllowMobileData}"/>
+                </Grid>
+            </Frame>
+
+            <Frame>
+                <Grid ColumnDefinitions="*,Auto">
                     <Label Grid.Column="0" Text="Enable Stream" Style="{StaticResource SectionLabelStyle}"/>
                     <Switch Grid.Column="1" IsToggled="{Binding IsEnabled}"/>
                 </Grid>

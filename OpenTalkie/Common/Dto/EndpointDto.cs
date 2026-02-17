@@ -13,6 +13,7 @@ public class EndpointDto
     public int Port { get; set; }
     public bool IsEnabled { get; set; }
     public bool IsDenoiseEnabled { get; set; }
+    public bool AllowMobileData { get; set; }
     public float Volume { get; set; } = 1f;
     public VBanQuality Quality { get; set; } = VBanQuality.VBAN_QUALITY_FAST;
 }
@@ -29,6 +30,7 @@ public class EndpointDtoMappingProfile : Profile
             .ForMember(dest => dest.Port, src => src.MapFrom(endpoint => endpoint.Port))
             .ForMember(dest => dest.IsEnabled, src => src.MapFrom(endpoint => endpoint.IsEnabled))
             .ForMember(dest => dest.IsDenoiseEnabled, src => src.MapFrom(endpoint => endpoint.IsDenoiseEnabled))
+            .ForMember(dest => dest.AllowMobileData, src => src.MapFrom(endpoint => endpoint.AllowMobileData))
             .ForMember(dest => dest.Volume, src => src.MapFrom(endpoint => endpoint.Volume))
             .ForMember(dest => dest.Quality, src => src.MapFrom(endpoint => endpoint.Quality))
         .ReverseMap();

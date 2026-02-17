@@ -21,6 +21,8 @@ public partial class Endpoint : ObservableObject, IDisposable
     [ObservableProperty]
     private bool isDenoiseEnabled;
     [ObservableProperty]
+    private bool allowMobileData;
+    [ObservableProperty]
     private float volume = 1f;
     [ObservableProperty]
     private VBanQuality quality = VBanQuality.VBAN_QUALITY_FAST;
@@ -29,7 +31,7 @@ public partial class Endpoint : ObservableObject, IDisposable
     public uint FrameCount;
     internal readonly byte[] NameBytes16 = new byte[16];
 
-    public Endpoint(EndpointType type, string name, string hostname, int port, bool denoise)
+    public Endpoint(EndpointType type, string name, string hostname, int port, bool denoise, bool allowMobileData)
     {
         Id = Guid.NewGuid();
         Type = type;
@@ -49,6 +51,7 @@ public partial class Endpoint : ObservableObject, IDisposable
         this.PropertyChanged += DestinationChanged;
         Connectivity.ConnectivityChanged += OnConnectivityChanged;
         IsDenoiseEnabled = denoise;
+        AllowMobileData = allowMobileData;
         Quality = VBanQuality.VBAN_QUALITY_FAST;
         UpdateNameBytes();
     }
