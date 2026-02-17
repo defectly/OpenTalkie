@@ -40,6 +40,7 @@ public class EndpointRepository : IEndpointRepository
             Port = endpointDto.Port,
             IsEnabled = endpointDto.IsEnabled,
             IsDenoiseEnabled = endpointDto.IsDenoiseEnabled,
+            AllowMobileData = endpointDto.AllowMobileData,
             Quality = endpointDto.Quality,
             Volume = endpointDto.Volume
         };
@@ -78,6 +79,7 @@ public class EndpointRepository : IEndpointRepository
         endpoint.Port = endpointDto.Port;
         endpoint.IsEnabled = endpointDto.IsEnabled;
         endpoint.IsDenoiseEnabled = endpointDto.IsDenoiseEnabled;
+        endpoint.AllowMobileData = endpointDto.AllowMobileData;
         endpoint.Quality = endpointDto.Quality;
         endpoint.Volume = endpointDto.Volume;
 

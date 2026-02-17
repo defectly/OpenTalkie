@@ -27,6 +27,9 @@ public partial class AddStreamViewModel : ObservableObject
     private bool isDenoiseEnabled;
 
     [ObservableProperty]
+    private bool allowMobileData;
+
+    [ObservableProperty]
     private bool isEnabled = true;
 
     [ObservableProperty]
@@ -161,7 +164,7 @@ public partial class AddStreamViewModel : ObservableObject
         Endpoint newEndpoint;
         try
         {
-            newEndpoint = new Endpoint(StreamType, Name, Hostname, Port, IsDenoiseEnabled)
+            newEndpoint = new Endpoint(StreamType, Name, Hostname, Port, IsDenoiseEnabled, AllowMobileData)
             {
                 IsEnabled = this.IsEnabled,
                 Quality = this.SelectedQuality

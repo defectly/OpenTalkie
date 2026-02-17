@@ -28,6 +28,7 @@ public class AsyncSender : IDisposable
     private readonly ArrayPool<byte> _pool = ArrayPool<byte>.Shared;
     private byte[]? _packetScratch;
     private int _packetScratchCapacity;
+    private bool onWifi;
     private readonly int _srIndex;
     private readonly int _srIndex48;
     private const int VBanMaxSamplesPerPacket = 256; // PCM max samples per packet per VBAN spec
@@ -50,10 +51,18 @@ public class AsyncSender : IDisposable
         _bytesPerSample = _waveFormat.BitsPerSample / 8;
         _srIndex = Array.IndexOf(VBANConsts.SAMPLERATES, _waveFormat.SampleRate);
         _srIndex48 = Array.IndexOf(VBANConsts.SAMPLERATES, 48000);
+        onWifi = Connectivity.Current.ConnectionProfiles.Contains(ConnectionProfile.WiFi);
+        Connectivity.ConnectivityChanged += OnConnectivityChanged;
+    }
+
+    public void OnConnectivityChanged(object? sender, ConnectivityChangedEventArgs e)
+    {
+        onWifi = e.ConnectionProfiles.Contains(ConnectionProfile.WiFi);
     }
 
     public void Dispose()
     {
+        Connectivity.ConnectivityChanged -= OnConnectivityChanged;
         _denoiser.Dispose();
         ReturnPooled(ref _denoiseBuffer);
         ReturnPooled(ref _denoisePending);
@@ -139,6 +148,9 @@ public class AsyncSender : IDisposable
         {
             Endpoint? endpoint = _endpoints[i];
             if (!endpoint.IsEnabled)
+                continue;
+
+            if (!onWifi && !endpoint.AllowMobileData)
                 continue;
 
             ReadOnlyMemory<byte> sendMemory;

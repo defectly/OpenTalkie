@@ -7,7 +7,7 @@
     Title="stream settings"
     Padding="16">
     <ScrollView>
-        <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,*" RowSpacing="16">
+        <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,*" RowSpacing="16">
 
             <!--  Name  -->
             <Frame
@@ -155,6 +155,41 @@
                 </HorizontalStackLayout>
             </Frame>
 
+            <!--  Active on Mobile Data Switch  -->
+            <Frame
+                Grid.Row="5"
+                Padding="16"
+                BackgroundColor="{StaticResource CardBackground}"
+                BorderColor="{AppThemeBinding Light={StaticResource OutlineLight}, Dark={StaticResource OutlineDark}}"
+                CornerRadius="8"
+                Shadow="{StaticResource MaterialShadowDark}">
+                <HorizontalStackLayout Spacing="12">
+                    <Image
+                        HeightRequest="24"
+                        Source="mobile_icon.png"
+                        VerticalOptions="Center"
+                        WidthRequest="24" />
+                    <Grid
+                        ColumnDefinitions="*,Auto"
+                        RowDefinitions="Auto"
+                        VerticalOptions="Center">
+                        <Label
+                            Grid.Column="0"
+                            FontAttributes="Bold"
+                            FontSize="16"
+                            Text="Active On Mobile Data"
+                            TextColor="{StaticResource OnSurfaceDark}"
+                            VerticalOptions="Center" />
+                        <Switch
+                            Grid.Column="1"
+                            IsToggled="{Binding Endpoint.AllowMobileData, Mode=TwoWay}"
+                            OnColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
+                            ThumbColor="{AppThemeBinding Light={StaticResource OnPrimaryLight}, Dark={StaticResource PrimaryDarkText}}"
+                            VerticalOptions="Center" />
+                    </Grid>
+                </HorizontalStackLayout>
+            </Frame>
+            
             <!--  Net Quality  -->
             <Frame
                 Grid.Row="3"
