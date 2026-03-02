@@ -111,8 +111,10 @@ public class PlaybackService : IPlaybackService
             throw new NotSupportedException($"Minimum android version is 10 (SDK 29)");
 
         var config = new AudioPlaybackCaptureConfiguration.Builder(mediaProjection)
-        .AddMatchingUsage(AudioUsageKind.Media)
-        .Build();
+            .AddMatchingUsage(AudioUsageKind.Media)
+            .AddMatchingUsage(AudioUsageKind.Game)
+            .AddMatchingUsage(AudioUsageKind.Unknown)
+            .Build();
 
         var audioFormat = new AudioFormat.Builder()
             .SetEncoding(_encoding)
