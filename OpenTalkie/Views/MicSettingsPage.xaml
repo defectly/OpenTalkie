@@ -1,0 +1,315 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="OpenTalkie.Presentation.Views.MicSettingsPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:viewmodel="clr-namespace:OpenTalkie.Presentation.ViewModels;assembly=OpenTalkie.Presentation"
+    xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+    Title="Microphone settings"
+    x:DataType="viewmodel:MicSettingsViewModel"
+    Padding="16">
+    <ScrollView VerticalScrollBarVisibility="Never" HorizontalScrollBarVisibility="Never">
+        <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="16">
+
+            <!--  Audio Source  -->
+            <Border
+                x:Name="AudioSourceFrame"
+                Grid.Row="0"
+                Padding="16"
+                BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceContainerLowLight}, Dark={StaticResource SurfaceContainerLowDark}}"
+                Stroke="{AppThemeBinding Light={StaticResource OutlineLight}, Dark={StaticResource OutlineDark}}"
+                StrokeShape="RoundRectangle 8"
+                Shadow="{StaticResource MaterialShadowLevel1}">
+                <Grid Padding="5">
+                    <Grid.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding EditFieldCommand}" CommandParameter="Source" />
+                    </Grid.GestureRecognizers>
+                    <Image
+                        HeightRequest="24"
+                        Source="mic_icon.png"
+                        VerticalOptions="Center"
+                        WidthRequest="24" />
+                    <Grid
+                        ColumnDefinitions="*"
+                        RowDefinitions="Auto,Auto"
+                        RowSpacing="4"
+                        VerticalOptions="Center">
+                        <Label
+                            Grid.Row="0">
+                            <Label.FormattedText>
+                                <FormattedString>
+                                    <Span Text="Audio Source " TextColor="{AppThemeBinding Light={StaticResource OnSurfaceLight}, Dark={StaticResource OnSurfaceDark}}" FontAttributes="Bold" FontSize="16" />
+                                    <Span Text="(requires restart)" TextColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" FontSize="14" />
+                                </FormattedString>
+                            </Label.FormattedText>
+                        </Label>
+                        <Label
+                            Grid.Row="1"
+                            FontSize="14"
+                            Text="{Binding SelectedSource}"
+                            TextColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" />
+                    </Grid>
+                </Grid>
+            </Border>
+
+            <!--  Input Channel  -->
+            <Border
+                Grid.Row="1"
+                Padding="16"
+                BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceContainerLowLight}, Dark={StaticResource SurfaceContainerLowDark}}"
+                Stroke="{AppThemeBinding Light={StaticResource OutlineLight}, Dark={StaticResource OutlineDark}}"
+                StrokeShape="RoundRectangle 8"
+                Shadow="{StaticResource MaterialShadowLevel1}">
+                <Grid Padding="5">
+                    <Grid.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding EditFieldCommand}" CommandParameter="InputChannel" />
+                    </Grid.GestureRecognizers>
+                    <Image
+                        HeightRequest="24"
+                        Source="channel_icon.png"
+                        VerticalOptions="Center"
+                        WidthRequest="24" />
+                    <Grid
+                        ColumnDefinitions="*"
+                        RowDefinitions="Auto,Auto"
+                        RowSpacing="4"
+                        VerticalOptions="Center">
+                        <Label
+                            Grid.Row="0">
+                            <Label.FormattedText>
+                                <FormattedString>
+                                    <Span Text="Input Channel " TextColor="{AppThemeBinding Light={StaticResource OnSurfaceLight}, Dark={StaticResource OnSurfaceDark}}" FontAttributes="Bold" FontSize="16" />
+                                    <Span Text="(requires restart)" TextColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" FontSize="14" />
+                                </FormattedString>
+                            </Label.FormattedText>
+                        </Label>
+                        <Label
+                            Grid.Row="1"
+                            FontSize="14"
+                            Text="{Binding SelectedInputChannel}"
+                            TextColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" />
+                    </Grid>
+                </Grid>
+            </Border>
+
+            <!--  Sample Rate  -->
+            <Border
+                Grid.Row="2"
+                Padding="16"
+                BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceContainerLowLight}, Dark={StaticResource SurfaceContainerLowDark}}"
+                Stroke="{AppThemeBinding Light={StaticResource OutlineLight}, Dark={StaticResource OutlineDark}}"
+                StrokeShape="RoundRectangle 8"
+                Shadow="{StaticResource MaterialShadowLevel1}">
+                <Grid Padding="5">
+                    <Grid.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding EditFieldCommand}" CommandParameter="SampleRate" />
+                    </Grid.GestureRecognizers>
+                    <Image
+                        HeightRequest="24"
+                        Source="samplerate_icon.png"
+                        VerticalOptions="Center"
+                        WidthRequest="24" />
+                    <Grid
+                        ColumnDefinitions="*"
+                        RowDefinitions="Auto,Auto"
+                        RowSpacing="4"
+                        VerticalOptions="Center">
+                        <Label
+                            Grid.Row="0">
+                            <Label.FormattedText>
+                                <FormattedString>
+                                    <Span Text="Sample Rate " TextColor="{AppThemeBinding Light={StaticResource OnSurfaceLight}, Dark={StaticResource OnSurfaceDark}}" FontAttributes="Bold" FontSize="16" />
+                                    <Span Text="(requires restart)" TextColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" FontSize="14" />
+                                </FormattedString>
+                            </Label.FormattedText>
+                        </Label>
+                        <Label
+                            Grid.Row="1"
+                            FontSize="14"
+                            Text="{Binding SelectedSampleRate}"
+                            TextColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" />
+                    </Grid>
+                </Grid>
+            </Border>
+
+            <!--  Encoding  -->
+            <Border
+                Grid.Row="3"
+                Padding="16"
+                BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceContainerLowLight}, Dark={StaticResource SurfaceContainerLowDark}}"
+                Stroke="{AppThemeBinding Light={StaticResource OutlineLight}, Dark={StaticResource OutlineDark}}"
+                StrokeShape="RoundRectangle 8"
+                Shadow="{StaticResource MaterialShadowLevel1}">
+                <Grid Padding="5">
+                    <Grid.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding EditFieldCommand}" CommandParameter="Encoding" />
+                    </Grid.GestureRecognizers>
+                    <Image
+                        HeightRequest="24"
+                        Source="encoding_icon.png"
+                        VerticalOptions="Center"
+                        WidthRequest="24" />
+                    <Grid
+                        ColumnDefinitions="*"
+                        RowDefinitions="Auto,Auto"
+                        RowSpacing="4"
+                        VerticalOptions="Center">
+                        <Label
+                            Grid.Row="0">
+                            <Label.FormattedText>
+                                <FormattedString>
+                                    <Span Text="Encoding " TextColor="{AppThemeBinding Light={StaticResource OnSurfaceLight}, Dark={StaticResource OnSurfaceDark}}" FontAttributes="Bold" FontSize="16" />
+                                    <Span Text="(requires restart)" TextColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" FontSize="14" />
+                                </FormattedString>
+                            </Label.FormattedText>
+                        </Label>
+                        <Label
+                            Grid.Row="1"
+                            FontSize="14"
+                            Text="{Binding SelectedEncoding}"
+                            TextColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" />
+                    </Grid>
+                </Grid>
+            </Border>
+
+            <!--  Buffer Size  -->
+            <Border
+                Grid.Row="4"
+                Padding="16"
+                BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceContainerLowLight}, Dark={StaticResource SurfaceContainerLowDark}}"
+                Stroke="{AppThemeBinding Light={StaticResource OutlineLight}, Dark={StaticResource OutlineDark}}"
+                StrokeShape="RoundRectangle 8"
+                Shadow="{StaticResource MaterialShadowLevel1}">
+                <Grid Padding="5">
+                    <Grid.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding EditBufferSizeCommand}" CommandParameter="BufferSize" />
+                    </Grid.GestureRecognizers>
+                    <Image
+                        HeightRequest="24"
+                        Source="buffer_icon.png"
+                        VerticalOptions="Center"
+                        WidthRequest="24" />
+                    <Grid
+                        ColumnDefinitions="*"
+                        RowDefinitions="Auto,Auto"
+                        RowSpacing="4"
+                        VerticalOptions="Center">
+                        <Label
+                            Grid.Row="0">
+                            <Label.FormattedText>
+                                <FormattedString>
+                                    <Span Text="Buffer Size " TextColor="{AppThemeBinding Light={StaticResource OnSurfaceLight}, Dark={StaticResource OnSurfaceDark}}" FontAttributes="Bold" FontSize="16" />
+                                    <Span Text="(requires restart)" TextColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" FontSize="14" />
+                                </FormattedString>
+                            </Label.FormattedText>
+                        </Label>
+                        <Label
+                            Grid.Row="1"
+                            FontSize="14"
+                            Text="{Binding SelectedBufferSize}"
+                            TextColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" />
+                    </Grid>
+                </Grid>
+            </Border>
+
+            <!--  Input device  -->
+            <Border
+                Grid.Row="5"
+                Padding="16"
+                BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceContainerLowLight}, Dark={StaticResource SurfaceContainerLowDark}}"
+                Stroke="{AppThemeBinding Light={StaticResource OutlineLight}, Dark={StaticResource OutlineDark}}"
+                StrokeShape="RoundRectangle 8"
+                Shadow="{StaticResource MaterialShadowLevel1}">
+                <Grid Padding="5">
+                    <Grid.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding EditFieldCommand}" CommandParameter="PrefferedAudioInputDevice" />
+                    </Grid.GestureRecognizers>
+                    <Image
+                        HeightRequest="24"
+                        Source="channel_icon.png"
+                        VerticalOptions="Center"
+                        WidthRequest="24" />
+                    <Grid
+                        ColumnDefinitions="*"
+                        RowDefinitions="Auto,Auto"
+                        RowSpacing="4"
+                        VerticalOptions="Center">
+                        <Label
+                            Grid.Row="0">
+                            <Label.FormattedText>
+                                <FormattedString>
+                                    <Span Text="Input device" TextColor="{AppThemeBinding Light={StaticResource OnSurfaceLight}, Dark={StaticResource OnSurfaceDark}}" FontAttributes="Bold" FontSize="16" />
+                                </FormattedString>
+                            </Label.FormattedText>
+                        </Label>
+                        <Label
+                            Grid.Row="1"
+                            FontSize="14"
+                            Text="{Binding PrefferedAudioInputDevice}"
+                            TextColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" />
+                    </Grid>
+                </Grid>
+            </Border>
+
+            <!--  Volume Slider  -->
+            <Border
+                Grid.Row="6"
+                Padding="16"
+                BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceContainerLowLight}, Dark={StaticResource SurfaceContainerLowDark}}"
+                Stroke="{AppThemeBinding Light={StaticResource OutlineLight}, Dark={StaticResource OutlineDark}}"
+                StrokeShape="RoundRectangle 8"
+                Shadow="{StaticResource MaterialShadowLevel1}">
+                <VerticalStackLayout Spacing="12">
+                    <Grid Padding="5">
+                        <Image
+                            HeightRequest="24"
+                            Source="volume_icon.png"
+                            VerticalOptions="Center"
+                            WidthRequest="24" />
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Grid
+                                Grid.Column="0"
+                                ColumnDefinitions="*,Auto"
+                                RowDefinitions="Auto,Auto"
+                                RowSpacing="4">
+                                <Label
+                                    Grid.Row="0"
+                                    Grid.Column="0"
+                                    FontAttributes="Bold"
+                                    FontSize="16"
+                                    Text="Global Volume"
+                                    TextColor="{AppThemeBinding Light={StaticResource OnSurfaceLight}, Dark={StaticResource OnSurfaceDark}}" />
+                                <Label
+                                    Grid.Row="1"
+                                    Grid.Column="0"
+                                    FontSize="14"
+                                    Text="{Binding Volume, StringFormat='{0:F0}%'}"
+                                    TextColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" />
+                            </Grid>
+                            <Button Style="{StaticResource OutlinedButton}"
+                                Grid.Column="1"
+                                Padding="8"
+                                Command="{Binding ResetVolumeCommand}"
+                                FontSize="14"
+                                Text="Reset"
+                                 />
+                        </Grid>
+                    </Grid>
+                    <Slider
+                        DragCompleted="OnVolumeDragCompleted"
+                        Maximum="400"
+                        MaximumTrackColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}"
+                        Minimum="0"
+                        MinimumTrackColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
+                        ThumbColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
+                        Value="{Binding Volume}" />
+                </VerticalStackLayout>
+            </Border>
+        </Grid>
+    </ScrollView>
+
+</ContentPage>
+
+
+
+

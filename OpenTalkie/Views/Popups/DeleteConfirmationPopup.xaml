@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<toolkit:Popup
+    x:Class="OpenTalkie.Presentation.Views.Popups.DeleteConfirmationPopup"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+    xmlns:viewmodel="clr-namespace:OpenTalkie.Presentation.Views.Popups"
+    x:DataType="viewmodel:DeleteConfirmationViewModel"
+    BackgroundColor="Transparent"
+    Padding="0">
+    <Border
+        Style="{StaticResource M3CardBorder}"
+        HorizontalOptions="Center"
+        VerticalOptions="Center"
+        MaximumWidthRequest="320"
+        Padding="16"
+        StrokeThickness="0"
+        StrokeShape="RoundRectangle 12">
+        <Grid
+            RowDefinitions="Auto,Auto,Auto"
+            RowSpacing="16">
+
+            <Grid
+                Grid.Row="0"
+                RowDefinitions="Auto,Auto"
+                RowSpacing="8">
+                <Label
+                    Grid.Row="0"
+                    FontAttributes="Bold"
+                    FontSize="18"
+                    HorizontalOptions="Center"
+                    Text="Delete Stream"
+                    TextColor="{AppThemeBinding Light={StaticResource OnSurfaceLight}, Dark={StaticResource OnSurfaceDark}}" />
+                <Label
+                    Grid.Row="1"
+                    FontSize="14"
+                    HorizontalOptions="Center"
+                    HorizontalTextAlignment="Center"
+                    Text="{Binding Message}"
+                    TextColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" />
+            </Grid>
+
+            <Button
+                Grid.Row="1"
+                Padding="16,8"
+                Command="{Binding DeleteCommand}"
+                Style="{StaticResource DestructiveButton}"
+                FontAttributes="Bold"
+                FontSize="16"
+                MinimumHeightRequest="48"
+                Text="Delete" />
+
+            <Button
+                Grid.Row="2"
+                Padding="16,8"
+                Command="{Binding CancelCommand}"
+                Style="{StaticResource TextButton}"
+                FontAttributes="Bold"
+                FontSize="16"
+                MinimumHeightRequest="48"
+                Text="Cancel" />
+        </Grid>
+    </Border>
+</toolkit:Popup>
+

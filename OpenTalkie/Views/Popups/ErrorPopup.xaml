@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<toolkit:Popup
+    x:Class="OpenTalkie.Presentation.Views.Popups.ErrorPopup"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+    xmlns:viewmodel="clr-namespace:OpenTalkie.Presentation.ViewModels.Popups;assembly=OpenTalkie.Presentation"
+    x:DataType="viewmodel:ErrorViewModel"
+    BackgroundColor="Transparent"
+    Padding="0">
+    <Grid HorizontalOptions="Fill" VerticalOptions="Fill" Padding="24">
+
+        <Border
+            Style="{StaticResource M3CardBorder}"
+            HorizontalOptions="Center"
+            VerticalOptions="Center"
+            Padding="20"
+            StrokeShape="RoundRectangle 12"
+            StrokeThickness="0"
+            BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceContainerLowLight}, Dark={StaticResource SurfaceContainerLowDark}}">
+            <Grid RowDefinitions="Auto,Auto" RowSpacing="16" MaximumWidthRequest="360">
+                <Label
+                    Grid.Row="0"
+                    FontSize="16"
+                    HorizontalOptions="Center"
+                    HorizontalTextAlignment="Center"
+                    LineBreakMode="WordWrap"
+                    Text="{Binding Message}"
+                    TextColor="{AppThemeBinding Light={StaticResource OnSurfaceLight}, Dark={StaticResource OnSurfaceDark}}" />
+                <Button
+                    Grid.Row="1"
+                    Style="{StaticResource FilledButton}"
+                    Command="{Binding CloseCommand}"
+                    FontSize="16"
+                    MinimumHeightRequest="44"
+                    Text="OK"
+                    HorizontalOptions="Center"
+                    WidthRequest="120"
+                    TextColor="{AppThemeBinding Light={StaticResource OnPrimaryLight}, Dark={StaticResource OnPrimaryDark}}" />
+            </Grid>
+        </Border>
+    </Grid>
+</toolkit:Popup>
+
+

@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="OpenTalkie.Presentation.Views.HomePage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:viewmodel="clr-namespace:OpenTalkie.Presentation.ViewModels;assembly=OpenTalkie.Presentation"
+    x:DataType="viewmodel:HomeViewModel"
+    Padding="16">
+    <ScrollView>
+        <Grid
+            RowDefinitions="Auto,Auto,Auto,*"
+            RowSpacing="16"
+            VerticalOptions="Center">
+
+            <!--  mic service button  -->
+            <Button
+                Grid.Row="0"
+                Style="{StaticResource FilledButton}"
+                Command="{Binding SwitchMicrophoneBroadcastCommand}"
+                FontSize="16"
+                HorizontalOptions="Fill"
+                HeightRequest="56"
+                Text="{Binding MicrophoneBroadcastButtonText}"
+                TextColor="{AppThemeBinding Light={StaticResource OnPrimaryLight}, Dark={StaticResource OnPrimaryDark}}">
+                <Button.Triggers>
+                    <DataTrigger TargetType="Button" Binding="{Binding IsMicrophoneActive}" Value="True">
+                        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource ServiceRunningLight}, Dark={StaticResource ServiceRunningDark}}" />
+                        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource OnServiceRunningLight}, Dark={StaticResource OnServiceRunningDark}}" />
+                    </DataTrigger>
+                </Button.Triggers>
+            </Button>
+
+            <!--  playback service button  -->
+            <Button
+                Grid.Row="1"
+                Style="{StaticResource FilledButton}"
+                Command="{Binding SwitchPlaybackBroadcastCommand}"
+                FontSize="16"
+                HorizontalOptions="Fill"
+                IsVisible="{Binding IsPlaybackAvailable}"
+                HeightRequest="56"
+                Text="{Binding PlaybackBroadcastButtonText}"
+                TextColor="{AppThemeBinding Light={StaticResource OnPrimaryLight}, Dark={StaticResource OnPrimaryDark}}">
+                <Button.Triggers>
+                    <DataTrigger TargetType="Button" Binding="{Binding IsPlaybackActive}" Value="True">
+                        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource ServiceRunningLight}, Dark={StaticResource ServiceRunningDark}}" />
+                        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource OnServiceRunningLight}, Dark={StaticResource OnServiceRunningDark}}" />
+                    </DataTrigger>
+                </Button.Triggers>
+            </Button>
+
+            <!--  receiver button  -->
+            <Button
+                Grid.Row="2"
+                Style="{StaticResource FilledButton}"
+                Command="{Binding SwitchReceiverCommand}"
+                FontSize="16"
+                HorizontalOptions="Fill"
+                HeightRequest="56"
+                Text="{Binding ReceiverButtonText}"
+                TextColor="{AppThemeBinding Light={StaticResource OnPrimaryLight}, Dark={StaticResource OnPrimaryDark}}">
+                <Button.Triggers>
+                    <DataTrigger TargetType="Button" Binding="{Binding IsReceiverActive}" Value="True">
+                        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource ServiceRunningLight}, Dark={StaticResource ServiceRunningDark}}" />
+                        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource OnServiceRunningLight}, Dark={StaticResource OnServiceRunningDark}}" />
+                    </DataTrigger>
+                </Button.Triggers>
+            </Button>
+
+            <!--  ip addresses  -->
+            <Grid
+                Grid.Row="3"
+                RowDefinitions="Auto,Auto,*"
+                RowSpacing="10"
+                VerticalOptions="End">
+
+                <Label
+                    Grid.Row="0"
+                    FontAttributes="Bold"
+                    FontSize="20"
+                    HorizontalOptions="Center"
+                    Text="Available networks"
+                    TextColor="{AppThemeBinding Light={StaticResource OnSurfaceLight}, Dark={StaticResource OnSurfaceDark}}" />
+
+                <CollectionView Grid.Row="1" ItemsSource="{Binding NetworkAddresses}">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="x:String">
+                            <Border
+                                Style="{StaticResource M3CardBorder}"
+                                Margin="0,4"
+                                Padding="12"
+                                StrokeShape="RoundRectangle 8">
+                                <Label
+                                    FontSize="14"
+                                    Text="{Binding .}"
+                                    TextColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" />
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+
+                <Button
+                    Grid.Row="2"
+                    Style="{StaticResource TonalButton}"
+                    Command="{Binding RefreshNetworkAddressesCommand}"
+                    FontSize="14"
+                    HorizontalOptions="Center"
+                    Text="Refresh"
+                    VerticalOptions="End" />
+            </Grid>
+        </Grid>
+    </ScrollView>
+</ContentPage>
+
+

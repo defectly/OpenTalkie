@@ -3,7 +3,7 @@
     x:Class="OpenTalkie.AppShell"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    xmlns:view="clr-namespace:OpenTalkie.View"
+    xmlns:view="clr-namespace:OpenTalkie.Presentation.Views"
     Title="OpenTalkie"
     Shell.FlyoutBehavior="Disabled">
 
@@ -27,12 +27,4 @@
             <ShellContent ContentTemplate="{DataTemplate view:SettingsPage}" Route="SettingsPage" />
         </Tab>
     </TabBar>
-
-    <Shell.Resources>
-        <Style ApplyToDerivedTypes="True" TargetType="Shell">
-            <Setter Property="Shell.TabBarForegroundColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
-            <Setter Property="Shell.TabBarUnselectedColor" Value="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" />
-            <Setter Property="Shell.TabBarTitleColor" Value="{AppThemeBinding Light={StaticResource OnSurfaceLight}, Dark={StaticResource OnSurfaceDark}}" />
-        </Style>
-    </Shell.Resources>
 </Shell>

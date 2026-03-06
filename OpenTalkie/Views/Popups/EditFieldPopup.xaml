@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<toolkit:Popup
+    x:Class="OpenTalkie.Presentation.Views.Popups.EditFieldPopup"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+    xmlns:viewmodel="clr-namespace:OpenTalkie.Presentation.ViewModels.Popups;assembly=OpenTalkie.Presentation"
+    x:DataType="viewmodel:EditFieldViewModel"
+    BackgroundColor="Transparent"
+    Padding="0">
+    <Border
+        Style="{StaticResource M3CardBorder}"
+        HorizontalOptions="Center"
+        VerticalOptions="Center"
+        MaximumWidthRequest="420"
+        Padding="16"
+        StrokeThickness="0"
+        StrokeShape="RoundRectangle 12">
+        <Grid
+            RowDefinitions="Auto,Auto,Auto,Auto"
+            RowSpacing="16">
+
+            <Border
+                Grid.Row="0"
+                Padding="16"
+                BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceVariantLight}, Dark={StaticResource SurfaceVariantDark}}"
+                StrokeThickness="0"
+                StrokeShape="RoundRectangle 8">
+                <Label
+                    FontAttributes="Bold"
+                    FontSize="18"
+                    HorizontalOptions="Center"
+                    Text="{Binding Title}"
+                    TextColor="{AppThemeBinding Light={StaticResource OnSurfaceLight}, Dark={StaticResource OnSurfaceDark}}" />
+            </Border>
+
+            <Border
+                x:Name="EntryFrame"
+                Grid.Row="1"
+                Padding="8"
+                BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceVariantLight}, Dark={StaticResource SurfaceVariantDark}}"
+                StrokeThickness="0"
+                StrokeShape="RoundRectangle 8">
+                <Entry
+                    FontSize="16"
+                    Keyboard="{Binding KeyboardType}"
+                    MaxLength="{Binding MaxLength}"
+                    Placeholder="{Binding Placeholder}"
+                    PlaceholderColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}"
+                    Text="{Binding Value}"
+                    TextColor="{AppThemeBinding Light={StaticResource OnSurfaceLight}, Dark={StaticResource OnSurfaceDark}}" />
+            </Border>
+
+            <Button
+                Grid.Row="2"
+                Padding="16,8"
+                Command="{Binding SaveCommand}"
+                Style="{StaticResource FilledButton}"
+                FontAttributes="Bold"
+                FontSize="16"
+                MinimumHeightRequest="48"
+                Text="Save" />
+
+            <Button
+                Grid.Row="3"
+                Padding="16,8"
+                Command="{Binding CancelCommand}"
+                Style="{StaticResource TextButton}"
+                FontAttributes="Bold"
+                FontSize="16"
+                MinimumHeightRequest="48"
+                Text="Cancel" />
+        </Grid>
+    </Border>
+</toolkit:Popup>
+

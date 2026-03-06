@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<toolkit:Popup
+    x:Class="OpenTalkie.Presentation.Views.Popups.OptionsPopup"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+    xmlns:views="clr-namespace:OpenTalkie.Presentation.Views.Popups"
+    xmlns:viewmodel="clr-namespace:OpenTalkie.Presentation.ViewModels.Popups;assembly=OpenTalkie.Presentation"
+    x:Name="OptionsPopupRoot"
+    x:DataType="viewmodel:OptionsViewModel"
+    BackgroundColor="Transparent"
+    Padding="0">
+
+    <Border
+        Style="{StaticResource M3CardBorder}"
+        HorizontalOptions="Center"
+        VerticalOptions="Center"
+        MaximumWidthRequest="420"
+        MaximumHeightRequest="560"
+        Padding="16"
+        StrokeThickness="0"
+        StrokeShape="RoundRectangle 12">
+        <Grid
+            RowDefinitions="Auto,*,Auto"
+            RowSpacing="12">
+            <Border
+                Grid.Row="0"
+                Padding="12"
+                BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceVariantLight}, Dark={StaticResource SurfaceVariantDark}}"
+                StrokeThickness="0"
+                StrokeShape="RoundRectangle 8">
+                <Label
+                    FontAttributes="Bold"
+                    FontSize="18"
+                    HorizontalOptions="Center"
+                    Text="{Binding Title}"
+                    TextColor="{AppThemeBinding Light={StaticResource OnSurfaceLight}, Dark={StaticResource OnSurfaceDark}}" />
+            </Border>
+
+            <ScrollView Grid.Row="1">
+                <CollectionView ItemsSource="{Binding Options}">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="x:String">
+                            <Button
+                                Style="{StaticResource TonalButton}"
+                                Margin="0,4"
+                                Padding="12"
+                                Command="{Binding Source={x:Reference OptionsPopupRoot}, Path=SelectOptionCommand, x:DataType=views:OptionsPopup}"
+                                CommandParameter="{Binding}"
+                                FontSize="16"
+                                Text="{Binding}"
+                                FontAttributes="None" />
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+            </ScrollView>
+
+            <Button
+                Grid.Row="2"
+                Padding="16"
+                Command="{Binding CancelCommand}"
+                Style="{StaticResource TextButton}"
+                FontAttributes="Bold"
+                FontSize="16"
+                HorizontalOptions="Center"
+                Text="Cancel" />
+        </Grid>
+    </Border>
+</toolkit:Popup>
+

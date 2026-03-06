@@ -1,0 +1,306 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="OpenTalkie.Presentation.Views.StreamSettingsPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+    xmlns:views="clr-namespace:OpenTalkie.Presentation.Views"
+    xmlns:vm="clr-namespace:OpenTalkie.Presentation.ViewModels;assembly=OpenTalkie.Presentation"
+    x:Name="StreamSettingsRoot"
+    x:DataType="vm:StreamSettingsViewModel"
+    Title="stream settings"
+    Padding="16">
+    <ScrollView>
+        <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,*" RowSpacing="16">
+
+            <!--  Name  -->
+            <Border
+                Grid.Row="0"
+                Padding="16"
+                BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceContainerLowLight}, Dark={StaticResource SurfaceContainerLowDark}}"
+                Stroke="{AppThemeBinding Light={StaticResource OutlineLight}, Dark={StaticResource OutlineDark}}"
+                StrokeShape="RoundRectangle 8"
+                Shadow="{StaticResource MaterialShadowLevel1}">
+                <HorizontalStackLayout Spacing="12">
+                    <HorizontalStackLayout.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding EditNameCommand}" CommandParameter="Name" />
+                    </HorizontalStackLayout.GestureRecognizers>
+                    <Image
+                        HeightRequest="24"
+                        Source="name_icon.png"
+                        VerticalOptions="Center"
+                        WidthRequest="24" />
+                    <Grid
+                        ColumnDefinitions="*"
+                        RowDefinitions="Auto,Auto"
+                        RowSpacing="4"
+                        VerticalOptions="Center">
+                        <Label
+                            Grid.Row="0"
+                            FontAttributes="Bold"
+                            FontSize="16"
+                            Text="Name"
+                            TextColor="{AppThemeBinding Light={StaticResource OnSurfaceLight}, Dark={StaticResource OnSurfaceDark}}" />
+                        <Label
+                            Grid.Row="1"
+                            FontSize="14"
+                            Text="{Binding Name}"
+                            TextColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" />
+                    </Grid>
+                </HorizontalStackLayout>
+            </Border>
+
+            <!--  Hostname  -->
+            <Border
+                Grid.Row="1"
+                Padding="16"
+                BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceContainerLowLight}, Dark={StaticResource SurfaceContainerLowDark}}"
+                Stroke="{AppThemeBinding Light={StaticResource OutlineLight}, Dark={StaticResource OutlineDark}}"
+                StrokeShape="RoundRectangle 8"
+                Shadow="{StaticResource MaterialShadowLevel1}">
+                <HorizontalStackLayout Spacing="12">
+                    <HorizontalStackLayout.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding EditHostnameCommand}" CommandParameter="Address" />
+                    </HorizontalStackLayout.GestureRecognizers>
+                    <Image
+                        HeightRequest="24"
+                        Source="address_icon.png"
+                        VerticalOptions="Center"
+                        WidthRequest="24" />
+                    <Grid
+                        ColumnDefinitions="*"
+                        RowDefinitions="Auto,Auto"
+                        RowSpacing="4"
+                        VerticalOptions="Center">
+                        <Label
+                            Grid.Row="0"
+                            FontAttributes="Bold"
+                            FontSize="16"
+                            Text="Hostname"
+                            TextColor="{AppThemeBinding Light={StaticResource OnSurfaceLight}, Dark={StaticResource OnSurfaceDark}}" />
+                        <Label
+                            Grid.Row="1"
+                            FontSize="14"
+                            Text="{Binding Hostname}"
+                            TextColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" />
+                    </Grid>
+                </HorizontalStackLayout>
+            </Border>
+
+            <!--  Port  -->
+            <Border
+                Grid.Row="2"
+                Padding="16"
+                BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceContainerLowLight}, Dark={StaticResource SurfaceContainerLowDark}}"
+                Stroke="{AppThemeBinding Light={StaticResource OutlineLight}, Dark={StaticResource OutlineDark}}"
+                StrokeShape="RoundRectangle 8"
+                Shadow="{StaticResource MaterialShadowLevel1}">
+                <HorizontalStackLayout Spacing="12">
+                    <HorizontalStackLayout.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding EditPortCommand}" CommandParameter="Port" />
+                    </HorizontalStackLayout.GestureRecognizers>
+                    <Image
+                        HeightRequest="24"
+                        Source="port_icon.png"
+                        VerticalOptions="Center"
+                        WidthRequest="24" />
+                    <Grid
+                        ColumnDefinitions="*"
+                        RowDefinitions="Auto,Auto"
+                        RowSpacing="4"
+                        VerticalOptions="Center">
+                        <Label
+                            Grid.Row="0"
+                            FontAttributes="Bold"
+                            FontSize="16"
+                            Text="Port"
+                            TextColor="{AppThemeBinding Light={StaticResource OnSurfaceLight}, Dark={StaticResource OnSurfaceDark}}" />
+                        <Label
+                            Grid.Row="1"
+                            FontSize="14"
+                            Text="{Binding Port}"
+                            TextColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" />
+                    </Grid>
+                </HorizontalStackLayout>
+            </Border>
+
+            <!--  Volume  -->
+            <Border
+                Grid.Row="4"
+                Padding="16"
+                BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceContainerLowLight}, Dark={StaticResource SurfaceContainerLowDark}}"
+                Stroke="{AppThemeBinding Light={StaticResource OutlineLight}, Dark={StaticResource OutlineDark}}"
+                StrokeShape="RoundRectangle 8"
+                Shadow="{StaticResource MaterialShadowLevel1}">
+                <VerticalStackLayout Spacing="12">
+                    <Grid Padding="5">
+                        <Image
+                            HeightRequest="24"
+                            Source="volume_icon.png"
+                            VerticalOptions="Center"
+                            WidthRequest="24" />
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Grid
+                                Grid.Column="0"
+                                ColumnDefinitions="*,Auto"
+                                RowDefinitions="Auto,Auto"
+                                RowSpacing="4">
+                                <Label
+                                    Grid.Row="0"
+                                    Grid.Column="0"
+                                    FontAttributes="Bold"
+                                    FontSize="16"
+                                    Text="Stream Volume"
+                                    TextColor="{AppThemeBinding Light={StaticResource OnSurfaceLight}, Dark={StaticResource OnSurfaceDark}}" />
+                                <Label
+                                    Grid.Row="1"
+                                    Grid.Column="0"
+                                    FontSize="14"
+                                    Text="{Binding Volume, StringFormat='x{0:F2}'}"
+                                    TextColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" />
+                            </Grid>
+                            <Button
+                                Grid.Column="1"
+                                Style="{StaticResource OutlinedButton}"
+                                Padding="8"
+                                Command="{Binding ResetVolumeCommand}"
+                                FontSize="14"
+                                Text="Reset" />
+                        </Grid>
+                    </Grid>
+                    <Slider
+                        Minimum="0"
+                        Maximum="4"
+                        Value="{Binding Volume, Mode=TwoWay}"
+                        DragCompleted="OnVolumeDragCompleted"
+                        MaximumTrackColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}"
+                        MinimumTrackColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
+                        ThumbColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!--  Denoise Switch  -->
+            <Border
+                Grid.Row="5"
+                Padding="16"
+                BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceContainerLowLight}, Dark={StaticResource SurfaceContainerLowDark}}"
+                Stroke="{AppThemeBinding Light={StaticResource OutlineLight}, Dark={StaticResource OutlineDark}}"
+                StrokeShape="RoundRectangle 8"
+                Shadow="{StaticResource MaterialShadowLevel1}">
+                <HorizontalStackLayout Spacing="12">
+                    <Image
+                        HeightRequest="24"
+                        Source="denoise_icon.png"
+                        VerticalOptions="Center"
+                        WidthRequest="24" />
+                    <Grid
+                        ColumnDefinitions="*,Auto"
+                        RowDefinitions="Auto"
+                        VerticalOptions="Center">
+                        <Label
+                            Grid.Column="0"
+                            FontAttributes="Bold"
+                            FontSize="16"
+                            Text="Denoise"
+                            TextColor="{AppThemeBinding Light={StaticResource OnSurfaceLight}, Dark={StaticResource OnSurfaceDark}}"
+                            VerticalOptions="Center" />
+                        <Switch
+                            x:Name="DenoiseSwitch"
+                            Grid.Column="1"
+                            IsToggled="{Binding IsDenoiseEnabled, Mode=TwoWay}"
+                            VerticalOptions="Center">
+                            <Switch.Behaviors>
+                                <toolkit:EventToCommandBehavior
+                                    Command="{Binding Source={x:Reference StreamSettingsRoot}, Path=DenoiseToggledCommand, x:DataType=views:StreamSettingsPage}"
+                                    EventName="Toggled" />
+                            </Switch.Behaviors>
+                        </Switch>
+                    </Grid>
+                </HorizontalStackLayout>
+            </Border>
+
+            <!--  Active on Mobile Data Switch  -->
+            <Border
+                Grid.Row="6"
+                Padding="16"
+                BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceContainerLowLight}, Dark={StaticResource SurfaceContainerLowDark}}"
+                Stroke="{AppThemeBinding Light={StaticResource OutlineLight}, Dark={StaticResource OutlineDark}}"
+                StrokeShape="RoundRectangle 8"
+                Shadow="{StaticResource MaterialShadowLevel1}">
+                <HorizontalStackLayout Spacing="12">
+                    <Image
+                        HeightRequest="24"
+                        Source="mobile_icon.png"
+                        VerticalOptions="Center"
+                        WidthRequest="24" />
+                    <Grid
+                        ColumnDefinitions="*,Auto"
+                        RowDefinitions="Auto"
+                        VerticalOptions="Center">
+                        <Label
+                            Grid.Column="0"
+                            FontAttributes="Bold"
+                            FontSize="16"
+                            Text="Active On Mobile Data"
+                            TextColor="{AppThemeBinding Light={StaticResource OnSurfaceLight}, Dark={StaticResource OnSurfaceDark}}"
+                            VerticalOptions="Center" />
+                        <Switch
+                            x:Name="MobileDataSwitch"
+                            Grid.Column="1"
+                            IsToggled="{Binding AllowMobileData, Mode=TwoWay}"
+                            VerticalOptions="Center">
+                            <Switch.Behaviors>
+                                <toolkit:EventToCommandBehavior
+                                    Command="{Binding Source={x:Reference StreamSettingsRoot}, Path=MobileDataToggledCommand, x:DataType=views:StreamSettingsPage}"
+                                    EventName="Toggled" />
+                            </Switch.Behaviors>
+                        </Switch>
+                    </Grid>
+                </HorizontalStackLayout>
+            </Border>
+            
+            <!--  Net Quality  -->
+            <Border
+                Grid.Row="3"
+                Padding="16"
+                BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceContainerLowLight}, Dark={StaticResource SurfaceContainerLowDark}}"
+                Stroke="{AppThemeBinding Light={StaticResource OutlineLight}, Dark={StaticResource OutlineDark}}"
+                StrokeShape="RoundRectangle 8"
+                Shadow="{StaticResource MaterialShadowLevel1}">
+                <HorizontalStackLayout Spacing="12">
+                    <HorizontalStackLayout.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding EditQualityCommand}" />
+                    </HorizontalStackLayout.GestureRecognizers>
+                    <Image
+                        HeightRequest="24"
+                        Source="quality_icon.png"
+                        VerticalOptions="Center"
+                        WidthRequest="24" />
+                    <Grid
+                        ColumnDefinitions="*"
+                        RowDefinitions="Auto,Auto"
+                        RowSpacing="4"
+                        VerticalOptions="Center">
+                        <Label
+                            Grid.Row="0"
+                            FontAttributes="Bold"
+                            FontSize="16"
+                            Text="Net Quality"
+                            TextColor="{AppThemeBinding Light={StaticResource OnSurfaceLight}, Dark={StaticResource OnSurfaceDark}}" />
+                        <Label
+                            Grid.Row="1"
+                            FontSize="14"
+                            Text="{Binding DisplayQuality}"
+                            TextColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" />
+                    </Grid>
+                </HorizontalStackLayout>
+            </Border>
+
+        </Grid>
+    </ScrollView>
+
+</ContentPage>
+
+
+
+

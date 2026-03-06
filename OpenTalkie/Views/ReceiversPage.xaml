@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="OpenTalkie.Presentation.Views.ReceiversPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+        xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+    xmlns:views="clr-namespace:OpenTalkie.Presentation.Views"
+    xmlns:vm="clr-namespace:OpenTalkie.Presentation.ViewModels;assembly=OpenTalkie.Presentation"
+    x:Name="ReceiversRoot"
+    x:DataType="vm:ReceiversViewModel"
+    Padding="16,16,16,0">
+    <AbsoluteLayout>
+        <CollectionView
+            x:Name="EndpointsCollection"
+            AbsoluteLayout.LayoutBounds="0,0,1,1"
+            AbsoluteLayout.LayoutFlags="All"
+            ItemsSource="{Binding Endpoints}">
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="vm:StreamEndpointItemViewModel">
+                    <Border
+                        Style="{StaticResource M3CardBorder}"
+                        Margin="0,8"
+                        Padding="12"
+                        StrokeShape="RoundRectangle 8">
+                        <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto" RowSpacing="16">
+                            <Grid Grid.Row="0" Grid.Column="0" RowDefinitions="*,Auto">
+                                <Label Grid.Row="0" FontAttributes="Bold" FontSize="16" Text="{Binding Name}" TextColor="{AppThemeBinding Light={StaticResource OnSurfaceLight}, Dark={StaticResource OnSurfaceDark}}" />
+                                <Grid Grid.Row="1" ColumnDefinitions="Auto,Auto">
+                                    <Label Grid.Column="0" FontSize="14" Text="{Binding Hostname}" TextColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" />
+                                    <Label Grid.Column="1" FontSize="14" Text="{Binding Port, StringFormat=':{0}'}" TextColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" />
+                                </Grid>
+                            </Grid>
+                            <Switch Grid.Column="1" IsToggled="{Binding IsEnabled, Mode=TwoWay}">
+                                <Switch.Behaviors>
+                                    <toolkit:EventToCommandBehavior
+                                        Command="{Binding Source={x:Reference ReceiversRoot}, Path=StreamEnabledChangedCommand, x:DataType=views:ReceiversPage}"
+                                        CommandParameter="{Binding}"
+                                        EventName="Toggled" />
+                                </Switch.Behaviors>
+                            </Switch>
+                            <!-- Volume slider -->
+                            <Grid Grid.Row="1" Grid.Column="0" ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10">
+                                <Label Text="Vol" TextColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" VerticalOptions="Center"/>
+                                <Slider Grid.Column="1" Minimum="0" Maximum="4" Value="{Binding Volume, Mode=TwoWay}" DragCompleted="OnStreamVolumeDragCompleted" />
+                                <Label Grid.Column="2" Text="{Binding Volume, StringFormat='x{0:F2}'}" TextColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" VerticalOptions="Center"/>
+                            </Grid>
+                            <Grid Grid.Row="1" Grid.Column="1" ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10">
+                                <Button
+                                    Grid.Column="3"
+                                    Style="{StaticResource TonalButton}"
+                                    Command="{Binding Source={x:Reference ReceiversRoot}, Path=ResetVolumeCommand, x:DataType=views:ReceiversPage}"
+                                    CommandParameter="{Binding}"
+                                    FontSize="12"
+                                    Padding="12,8"
+                                    Text="Reset" />
+                            </Grid>
+                            <HorizontalStackLayout Grid.Row="2" Grid.Column="0" Spacing="10">
+                                <Button
+                                        Style="{StaticResource FilledButton}"
+                                        Command="{Binding Source={x:Reference ReceiversRoot}, Path=OpenSettingsCommand, x:DataType=views:ReceiversPage}"
+                                        CommandParameter="{Binding}"
+                                        FontSize="14"
+                                        Padding="16,8"
+                                        Text="Open" />
+                                <Button
+                                        Style="{StaticResource DestructiveButton}"
+                                        Command="{Binding Source={x:Reference ReceiversRoot}, Path=DeleteStreamCommand, x:DataType=views:ReceiversPage}"
+                                        CommandParameter="{Binding}"
+                                        FontSize="14"
+                                        Padding="16,8"
+                                        Text="Delete" />
+                            </HorizontalStackLayout>
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+            <CollectionView.Footer>
+                <Grid HeightRequest="100"/>
+            </CollectionView.Footer>
+        </CollectionView>
+
+        <Button
+            AbsoluteLayout.LayoutBounds="0.95,0.95,AutoSize,AutoSize"
+            AbsoluteLayout.LayoutFlags="PositionProportional"
+            Style="{StaticResource FabButton}"
+            Command="{Binding AddStreamCommand}"
+            FontSize="28"
+            Text="+"
+            WidthRequest="56"
+            HeightRequest="56" />
+    </AbsoluteLayout>
+</ContentPage>
+
+
+
