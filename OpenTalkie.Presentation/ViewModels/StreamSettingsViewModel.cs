@@ -73,9 +73,6 @@ public partial class StreamSettingsViewModel : ObservableObject
     [ObservableProperty]
     public partial bool AllowMobileData { get; set; }
 
-    [ObservableProperty]
-    public partial float Volume { get; set; }
-
     public string DisplayQuality => Quality switch
     {
         VBanQuality.VBAN_QUALITY_OPTIMAL => "Optimal",
@@ -224,35 +221,6 @@ public partial class StreamSettingsViewModel : ObservableObject
         }
     }
 
-    [RelayCommand]
-    private async Task VolumeChanged()
-    {
-        if (_isApplyingEndpointState || _currentEndpoint == null)
-        {
-            return;
-        }
-
-        if (!await TryUpdateEndpointAsync(new UpdateStreamEndpointCommand(StreamType, EndpointId, Volume: Volume)))
-        {
-            ApplyEndpoint(_currentEndpoint);
-        }
-    }
-
-    [RelayCommand]
-    private async Task ResetVolume()
-    {
-        if (_currentEndpoint == null)
-        {
-            return;
-        }
-
-        Volume = 1f;
-        if (!await TryUpdateEndpointAsync(new UpdateStreamEndpointCommand(StreamType, EndpointId, Volume: 1f)))
-        {
-            ApplyEndpoint(_currentEndpoint);
-        }
-    }
-
     private void ReloadEndpoint()
     {
         if (EndpointId == Guid.Empty)
@@ -276,7 +244,6 @@ public partial class StreamSettingsViewModel : ObservableObject
         Quality = endpoint.Quality;
         IsDenoiseEnabled = endpoint.IsDenoiseEnabled;
         AllowMobileData = endpoint.AllowMobileData;
-        Volume = endpoint.Volume;
         _isApplyingEndpointState = false;
     }
 

@@ -11,7 +11,6 @@ public partial class StreamSettingsPage : ContentPage, IQueryAttributable
 
     public ICommand DenoiseToggledCommand => _viewModel.DenoiseToggledCommand;
     public ICommand MobileDataToggledCommand => _viewModel.MobileDataToggledCommand;
-    public ICommand ResetVolumeCommand => _viewModel.ResetVolumeCommand;
 
     public StreamSettingsPage(StreamSettingsViewModel viewModel)
     {
@@ -30,14 +29,6 @@ public partial class StreamSettingsPage : ContentPage, IQueryAttributable
         if (TryGetEndpointType(query, "StreamType", out var streamType))
         {
             _viewModel.StreamType = streamType;
-        }
-    }
-
-    private void OnVolumeDragCompleted(object? sender, EventArgs e)
-    {
-        if (_viewModel.VolumeChangedCommand.CanExecute(null))
-        {
-            _viewModel.VolumeChangedCommand.Execute(null);
         }
     }
 

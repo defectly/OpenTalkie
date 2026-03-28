@@ -11,7 +11,7 @@
     Title="stream settings"
     Padding="16">
     <ScrollView>
-        <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,*" RowSpacing="16">
+        <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,*" RowSpacing="16">
 
             <!--  Name  -->
             <Border
@@ -124,64 +124,9 @@
                 </HorizontalStackLayout>
             </Border>
 
-            <!--  Volume  -->
-            <Border
-                Grid.Row="4"
-                Padding="16"
-                BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceContainerLowLight}, Dark={StaticResource SurfaceContainerLowDark}}"
-                Stroke="{AppThemeBinding Light={StaticResource OutlineLight}, Dark={StaticResource OutlineDark}}"
-                StrokeShape="RoundRectangle 8"
-                Shadow="{StaticResource MaterialShadowLevel1}">
-                <VerticalStackLayout Spacing="12">
-                    <Grid Padding="5">
-                        <Image
-                            HeightRequest="24"
-                            Source="volume_icon.png"
-                            VerticalOptions="Center"
-                            WidthRequest="24" />
-                        <Grid ColumnDefinitions="*,Auto">
-                            <Grid
-                                Grid.Column="0"
-                                ColumnDefinitions="*,Auto"
-                                RowDefinitions="Auto,Auto"
-                                RowSpacing="4">
-                                <Label
-                                    Grid.Row="0"
-                                    Grid.Column="0"
-                                    FontAttributes="Bold"
-                                    FontSize="16"
-                                    Text="Stream Volume"
-                                    TextColor="{AppThemeBinding Light={StaticResource OnSurfaceLight}, Dark={StaticResource OnSurfaceDark}}" />
-                                <Label
-                                    Grid.Row="1"
-                                    Grid.Column="0"
-                                    FontSize="14"
-                                    Text="{Binding Volume, StringFormat='x{0:F2}'}"
-                                    TextColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" />
-                            </Grid>
-                            <Button
-                                Grid.Column="1"
-                                Style="{StaticResource OutlinedButton}"
-                                Padding="8"
-                                Command="{Binding ResetVolumeCommand}"
-                                FontSize="14"
-                                Text="Reset" />
-                        </Grid>
-                    </Grid>
-                    <Slider
-                        Minimum="0"
-                        Maximum="4"
-                        Value="{Binding Volume, Mode=TwoWay}"
-                        DragCompleted="OnVolumeDragCompleted"
-                        MaximumTrackColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}"
-                        MinimumTrackColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
-                        ThumbColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
-                </VerticalStackLayout>
-            </Border>
-
             <!--  Denoise Switch  -->
             <Border
-                Grid.Row="5"
+                Grid.Row="4"
                 Padding="16"
                 BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceContainerLowLight}, Dark={StaticResource SurfaceContainerLowDark}}"
                 Stroke="{AppThemeBinding Light={StaticResource OutlineLight}, Dark={StaticResource OutlineDark}}"
@@ -221,7 +166,7 @@
 
             <!--  Active on Mobile Data Switch  -->
             <Border
-                Grid.Row="6"
+                Grid.Row="5"
                 Padding="16"
                 BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceContainerLowLight}, Dark={StaticResource SurfaceContainerLowDark}}"
                 Stroke="{AppThemeBinding Light={StaticResource OutlineLight}, Dark={StaticResource OutlineDark}}"
