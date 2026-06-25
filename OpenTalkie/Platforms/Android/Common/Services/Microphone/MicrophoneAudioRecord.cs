@@ -43,6 +43,13 @@ public static class MicrophoneAudioRecord
         if (!string.IsNullOrWhiteSpace(prefferedOutputAudioDevice))
             SetPrefferedAudioDevice(microphoneRepository.GetPrefferedDevice()!);
 
+        if (_microphoneSource == (int)AudioSource.VoiceCommunication)
+        {
+            var audioManager = (AudioManager?)Platform.AppContext.GetSystemService(Context.AudioService);
+            if (audioManager != null)
+                audioManager.Mode = Mode.InCommunication;
+        }
+
         _audioRecord.StartRecording();
     }
 
@@ -64,6 +71,14 @@ public static class MicrophoneAudioRecord
             return;
 
         _audioRecord.Stop();
+
+        if (_microphoneSource == (int)AudioSource.VoiceCommunication)
+        {
+            var audioManager = (AudioManager?)Platform.AppContext.GetSystemService(Context.AudioService);
+            if (audioManager != null)
+                audioManager.Mode = Mode.Normal;
+        }
+
         _audioRecord.Release();
         _audioRecord.Dispose();
         _audioRecord = null;
