@@ -47,6 +47,10 @@ public class MicrophoneRepository : IMicrophoneRepository
         else
             return ["8", "16"];
     }
+    public List<string> GetAudioManagerModes()
+    {
+        return ["Normal", "InCommunication"];
+    }
     public string GetSelectedSource()
     {
         int source = Preferences.Get("MicrophoneSource", (int)AudioSource.Default);
@@ -169,5 +173,17 @@ public class MicrophoneRepository : IMicrophoneRepository
     public string GetPrefferedDevice()
     {
         return Preferences.Get("MicrophonePrefferedAudioInputDevice", "Default");
+    }
+
+    public void SetSelectedAudioManagerMode(string mode)
+    {
+        int modeValue = mode == "InCommunication" ? (int)Mode.InCommunication : (int)Mode.Normal;
+        Preferences.Set("AudioManagerMode", modeValue);
+    }
+
+    public string GetSelectedAudioManagerMode()
+    {
+        int modeValue = Preferences.Get("AudioManagerMode", (int)Mode.Normal);
+        return modeValue == (int)Mode.InCommunication ? "InCommunication" : "Normal";
     }
 }

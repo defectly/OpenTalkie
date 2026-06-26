@@ -12,6 +12,7 @@ public static class MicrophoneAudioRecord
     private static int _microphoneChannel;
     private static int _microphoneSampleRate;
     private static int _microphoneEncoding;
+    private static int _audioManagerMode;
     private static WaveFormat? _waveFormat;
     private static readonly IMicrophoneRepository microphoneRepository =
         IPlatformApplication.Current?.Services.GetService<IMicrophoneRepository>()
@@ -43,12 +44,7 @@ public static class MicrophoneAudioRecord
         if (!string.IsNullOrWhiteSpace(prefferedOutputAudioDevice))
             SetPrefferedAudioDevice(microphoneRepository.GetPrefferedDevice()!);
 
-        if (_microphoneSource == (int)AudioSource.VoiceCommunication)
-        {
-            var audioManager = (AudioManager?)Platform.AppContext.GetSystemService(Context.AudioService);
-            if (audioManager != null)
-                audioManager.Mode = Mode.InCommunication;
-        }
+        ApplyConfiguredAudioMode();
 
         _audioRecord.StartRecording();
     }
@@ -72,12 +68,7 @@ public static class MicrophoneAudioRecord
 
         _audioRecord.Stop();
 
-        if (_microphoneSource == (int)AudioSource.VoiceCommunication)
-        {
-            var audioManager = (AudioManager?)Platform.AppContext.GetSystemService(Context.AudioService);
-            if (audioManager != null)
-                audioManager.Mode = Mode.Normal;
-        }
+        ResetAudioMode();
 
         _audioRecord.Release();
         _audioRecord.Dispose();
@@ -129,6 +120,23 @@ public static class MicrophoneAudioRecord
         _microphoneEncoding = Preferences.Get("MicrophoneEncoding", (int)Encoding.Default);
         BufferSize = Preferences.Get("MicrophoneBufferSize", 960);
         _volume = Preferences.Get("MicrophoneVolume", 1f);
+        _audioManagerMode = Preferences.Get("AudioManagerMode", (int)Mode.Normal);
+    }
+
+    private static void ApplyConfiguredAudioMode()
+    {
+        var context = Platform.AppContext;
+        var audioManager = (AudioManager?)context.GetSystemService(Context.AudioService);
+        if (audioManager != null)
+            audioManager.Mode = (Mode)_audioManagerMode;
+    }
+
+    private static void ResetAudioMode()
+    {
+        var context = Platform.AppContext;
+        var audioManager = (AudioManager?)context.GetSystemService(Context.AudioService);
+        if (audioManager != null)
+            audioManager.Mode = Mode.Normal;
     }
 
     private static void CreateAudioRecord()
