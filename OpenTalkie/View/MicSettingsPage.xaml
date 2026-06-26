@@ -7,7 +7,7 @@
     Title="Microphone settings"
     Padding="16">
     <ScrollView VerticalScrollBarVisibility="Never" HorizontalScrollBarVisibility="Never">
-        <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="16">
+        <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="16">
 
             <!--  Audio Source  -->
             <Frame
@@ -209,10 +209,50 @@
                     </Grid>
                 </Grid>
             </Frame>
+            
+            <!--  Audio Manager Mode  -->
+            <Frame
+                Grid.Row="5"
+                Padding="16"
+                BackgroundColor="{StaticResource CardBackground}"
+                BorderColor="{AppThemeBinding Light={StaticResource OutlineLight}, Dark={StaticResource OutlineDark}}"
+                CornerRadius="8"
+                Shadow="{StaticResource MaterialShadowDark}">
+                <Grid Padding="5">
+                    <Grid.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding EditFieldCommand}" CommandParameter="AudioManagerMode" />
+                    </Grid.GestureRecognizers>
+                    <Image
+                        HeightRequest="24"
+                        Source="mode_icon.png"
+                        VerticalOptions="Center"
+                        WidthRequest="24" />
+                    <Grid
+                        ColumnDefinitions="*"
+                        RowDefinitions="Auto,Auto"
+                        RowSpacing="4"
+                        VerticalOptions="Center">
+                        <Label
+                            Grid.Row="0">
+                            <Label.FormattedText>
+                                <FormattedString>
+                                    <Span Text="Audio Mode " TextColor="{StaticResource OnSurfaceDark}" FontAttributes="Bold" FontSize="16" />
+                                    <Span Text="(requires restart)" TextColor="{StaticResource OnSurfaceVariantDark}" FontSize="14" />
+                                </FormattedString>
+                            </Label.FormattedText>
+                        </Label>
+                        <Label
+                            Grid.Row="1"
+                            FontSize="14"
+                            Text="{Binding SelectedAudioManagerMode}"
+                            TextColor="{StaticResource OnSurfaceVariantDark}" />
+                    </Grid>
+                </Grid>
+            </Frame>
 
             <!--  Input device  -->
             <Frame
-                Grid.Row="5"
+                Grid.Row="6"
                 Padding="16"
                 BackgroundColor="{StaticResource CardBackground}"
                 BorderColor="{AppThemeBinding Light={StaticResource OutlineLight}, Dark={StaticResource OutlineDark}}"
@@ -248,10 +288,10 @@
                     </Grid>
                 </Grid>
             </Frame>
-
+            
             <!--  Volume Slider  -->
             <Frame
-                Grid.Row="6"
+                Grid.Row="7"
                 Padding="16"
                 BackgroundColor="{StaticResource CardBackground}"
                 BorderColor="{AppThemeBinding Light={StaticResource OutlineLight}, Dark={StaticResource OutlineDark}}"
