@@ -83,6 +83,7 @@ public static class MauiProgram
         services.AddTransient<ReceiverSettingsViewModel>();
         services.AddTransient<SettingsViewModel>();
         services.AddTransient<AddStreamViewModel>();
+        services.AddTransient<AudioManagerSettingsViewModel>();
     }
     private static void RegisterViews(IServiceCollection services)
     {
@@ -96,5 +97,6 @@ public static class MauiProgram
         services.AddTransient<ReceiverSettingsPage>();
         services.AddTransient<SettingsPage>();
         services.AddTransient<AddStreamPage>();
+        services.AddTransient<AudioManagerSettingsPage>();
     }
 }

@@ -49,7 +49,13 @@ public class MicrophoneRepository : IMicrophoneRepository
     }
     public List<string> GetAudioManagerModes()
     {
-        return ["Normal", "InCommunication"];
+        List<string> audioManagerModes = [];
+
+        var modes = Enum.GetNames<Mode>();
+        audioManagerModes.Add(modes[0].ToString());
+        audioManagerModes.Add(modes[3].ToString());
+
+        return audioManagerModes;
     }
     public string GetSelectedSource()
     {
@@ -177,13 +183,13 @@ public class MicrophoneRepository : IMicrophoneRepository
 
     public void SetSelectedAudioManagerMode(string mode)
     {
-        int modeValue = mode == "InCommunication" ? (int)Mode.InCommunication : (int)Mode.Normal;
-        Preferences.Set("AudioManagerMode", modeValue);
+        var parsedMode = Enum.Parse<Mode>(mode);
+        Preferences.Set("AudioManagerMode", (int)parsedMode);
     }
 
     public string GetSelectedAudioManagerMode()
     {
         int modeValue = Preferences.Get("AudioManagerMode", (int)Mode.Normal);
-        return modeValue == (int)Mode.InCommunication ? "InCommunication" : "Normal";
+        return ((Mode)modeValue).ToString();
     }
 }

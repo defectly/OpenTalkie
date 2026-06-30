@@ -105,6 +105,9 @@
 		<Compile Update="View\HomePage.xaml.cs">
 			<DependentUpon>HomePage.xaml</DependentUpon>
 		</Compile>
+		<Compile Update="View\AudioManagerSettingsPage.xaml.cs">
+		  <DependentUpon>AudioManagerSettingsPage.xaml</DependentUpon>
+		</Compile>
 	</ItemGroup>
 	<ItemGroup>
 		<MauiXaml Update="View\HomePage.xaml">
@@ -115,6 +118,9 @@
 		</MauiXaml>
 		<MauiXaml Update="View\MicSettingsPage.xaml">
 			<Generator>MSBuild:Compile</Generator>
+		</MauiXaml>
+		<MauiXaml Update="View\AudioManagerSettingsPage.xaml">
+		  <Generator>MSBuild:Compile</Generator>
 		</MauiXaml>
 		<MauiXaml Update="View\PlaybackSettingsPage.xaml">
 			<Generator>MSBuild:Compile</Generator>

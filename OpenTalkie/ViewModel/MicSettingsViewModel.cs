@@ -32,9 +32,6 @@ public partial class MicSettingsViewModel : ObservableObject
     [ObservableProperty]
     private string prefferedAudioInputDevice;
 
-    [ObservableProperty]
-    private string selectedAudioManagerMode;
-
     public MicSettingsViewModel(IMicrophoneRepository microphoneRepository)
     {
         _microphoneRepository = microphoneRepository;
@@ -46,7 +43,6 @@ public partial class MicSettingsViewModel : ObservableObject
         SelectedBufferSize = _microphoneRepository.GetSelectedBufferSize();
         Volume = _microphoneRepository.GetSelectedVolume() * 100;
         PrefferedAudioInputDevice = _microphoneRepository.GetPrefferedDevice();
-        SelectedAudioManagerMode = _microphoneRepository.GetSelectedAudioManagerMode();
     }
 
     [RelayCommand]
@@ -65,7 +61,6 @@ public partial class MicSettingsViewModel : ObservableObject
             "SampleRate" => [.. _microphoneRepository.GetSampleRates()],
             "Encoding" => [.. _microphoneRepository.GetEncodings()],
             "PrefferedAudioInputDevice" => [.. _microphoneRepository.GetAvailableAudioInputDevices()],
-            "AudioManagerMode" => [.. _microphoneRepository.GetAudioManagerModes()],
             _ => []
         };
 
@@ -76,7 +71,6 @@ public partial class MicSettingsViewModel : ObservableObject
             "SampleRate" => SelectedSampleRate,
             "Encoding" => SelectedEncoding,
             "PrefferedAudioInputDevice" => _microphoneRepository.GetPrefferedDevice(),
-            "AudioManagerMode" => SelectedAudioManagerMode,
             _ => string.Empty
         };
 
@@ -108,10 +102,6 @@ public partial class MicSettingsViewModel : ObservableObject
                         case "PrefferedAudioInputDevice":
                             _microphoneRepository.SetPrefferedDevice(result);
                             PrefferedAudioInputDevice = _microphoneRepository.GetPrefferedDevice();
-                            break;
-                        case "AudioManagerMode":
-                            SelectedAudioManagerMode = result;
-                            _microphoneRepository.SetSelectedAudioManagerMode(result);
                             break;
                     }
                 }

@@ -14,15 +14,18 @@ public partial class SettingsViewModel : ObservableObject
     private readonly MicSettingsPage _micSettingsPage;
     private readonly PlaybackSettingsPage _playbackSettingsPage;
     private readonly ReceiverSettingsPage _receiverSettingsPage;
+    private readonly AudioManagerSettingsPage _audioManagerSettingsPage;
 
     [ObservableProperty]
     private ObservableCollection<SettingsItem> settingsItems;
 
-    public SettingsViewModel(MicSettingsPage micSettingsPage, PlaybackSettingsPage playbackSettingsPage, ReceiverSettingsPage receiverSettingsPage)
+    public SettingsViewModel(MicSettingsPage micSettingsPage, PlaybackSettingsPage playbackSettingsPage, 
+        ReceiverSettingsPage receiverSettingsPage, AudioManagerSettingsPage audioManagerSettingsPage)
     {
         _micSettingsPage = micSettingsPage;
         _playbackSettingsPage = playbackSettingsPage;
         _receiverSettingsPage = receiverSettingsPage;
+        _audioManagerSettingsPage = audioManagerSettingsPage;
 
         SettingsItems = new ObservableCollection<SettingsItem>
         {
@@ -32,6 +35,8 @@ public partial class SettingsViewModel : ObservableObject
 
         if (OperatingSystem.IsAndroidVersionAtLeast(29))
             SettingsItems.Add(new SettingsItem { Name = "Cast Settings", PageType = "PlaybackSettingsPage" });
+
+        SettingsItems.Add(new SettingsItem { Name = "Audio Manager Settings", PageType = "AudioManagerSettingsPage" });
     }
 
     [RelayCommand]
@@ -44,6 +49,7 @@ public partial class SettingsViewModel : ObservableObject
             "MicSettingsPage" => _micSettingsPage,
             "PlaybackSettingsPage" => _playbackSettingsPage,
             "ReceiverSettingsPage" => _receiverSettingsPage,
+            "AudioManagerSettingsPage" => _audioManagerSettingsPage,
             _ => null
         };
 
