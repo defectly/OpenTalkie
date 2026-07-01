@@ -120,7 +120,7 @@ public class AudioOutputService(IReceiverRepository receiverRepository) : IAudio
         if (!Enum.TryParse<AudioDeviceType>(preferredDevice, ignoreCase: true, out var wantedType))
             return false;
 
-        audioManager.Mode = Mode.InCommunication;
+        audioManager.Mode = (Mode)savedMode;
 
         AudioDeviceInfo? target = null;
 

@@ -44,8 +44,6 @@ public static class MicrophoneAudioRecord
         if (!string.IsNullOrWhiteSpace(prefferedOutputAudioDevice))
             SetPrefferedAudioDevice(microphoneRepository.GetPrefferedDevice()!);
 
-        ApplyConfiguredAudioMode();
-
         _audioRecord.StartRecording();
     }
 
@@ -67,9 +65,6 @@ public static class MicrophoneAudioRecord
             return;
 
         _audioRecord.Stop();
-
-        ResetAudioMode();
-
         _audioRecord.Release();
         _audioRecord.Dispose();
         _audioRecord = null;
@@ -123,22 +118,6 @@ public static class MicrophoneAudioRecord
         _audioManagerMode = Preferences.Get("AudioManagerMode", (int)Mode.Normal);
     }
 
-    private static void ApplyConfiguredAudioMode()
-    {
-        var context = Platform.AppContext;
-        var audioManager = (AudioManager?)context.GetSystemService(Context.AudioService);
-        if (audioManager != null)
-            audioManager.Mode = (Mode)_audioManagerMode;
-    }
-
-    private static void ResetAudioMode()
-    {
-        var context = Platform.AppContext;
-        var audioManager = (AudioManager?)context.GetSystemService(Context.AudioService);
-        if (audioManager != null)
-            audioManager.Mode = Mode.Normal;
-    }
-
     private static void CreateAudioRecord()
     {
         CreateAudioRecord
@@ -188,14 +167,14 @@ public static class MicrophoneAudioRecord
                 audioManager.StopBluetoothSco();
             }
 
-            audioManager.Mode = Mode.Normal;
+            audioManager.Mode = (Mode)_audioManagerMode;
             return true;
         }
 
         if (!Enum.TryParse<AudioDeviceType>(preferredDevice, ignoreCase: true, out var wantedType))
             return false;
 
-        audioManager.Mode = Mode.InCommunication;
+        audioManager.Mode = (Mode)_audioManagerMode;
 
         AudioDeviceInfo? target = null;
 
