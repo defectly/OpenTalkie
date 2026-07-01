@@ -7,6 +7,7 @@ using OpenTalkie.Application.DependencyInjection;
 using OpenTalkie.DependencyInjection;
 using OpenTalkie.Infrastructure.Android.DependencyInjection;
 using OpenTalkie.Infrastructure.DependencyInjection;
+using MattiasCibien.Extensions.Logging.Logcat;
 
 namespace OpenTalkie;
 
@@ -33,6 +34,12 @@ public static class MauiProgram
         builder.Services.AddInfrastructureLayer();
 #if ANDROID
         builder.Services.AddAndroidInfrastructureLayer();
+
+        builder.Services.AddLogging(options =>
+        {
+            options.SetMinimumLevel(LogLevel.Trace);
+            options.AddLogcat("OpenTalkie");
+        });
 #endif
         builder.Services.AddPresentationLayer();
 
