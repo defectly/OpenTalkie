@@ -11,9 +11,9 @@ public static class ForegroundServiceWatcher
     private static bool mediaProjectionForegroundServiceState;
     private static bool receiverForegroundServiceState;
     private static IWakeLockService? wakeLockService;
-    private static ILogger? logger;
+    private static ILogger<ForegroundServiceWatcherLogScope>? logger;
 
-    public static void Configure(IWakeLockService service, ILogger log)
+    public static void Configure(IWakeLockService service, ILogger<ForegroundServiceWatcherLogScope> log)
     {
         wakeLockService = service;
         logger = log;
@@ -63,3 +63,5 @@ public static class ForegroundServiceWatcher
             wakeLockService.Release();
     }
 }
+
+public sealed class ForegroundServiceWatcherLogScope;

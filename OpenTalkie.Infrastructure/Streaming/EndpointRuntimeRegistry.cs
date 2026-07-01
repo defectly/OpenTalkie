@@ -203,7 +203,7 @@ internal sealed class EndpointRuntime : IDisposable
         _logger.LogDebug("Endpoint runtime disposed.");
     }
 
-    private static void ConfigureUdpClient(UdpClient client, ILogger logger)
+    private static void ConfigureUdpClient(UdpClient client, ILogger<EndpointRuntime> logger)
     {
         try
         {

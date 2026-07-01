@@ -10,10 +10,10 @@ public class WakeLockService : Java.Lang.Object, IWakeLockService
     private const string Tag = "OpenTalkieWakeLock";
     private readonly ILogger<WakeLockService> _logger;
 
-    public WakeLockService(ILogger<WakeLockService> logger)
+    public WakeLockService(ILogger<WakeLockService> logger, ILoggerFactory loggerFactory)
     {
         _logger = logger;
-        ForegroundServiceWatcher.Configure(this, _logger);
+        ForegroundServiceWatcher.Configure(this, loggerFactory.CreateLogger<ForegroundServiceWatcherLogScope>());
     }
 
     public void Acquire()

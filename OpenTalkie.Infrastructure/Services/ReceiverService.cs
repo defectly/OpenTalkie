@@ -5,7 +5,6 @@ using OpenTalkie.Domain.VBAN;
 using OpenTalkie.Infrastructure.RNNoise;
 using OpenTalkie.Infrastructure.Streaming;
 using System.Collections.ObjectModel;
-using System.Collections.Specialized;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -402,7 +401,7 @@ public sealed class ReceiverService : IReceiverService
         public bool UnavailableLogged;
         public bool IsAvailable => Dn != null;
 
-        public DenoiseCtx(ILogger logger)
+        public DenoiseCtx(ILogger<ReceiverService> logger)
         {
             try
             {

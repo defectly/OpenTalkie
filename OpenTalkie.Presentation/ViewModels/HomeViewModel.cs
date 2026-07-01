@@ -147,7 +147,7 @@ public partial class HomeViewModel : ObservableObject
         await ShowErrorIfFailedAsync(result, _dialogService, _logger);
     }
 
-    private static async Task ShowErrorIfFailedAsync(OperationResult result, IUserDialogService dialogService, ILogger logger)
+    private static async Task ShowErrorIfFailedAsync(OperationResult result, IUserDialogService dialogService, ILogger<HomeViewModel> logger)
     {
         if (result.IsSuccess || string.IsNullOrWhiteSpace(result.ErrorMessage))
         {
