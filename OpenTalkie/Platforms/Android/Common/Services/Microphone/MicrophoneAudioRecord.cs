@@ -12,6 +12,7 @@ public static class MicrophoneAudioRecord
     private static int _microphoneChannel;
     private static int _microphoneSampleRate;
     private static int _microphoneEncoding;
+    private static int _audioManagerMode;
     private static WaveFormat? _waveFormat;
     private static readonly IMicrophoneRepository microphoneRepository =
         IPlatformApplication.Current?.Services.GetService<IMicrophoneRepository>()
@@ -114,6 +115,7 @@ public static class MicrophoneAudioRecord
         _microphoneEncoding = Preferences.Get("MicrophoneEncoding", (int)Encoding.Default);
         BufferSize = Preferences.Get("MicrophoneBufferSize", 960);
         _volume = Preferences.Get("MicrophoneVolume", 1f);
+        _audioManagerMode = Preferences.Get("AudioManagerMode", (int)Mode.Normal);
     }
 
     private static void CreateAudioRecord()
@@ -165,14 +167,14 @@ public static class MicrophoneAudioRecord
                 audioManager.StopBluetoothSco();
             }
 
-            audioManager.Mode = Mode.Normal;
+            audioManager.Mode = (Mode)_audioManagerMode;
             return true;
         }
 
         if (!Enum.TryParse<AudioDeviceType>(preferredDevice, ignoreCase: true, out var wantedType))
             return false;
 
-        audioManager.Mode = Mode.InCommunication;
+        audioManager.Mode = (Mode)_audioManagerMode;
 
         AudioDeviceInfo? target = null;
 

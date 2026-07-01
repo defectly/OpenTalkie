@@ -47,6 +47,16 @@ public class MicrophoneRepository : IMicrophoneRepository
         else
             return ["8", "16"];
     }
+    public List<string> GetAudioManagerModes()
+    {
+        List<string> audioManagerModes = [];
+
+        var modes = Enum.GetNames<Mode>();
+        audioManagerModes.Add(modes[0].ToString());
+        audioManagerModes.Add(modes[3].ToString());
+
+        return audioManagerModes;
+    }
     public string GetSelectedSource()
     {
         int source = Preferences.Get("MicrophoneSource", (int)AudioSource.Default);
@@ -169,5 +179,17 @@ public class MicrophoneRepository : IMicrophoneRepository
     public string GetPrefferedDevice()
     {
         return Preferences.Get("MicrophonePrefferedAudioInputDevice", "Default");
+    }
+
+    public void SetSelectedAudioManagerMode(string mode)
+    {
+        var parsedMode = Enum.Parse<Mode>(mode);
+        Preferences.Set("AudioManagerMode", (int)parsedMode);
+    }
+
+    public string GetSelectedAudioManagerMode()
+    {
+        int modeValue = Preferences.Get("AudioManagerMode", (int)Mode.Normal);
+        return ((Mode)modeValue).ToString();
     }
 }

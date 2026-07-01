@@ -31,9 +31,14 @@ public class AudioOutputService(IReceiverRepository receiverRepository) : IAudio
         int minBuf = AudioTrack.GetMinBufferSize(sampleRate, channelOut, encoding);
         if (minBuf <= 0) minBuf = sampleRate * channels * 2; // fallback
 
+        // Get configured AudioManager mode from preferences (Normal: 0, InCommunication: 3)
+        int savedMode = Preferences.Get("AudioManagerMode", (int)Mode.Normal);
+        bool isInCommunication = savedMode == (int)Mode.InCommunication;
+
+        // Dynamically select attributes to mix with VoiceCommunication routing if configured
         var attrs = new AudioAttributes.Builder()
-            .SetUsage(AudioUsageKind.Media)
-            .SetContentType(AudioContentType.Music)
+            .SetUsage(isInCommunication ? AudioUsageKind.VoiceCommunication : AudioUsageKind.Media)
+            .SetContentType(isInCommunication ? AudioContentType.Speech : AudioContentType.Music)
             .Build();
 
         var format = new AudioFormat.Builder()
@@ -92,6 +97,8 @@ public class AudioOutputService(IReceiverRepository receiverRepository) : IAudio
         if (audioManager is null)
             return false;
 
+       int savedMode = Preferences.Get("AudioManagerMode", (int)Mode.Normal);
+
         if (preferredDevice.Equals("default", StringComparison.OrdinalIgnoreCase))
         {
             _track?.SetPreferredDevice(null);
@@ -106,14 +113,14 @@ public class AudioOutputService(IReceiverRepository receiverRepository) : IAudio
                 audioManager.StopBluetoothSco();
             }
 
-            audioManager.Mode = Mode.Normal;
+            audioManager.Mode = (Mode)savedMode;
             return true;
         }
 
         if (!Enum.TryParse<AudioDeviceType>(preferredDevice, ignoreCase: true, out var wantedType))
             return false;
 
-        audioManager.Mode = Mode.InCommunication;
+        audioManager.Mode = (Mode)savedMode;
 
         AudioDeviceInfo? target = null;
 

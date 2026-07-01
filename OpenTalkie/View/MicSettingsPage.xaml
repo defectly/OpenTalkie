@@ -248,7 +248,7 @@
                     </Grid>
                 </Grid>
             </Frame>
-
+            
             <!--  Volume Slider  -->
             <Frame
                 Grid.Row="6"

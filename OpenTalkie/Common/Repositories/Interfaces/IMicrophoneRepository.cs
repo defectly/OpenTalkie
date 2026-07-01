@@ -9,6 +9,7 @@ public interface IMicrophoneRepository
     List<string> GetInputChannels();
     List<string> GetSampleRates();
     List<string> GetEncodings();
+    List<string> GetAudioManagerModes();
     string GetSelectedSource();
     string GetSelectedInputChannel();
     string GetSelectedSampleRate();
@@ -24,4 +25,6 @@ public interface IMicrophoneRepository
     string[] GetAvailableAudioInputDevices();
     void SetPrefferedDevice(string prefferedDevice);
     string GetPrefferedDevice();
+    void SetSelectedAudioManagerMode(string mode);
+    string GetSelectedAudioManagerMode();
 }
