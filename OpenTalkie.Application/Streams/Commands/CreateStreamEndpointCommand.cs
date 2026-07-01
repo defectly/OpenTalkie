@@ -20,7 +20,8 @@ public readonly record struct CreateStreamEndpointCommand(
 public sealed class CreateStreamEndpointCommandHandler(
     IEndpointCatalogService endpointCatalogService,
     IEndpointAddressValidator endpointAddressValidator,
-    IEndpointRepository endpointRepository)
+    IEndpointRepository endpointRepository,
+    ILogger<CreateStreamEndpointCommandHandler> logger)
     : ICommandHandler<CreateStreamEndpointCommand, OperationResult<Endpoint>>
 {
     public async ValueTask<OperationResult<Endpoint>> Handle(
@@ -30,18 +31,27 @@ public sealed class CreateStreamEndpointCommandHandler(
         string? error = StreamEndpointValidation.ValidateName(command.Name);
         if (error != null)
         {
+            if (logger.IsEnabled(LogLevel.Warning))
+                logger.LogWarning("Create {StreamType} endpoint rejected: {Error}.", command.StreamType, error);
+
             return OperationResult<Endpoint>.Fail(error);
         }
 
         error = StreamEndpointValidation.ValidateHostname(command.Hostname);
         if (error != null)
         {
+            if (logger.IsEnabled(LogLevel.Warning))
+                logger.LogWarning("Create {StreamType} endpoint rejected: {Error}.", command.StreamType, error);
+
             return OperationResult<Endpoint>.Fail(error);
         }
 
         error = StreamEndpointValidation.ValidatePort(command.Port);
         if (error != null)
         {
+            if (logger.IsEnabled(LogLevel.Warning))
+                logger.LogWarning("Create {StreamType} endpoint rejected: {Error}.", command.StreamType, error);
+
             return OperationResult<Endpoint>.Fail(error);
         }
 
@@ -55,6 +65,9 @@ public sealed class CreateStreamEndpointCommandHandler(
             hostname: command.Hostname,
             port: command.Port))
         {
+            if (logger.IsEnabled(LogLevel.Warning))
+                logger.LogWarning("Create {StreamType} endpoint rejected because identity already exists for {Host}:{Port}.", command.StreamType, command.Hostname, command.Port);
+
             return OperationResult<Endpoint>.Fail("A stream with the same identity already exists.");
         }
 
@@ -75,11 +88,17 @@ public sealed class CreateStreamEndpointCommandHandler(
         }
         catch (Exception ex)
         {
+            if (logger.IsEnabled(LogLevel.Error))
+                logger.LogError(ex, "Failed to create endpoint model for {StreamType}.", command.StreamType);
+
             return OperationResult<Endpoint>.Fail($"Failed to create endpoint: {ex.Message}");
         }
 
         if (!endpointAddressValidator.CanResolveHost(endpoint.Hostname))
         {
+            if (logger.IsEnabled(LogLevel.Warning))
+                logger.LogWarning("Create {StreamType} endpoint rejected because host {Host} could not be resolved.", command.StreamType, endpoint.Hostname);
+
             return OperationResult<Endpoint>.Fail("Could not resolve hostname or create UDP endpoint.");
         }
 
@@ -89,10 +108,17 @@ public sealed class CreateStreamEndpointCommandHandler(
         }
         catch (Exception ex)
         {
+            if (logger.IsEnabled(LogLevel.Error))
+                logger.LogError(ex, "Failed to persist new {StreamType} endpoint {EndpointId}.", command.StreamType, endpoint.Id);
+
             return OperationResult<Endpoint>.Fail($"Failed to persist stream endpoint: {ex.Message}");
         }
 
         endpointCatalogService.AddEndpoint(endpoint);
+
+        if (logger.IsEnabled(LogLevel.Information))
+            logger.LogInformation("Created {StreamType} endpoint {EndpointId} for {Host}:{Port}.", endpoint.Type, endpoint.Id, endpoint.Hostname, endpoint.Port);
+
         return OperationResult<Endpoint>.Success(endpoint);
     }
 }

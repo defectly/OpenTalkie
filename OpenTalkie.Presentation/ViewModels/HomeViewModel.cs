@@ -44,6 +44,7 @@ public partial class HomeViewModel : ObservableObject
     private readonly IPlaybackBroadcastService _playbackBroadcastService;
     private readonly IReceiverService _receiverService;
     private readonly IUserDialogService _dialogService;
+    private readonly ILogger<HomeViewModel> _logger;
 
     public HomeViewModel(
         IMediator mediator,
@@ -51,13 +52,15 @@ public partial class HomeViewModel : ObservableObject
         IPlaybackBroadcastService playbackBroadcastService,
         IReceiverService receiverService,
         IPlatformCapabilitiesService platformCapabilitiesService,
-        IUserDialogService dialogService)
+        IUserDialogService dialogService,
+        ILogger<HomeViewModel> logger)
     {
         _mediator = mediator;
         _microphoneBroadcastService = microphoneBroadcastService;
         _playbackBroadcastService = playbackBroadcastService;
         _receiverService = receiverService;
         _dialogService = dialogService;
+        _logger = logger;
 
         IsPlaybackAvailable = platformCapabilitiesService.GetCapabilities().IsPlaybackCaptureSupported;
 
@@ -121,14 +124,14 @@ public partial class HomeViewModel : ObservableObject
     private async Task SwitchMicrophoneBroadcast()
     {
         var result = await _mediator.Send(new SwitchMicrophoneBroadcastCommand());
-        await ShowErrorIfFailedAsync(result, _dialogService);
+        await ShowErrorIfFailedAsync(result, _dialogService, _logger);
     }
 
     [RelayCommand]
     private async Task SwitchPlaybackBroadcast()
     {
         var result = await _mediator.Send(new SwitchPlaybackBroadcastCommand());
-        await ShowErrorIfFailedAsync(result, _dialogService);
+        await ShowErrorIfFailedAsync(result, _dialogService, _logger);
     }
 
     [RelayCommand]
@@ -141,16 +144,20 @@ public partial class HomeViewModel : ObservableObject
     private async Task SwitchReceiver()
     {
         var result = await _mediator.Send(new SwitchReceiverCommand());
-        await ShowErrorIfFailedAsync(result, _dialogService);
+        await ShowErrorIfFailedAsync(result, _dialogService, _logger);
     }
 
-    private static async Task ShowErrorIfFailedAsync(OperationResult result, IUserDialogService dialogService)
+    private static async Task ShowErrorIfFailedAsync(OperationResult result, IUserDialogService dialogService, ILogger logger)
     {
         if (result.IsSuccess || string.IsNullOrWhiteSpace(result.ErrorMessage))
         {
             return;
         }
 
+        if (logger.IsEnabled(LogLevel.Warning))
+        {
+            logger.LogWarning("Home action failed: {ErrorMessage}.", result.ErrorMessage);
+        }
         await dialogService.ShowErrorAsync(result.ErrorMessage);
     }
 
@@ -187,6 +194,7 @@ public partial class HomeViewModel : ObservableObject
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Failed to load network addresses.");
             NetworkAddresses.Add($"Error: {ex.Message}");
         }
     }

@@ -11,6 +11,7 @@ public partial class ReceiverSettingsViewModel : ObservableObject
 {
     private readonly IMediator _mediator;
     private readonly IUserDialogService _dialogService;
+    private readonly ILogger<ReceiverSettingsViewModel> _logger;
 
     [ObservableProperty]
     public partial float Volume { get; set; }
@@ -18,10 +19,14 @@ public partial class ReceiverSettingsViewModel : ObservableObject
     [ObservableProperty]
     public partial string PrefferedAudioOutputDevice { get; set; } = string.Empty;
 
-    public ReceiverSettingsViewModel(IMediator mediator, IUserDialogService dialogService)
+    public ReceiverSettingsViewModel(
+        IMediator mediator,
+        IUserDialogService dialogService,
+        ILogger<ReceiverSettingsViewModel> logger)
     {
         _mediator = mediator;
         _dialogService = dialogService;
+        _logger = logger;
         _ = ReloadStateAsync();
     }
 
@@ -31,6 +36,10 @@ public partial class ReceiverSettingsViewModel : ObservableObject
         var result = await _mediator.Send(new SetReceiverVolumeCommand(Volume / 100.0f));
         if (!result.IsSuccess)
         {
+            if (_logger.IsEnabled(LogLevel.Warning))
+            {
+                _logger.LogWarning("Failed to update receiver volume: {ErrorMessage}.", result.ErrorMessage);
+            }
             await ShowErrorAsync(_dialogService, result.ErrorMessage);
             await ReloadStateAsync();
         }
@@ -43,6 +52,10 @@ public partial class ReceiverSettingsViewModel : ObservableObject
         var result = await _mediator.Send(new SetReceiverVolumeCommand(1f));
         if (!result.IsSuccess)
         {
+            if (_logger.IsEnabled(LogLevel.Warning))
+            {
+                _logger.LogWarning("Failed to reset receiver volume: {ErrorMessage}.", result.ErrorMessage);
+            }
             await ShowErrorAsync(_dialogService, result.ErrorMessage);
             await ReloadStateAsync();
         }
@@ -74,6 +87,10 @@ public partial class ReceiverSettingsViewModel : ObservableObject
                 var updateResult = await _mediator.Send(new SetReceiverPreferredAudioOutputDeviceCommand(selectedOption.Value));
                 if (!updateResult.IsSuccess)
                 {
+                    if (_logger.IsEnabled(LogLevel.Warning))
+                    {
+                        _logger.LogWarning("Failed to update receiver preferred output device: {ErrorMessage}.", updateResult.ErrorMessage);
+                    }
                     await ShowErrorAsync(_dialogService, updateResult.ErrorMessage);
                     await ReloadStateAsync();
                     return;
@@ -92,6 +109,7 @@ public partial class ReceiverSettingsViewModel : ObservableObject
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Failed to reload receiver settings.");
             await ShowErrorAsync(_dialogService, ex.Message);
         }
     }

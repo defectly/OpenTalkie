@@ -6,6 +6,7 @@ using System.Collections.Specialized;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace OpenTalkie.Infrastructure.Streaming;
 
@@ -13,10 +14,14 @@ public class AsyncReceiver : IDisposable
 {
     private readonly ObservableCollection<Endpoint> _endpoints;
     private readonly Dictionary<int, Listener> _listeners = new();
+    private readonly ILogger<AsyncReceiver> _logger;
+    private readonly ILoggerFactory _loggerFactory;
     private bool _started;
 
-    public AsyncReceiver(ObservableCollection<Endpoint> endpoints)
+    public AsyncReceiver(ObservableCollection<Endpoint> endpoints, ILoggerFactory? loggerFactory = null)
     {
+        _loggerFactory = loggerFactory ?? NullLoggerFactory.Instance;
+        _logger = _loggerFactory.CreateLogger<AsyncReceiver>();
         _endpoints = endpoints ?? throw new ArgumentNullException(nameof(endpoints));
         _endpoints.CollectionChanged += OnEndpointsCollectionChanged;
     }
@@ -28,6 +33,9 @@ public class AsyncReceiver : IDisposable
         if (_started) return;
         _started = true;
         RebuildListeners();
+
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("Async receiver started with {EndpointCount} endpoint(s).", _endpoints.Count);
     }
 
     public void Stop()
@@ -37,11 +45,13 @@ public class AsyncReceiver : IDisposable
         for (int i = 0; i < values.Count; i++)
             values[i].Dispose();
         _listeners.Clear();
+        _logger.LogInformation("Async receiver stopped.");
     }
 
     private void OnEndpointsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
         if (!_started) return;
+        _logger.LogDebug("Receiver endpoint collection changed; rebuilding listeners.");
         RebuildListeners();
     }
 
@@ -60,6 +70,10 @@ public class AsyncReceiver : IDisposable
             {
                 _listeners[port].Dispose();
                 _listeners.Remove(port);
+                if (_logger.IsEnabled(LogLevel.Information))
+                {
+                    _logger.LogInformation("Stopped UDP listener on port {Port}.", port);
+                }
             }
         }
 
@@ -76,12 +90,13 @@ public class AsyncReceiver : IDisposable
             {
                 try
                 {
-                    var l = new Listener(port, eps, OnVbanPayload);
+                    var l = new Listener(port, eps, OnVbanPayload, _loggerFactory.CreateLogger<Listener>());
                     l.Start();
                     _listeners.Add(port, l);
                 }
-                catch
+                catch (Exception ex)
                 {
+                    _logger.LogError(ex, "Failed to start UDP listener on port {Port}.", port);
                 }
             }
         }
@@ -104,6 +119,7 @@ public class AsyncReceiver : IDisposable
         private readonly int _port;
         private List<Endpoint> _eps;
         private readonly Action<Endpoint, byte[], int, int, int> _onPayload;
+        private readonly ILogger<Listener> _logger;
         private UdpClient? _udp;
         private CancellationTokenSource? _cts;
         private readonly Dictionary<Guid, DenoiseCtx> _denoisers = new();
@@ -135,11 +151,12 @@ public class AsyncReceiver : IDisposable
             }
         }
 
-        public Listener(int port, List<Endpoint> endpoints, Action<Endpoint, byte[], int, int, int> onPayload)
+        public Listener(int port, List<Endpoint> endpoints, Action<Endpoint, byte[], int, int, int> onPayload, ILogger<Listener> logger)
         {
             _port = port;
             _eps = endpoints;
             _onPayload = onPayload;
+            _logger = logger;
         }
 
         public void Start()
@@ -150,16 +167,24 @@ public class AsyncReceiver : IDisposable
             {
                 var sock = _udp.Client;
                 sock.ReceiveBufferSize = Math.Max(sock.ReceiveBufferSize, 1 << 20);
-                try { sock.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true); } catch { }
+                try { sock.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true); } catch (Exception ex) { _logger.LogDebug(ex, "Could not set UDP listener reuse-address option on port {Port}.", _port); }
             }
-            catch { }
+            catch (Exception ex) { _logger.LogWarning(ex, "Failed to configure UDP listener socket on port {Port}.", _port); }
             _cts = new CancellationTokenSource();
             _ = Task.Run(() => LoopAsync(_cts.Token));
+            if (_logger.IsEnabled(LogLevel.Information))
+            {
+                _logger.LogInformation("UDP listener started on port {Port} for {EndpointCount} endpoint(s).", _port, _eps.Count);
+            }
         }
 
         public void UpdateEndpoints(List<Endpoint> endpoints)
         {
             _eps = endpoints;
+
+            if (_logger.IsEnabled(LogLevel.Information))
+                _logger.LogInformation("UDP listener on port {Port} updated to {EndpointCount} endpoint(s).", _port, _eps.Count);
+
             var active = new HashSet<Guid>(endpoints.Select(e => e.Id));
             var denoiserKeys = _denoisers.Keys.ToList();
             for (int i = 0; i < denoiserKeys.Count; i++)
@@ -186,10 +211,9 @@ public class AsyncReceiver : IDisposable
             for (int i = 0; i < headerKeys.Count; i++)
             {
                 var key = headerKeys[i];
+
                 if (!active.Contains(key))
-                {
                     _lastHeader.Remove(key);
-                }
             }
         }
 
@@ -201,7 +225,11 @@ public class AsyncReceiver : IDisposable
                 UdpReceiveResult res;
                 try { res = await _udp.ReceiveAsync(ct); }
                 catch (OperationCanceledException) { break; }
-                catch { continue; }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "UDP receive failed on port {Port}.", _port);
+                    continue;
+                }
 
                 var buf = res.Buffer;
                 if (buf.Length < 28) continue;
@@ -304,9 +332,10 @@ public class AsyncReceiver : IDisposable
                     }
 
                     try { _onPayload(ep, payload, channels, bitsPerSample, sampleRate); }
-                    catch { }
+                    catch (Exception ex) { _logger.LogError(ex, "Failed to dispatch VBAN payload for stream '{StreamName}' on port {Port}.", ep.Name, _port); }
                 }
             }
+            _logger.LogDebug("UDP listener loop ended on port {Port}.", _port);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -323,6 +352,7 @@ public class AsyncReceiver : IDisposable
             var denoisers = _denoisers.Values.ToList();
             for (int i = 0; i < denoisers.Count; i++) denoisers[i].Dn.Dispose();
             _denoisers.Clear();
+            _logger.LogDebug("UDP listener disposed on port {Port}.", _port);
         }
     }
 }

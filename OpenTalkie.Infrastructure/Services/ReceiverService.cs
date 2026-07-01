@@ -20,6 +20,8 @@ public sealed class ReceiverService : IReceiverService
     private readonly IEndpointCatalogService _endpointCatalogService;
     private readonly IAudioOutputService _audioOutput;
     private readonly IReceiverForegroundServiceController _receiverForegroundServiceController;
+    private readonly ILogger<ReceiverService> _logger;
+    private readonly ILoggerFactory _loggerFactory;
     private readonly ObservableCollection<Endpoint> _endpoints = [];
     private AsyncReceiver? _receiver;
     private CancellationTokenSource? _mixCts;
@@ -29,9 +31,10 @@ public sealed class ReceiverService : IReceiverService
     private CancellationTokenSource? _procCts;
     private Task? _procTask;
     private readonly Dictionary<Guid, StreamBuffer> _buffers = new();
+    private readonly Lock _buffersLock = new();
     private StreamBuffer[] _activeBuffers = Array.Empty<StreamBuffer>();
     private readonly Dictionary<Guid, DenoiseCtx> _denoisers = new();
-    private readonly object _outputLock = new();
+    private readonly Lock _outputLock = new();
     private int _currentSampleRate;
     private int _currentChannels;
     private const int TargetSampleRate = 48000;
@@ -46,17 +49,30 @@ public sealed class ReceiverService : IReceiverService
         IEndpointCatalogService endpointCatalogService,
         IAudioOutputService audioOutput,
         IReceiverRepository receiverRepository,
-        IReceiverForegroundServiceController receiverForegroundServiceController)
+        IReceiverForegroundServiceController receiverForegroundServiceController,
+        ILogger<ReceiverService> logger,
+        ILoggerFactory loggerFactory)
     {
         _endpointCatalogService = endpointCatalogService;
         _audioOutput = audioOutput;
         _receiverForegroundServiceController = receiverForegroundServiceController;
+        _logger = logger;
+        _loggerFactory = loggerFactory;
 
         var settings = receiverRepository.GetSettings();
         _globalVolume = settings.VolumeGain;
-        receiverRepository.VolumeChanged += v => _globalVolume = v;
+        receiverRepository.VolumeChanged += v =>
+        {
+            _globalVolume = v;
+
+            if (_logger.IsEnabled(LogLevel.Debug))
+                _logger.LogDebug("Receiver volume changed to {Volume}.", v);
+        };
         receiverRepository.PreferredAudioOutputDeviceChanged += audioDevice =>
         {
+            if (_logger.IsEnabled(LogLevel.Information))
+                _logger.LogInformation("Receiver preferred audio output changed to {AudioDevice}.", audioDevice);
+
             _audioOutput.SetPrefferedAudioDevice(audioDevice);
         };
 
@@ -72,31 +88,42 @@ public sealed class ReceiverService : IReceiverService
     {
         if (_status.Phase is StreamSessionPhase.Starting or StreamSessionPhase.Running)
         {
+            if (_logger.IsEnabled(LogLevel.Debug))
+                _logger.LogDebug("Receiver start ignored while phase is {Phase}.", _status.Phase);
+
             return;
         }
 
         SetStatus(StreamSessionStatus.Starting());
 
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("Starting receiver with {EndpointCount} endpoint(s).", _endpoints.Count);
+
         try
         {
-            _receiver ??= new AsyncReceiver(_endpoints);
+            _receiver ??= new AsyncReceiver(_endpoints, _loggerFactory);
             _receiver.FrameReceived += OnFrameReceived;
             _receiver.Start();
             try
             {
                 _receiverForegroundServiceController.Start();
             }
-            catch { }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Receiver foreground service failed to start.");
+            }
             EnsureOutput(TargetSampleRate, TargetChannels);
             _mixCts = new CancellationTokenSource();
             _mixTask = Task.Run(() => MixLoopAsync(_mixCts.Token));
             _procCts = new CancellationTokenSource();
             _procTask = Task.Run(() => ProcessIncomingLoopAsync(_procCts.Token));
             SetStatus(StreamSessionStatus.Running());
+            _logger.LogInformation("Receiver started.");
         }
         catch (Exception ex)
         {
-            try { _receiver?.Stop(); } catch { }
+            _logger.LogError(ex, "Receiver failed to start.");
+            try { _receiver?.Stop(); } catch (Exception stopEx) { _logger.LogWarning(stopEx, "Receiver cleanup after failed start failed."); }
             SetStatus(StreamSessionStatus.Faulted(ex.Message));
         }
     }
@@ -105,10 +132,14 @@ public sealed class ReceiverService : IReceiverService
     {
         if (_status.Phase is StreamSessionPhase.Stopped or StreamSessionPhase.Stopping)
         {
+            if (_logger.IsEnabled(LogLevel.Debug))
+                _logger.LogDebug("Receiver stop ignored while phase is {Phase}.", _status.Phase);
+
             return;
         }
 
         SetStatus(StreamSessionStatus.Stopping());
+        _logger.LogInformation("Stopping receiver.");
 
         if (_receiver != null)
         {
@@ -118,24 +149,31 @@ public sealed class ReceiverService : IReceiverService
         }
 
         _mixCts?.Cancel();
-        try { _mixTask?.Wait(500); } catch { }
+        try { _mixTask?.Wait(500); } catch (Exception ex) { _logger.LogWarning(ex, "Receiver mix loop stopped with an error."); }
         _audioOutput.Stop();
         _procCts?.Cancel();
-        try { _procTask?.Wait(500); } catch { }
-        lock (_buffers)
+        try { _procTask?.Wait(500); } catch (Exception ex) { _logger.LogWarning(ex, "Receiver processing loop stopped with an error."); }
+        lock (_buffersLock)
         {
             _buffers.Clear();
         }
         var dvals = _denoisers.Values.ToList();
-        for (int i = 0; i < dvals.Count; i++) try { dvals[i].Dn?.Dispose(); } catch { }
+        for (int i = 0; i < dvals.Count; i++)
+        {
+            try { dvals[i].Dn?.Dispose(); } catch (Exception ex) { _logger.LogDebug(ex, "Receiver denoiser dispose failed."); }
+        }
         _denoisers.Clear();
         Volatile.Write(ref _activeBuffers, Array.Empty<StreamBuffer>());
         try
         {
             _receiverForegroundServiceController.Stop();
         }
-        catch { }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Receiver foreground service failed to stop.");
+        }
         SetStatus(StreamSessionStatus.Stopped());
+        _logger.LogInformation("Receiver stopped.");
     }
 
     public void Switch()
@@ -172,6 +210,10 @@ public sealed class ReceiverService : IReceiverService
                 _audioOutput.Start(sampleRate, channels);
                 _currentSampleRate = sampleRate;
                 _currentChannels = channels <= 1 ? 1 : 2;
+
+                if (_logger.IsEnabled(LogLevel.Information))
+                    _logger.LogInformation("Receiver audio output started at {SampleRate} Hz with {Channels} channel(s).", _currentSampleRate, _currentChannels);
+
                 return;
             }
             // Do not restart to minimize glitches; keep current output format.
@@ -184,7 +226,11 @@ public sealed class ReceiverService : IReceiverService
         {
             try { await _incomingSignal.WaitAsync(ct); }
             catch (OperationCanceledException) { break; }
-            catch { continue; }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Receiver incoming signal wait failed.");
+                continue;
+            }
 
             // Drain as much as possible to batch work
             for (int i = 0; i < 32; i++)
@@ -199,7 +245,7 @@ public sealed class ReceiverService : IReceiverService
                 {
                     if (!_denoisers.TryGetValue(ep.Id, out var dctx))
                     {
-                        dctx = new DenoiseCtx();
+                        dctx = new DenoiseCtx(_logger);
                         _denoisers[ep.Id] = dctx;
                     }
                     if (!dctx.IsAvailable)
@@ -207,7 +253,10 @@ public sealed class ReceiverService : IReceiverService
                         if (!dctx.UnavailableLogged)
                         {
                             dctx.UnavailableLogged = true;
-                            System.Diagnostics.Debug.WriteLine($"RNNoise unavailable for receiver stream '{ep.Name}' ({ep.Id}). Falling back to non-denoise path.");
+                            if (_logger.IsEnabled(LogLevel.Warning))
+                            {
+                                _logger.LogWarning("RNNoise unavailable for receiver stream '{StreamName}' ({StreamId}). Falling back to non-denoise path.", ep.Name, ep.Id);
+                            }
                         }
                     }
                     else
@@ -251,7 +300,7 @@ public sealed class ReceiverService : IReceiverService
                                 for (int f = 0; f < framesOut; f++) { short s = srcS[f]; int o = f * 2; dstS[o] = s; dstS[o + 1] = s; }
 
                                 bool added2 = false;
-                                lock (_buffers)
+                                lock (_buffersLock)
                                 {
                                     if (!_buffers.TryGetValue(ep.Id, out var buf2))
                                     {
@@ -320,7 +369,7 @@ public sealed class ReceiverService : IReceiverService
                 }
 
                 bool added = false;
-                lock (_buffers)
+                lock (_buffersLock)
                 {
                     if (!_buffers.TryGetValue(ep.Id, out var buf))
                     {
@@ -353,7 +402,7 @@ public sealed class ReceiverService : IReceiverService
         public bool UnavailableLogged;
         public bool IsAvailable => Dn != null;
 
-        public DenoiseCtx()
+        public DenoiseCtx(ILogger logger)
         {
             try
             {
@@ -362,7 +411,7 @@ public sealed class ReceiverService : IReceiverService
             catch (Exception ex)
             {
                 Dn = null;
-                System.Diagnostics.Debug.WriteLine($"RNNoise unavailable in receiver pipeline: {ex.Message}");
+                logger.LogWarning(ex, "RNNoise unavailable in receiver pipeline.");
             }
         }
     }
@@ -659,7 +708,7 @@ public sealed class ReceiverService : IReceiverService
     {
         private readonly Queue<byte[]> _queue = new();
         private int _offset = 0;
-        private readonly object _lock = new();
+        private readonly Lock _lock = new();
         private int _queuedBytes = 0;
         private readonly int _bytesPerChunk;
         private int _maxQueuedChunks;
@@ -947,7 +996,7 @@ public sealed class ReceiverService : IReceiverService
         var activeIds = _endpoints.Select(endpoint => endpoint.Id).ToHashSet();
         bool buffersChanged = false;
 
-        lock (_buffers)
+        lock (_buffersLock)
         {
             var bufferKeys = _buffers.Keys.ToList();
             for (int i = 0; i < bufferKeys.Count; i++)
@@ -986,7 +1035,7 @@ public sealed class ReceiverService : IReceiverService
             {
                 var denoiseCtx = _denoisers[key];
                 _denoisers.Remove(key);
-                try { denoiseCtx.Dn?.Dispose(); } catch { }
+                try { denoiseCtx.Dn?.Dispose(); } catch (Exception ex) { _logger.LogDebug(ex, "Receiver denoiser dispose failed while syncing endpoints."); }
             }
         }
 
@@ -1005,6 +1054,10 @@ public sealed class ReceiverService : IReceiverService
     private void SetStatus(StreamSessionStatus status)
     {
         _status = status;
+
+        if (_logger.IsEnabled(LogLevel.Debug))
+            _logger.LogDebug("Receiver status changed to {Phase}.", status.Phase);
+
         StatusChanged?.Invoke(status);
     }
 }

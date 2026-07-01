@@ -6,6 +6,13 @@ namespace OpenTalkie.Infrastructure.Android.Platforms.Android.Infrastructure.Rep
 
 public sealed class PlaybackRepository : IPlaybackRepository
 {
+    private readonly ILogger<PlaybackRepository> _logger;
+
+    public PlaybackRepository(ILogger<PlaybackRepository> logger)
+    {
+        _logger = logger;
+    }
+
     public event Action<float>? VolumeChanged;
 
     public PlaybackSettingsState GetSettings()
@@ -40,6 +47,9 @@ public sealed class PlaybackRepository : IPlaybackRepository
     public void SetBufferSize(int bufferSize)
     {
         Preferences.Set("PlaybackBufferSize", bufferSize);
+
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("Playback buffer size set to {BufferSize}.", bufferSize);
     }
 
     public void SetOption(PlaybackSettingOption option, string value)
@@ -58,12 +68,18 @@ public sealed class PlaybackRepository : IPlaybackRepository
             default:
                 throw new NotSupportedException($"Unsupported playback setting option: {option}");
         }
+
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("Playback setting {Option} set to {Value}.", option, value);
     }
 
     public void SetSelectedVolume(float gain)
     {
         Preferences.Set("PlaybackVolume", gain);
         VolumeChanged?.Invoke(gain);
+
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("Playback volume set to {Volume}.", gain);
     }
 
     private static IReadOnlyList<SettingOptionItem> GetEncodings()

@@ -1,4 +1,5 @@
 using Android.Content;
+using Android.Util;
 
 namespace OpenTalkie.Infrastructure.Android.Platforms.Android.Infrastructure.Services.Receiver;
 
@@ -22,6 +23,7 @@ internal static class ReceiverForegroundServiceManager
             context.StartService(notificationSetup);
 
         ForegroundServiceWatcher.NotifyServiceState(nameof(ReceiverForegroundService), true);
+        Log.Info("OpenTalkie", "Receiver foreground service start requested.");
     }
 
     public static void StopForegroundService()
@@ -29,6 +31,7 @@ internal static class ReceiverForegroundServiceManager
         var context = Platform.AppContext;
         context.StopService(new Intent(context, typeof(ReceiverForegroundService)));
         ForegroundServiceWatcher.NotifyServiceState(nameof(ReceiverForegroundService), false);
+        Log.Info("OpenTalkie", "Receiver foreground service stop requested.");
     }
 }
 

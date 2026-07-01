@@ -43,7 +43,8 @@ internal class MediaProjectionForegroundService : Service
             }
             catch (RemoteException ex)
             {
-                Log.Error(ChannelId, "Failed to send message to activity: " + ex);
+                if (Log.IsLoggable("OpenTalkie", LogPriority.Error))
+                    Log.Error("OpenTalkie", $"MediaProjection foreground service failed to send message to activity.{System.Environment.NewLine}{ex}");
             }
         }
     }
@@ -53,14 +54,16 @@ internal class MediaProjectionForegroundService : Service
         Intent? notificationIntent;
         if (string.IsNullOrEmpty(PackageName) || PackageManager == null)
         {
-            Log.Error(ChannelId, "PackageName or PackageManager is null, cannot create launch intent.");
+            Log.Error("OpenTalkie", "MediaProjection foreground service could not create launch intent because PackageName or PackageManager is null.");
             return;
         }
 
         notificationIntent = PackageManager.GetLaunchIntentForPackage(PackageName);
         if (notificationIntent == null)
         {
-            Log.Error(ChannelId, "Failed to get launch intent for package: " + PackageName);
+            if (Log.IsLoggable("OpenTalkie", LogPriority.Error))
+                Log.Error("OpenTalkie", $"MediaProjection foreground service failed to get launch intent for package {PackageName}.");
+
             return;
         }
 
@@ -73,7 +76,7 @@ internal class MediaProjectionForegroundService : Service
         var pendingIntent = PendingIntent.GetActivity(this, 0, notificationIntent, pendingIntentFlags);
         if (pendingIntent == null)
         {
-            Log.Error(ChannelId, "Failed to create activity pending intent.");
+            Log.Error("OpenTalkie", "MediaProjection foreground service failed to create activity pending intent.");
             return;
         }
 

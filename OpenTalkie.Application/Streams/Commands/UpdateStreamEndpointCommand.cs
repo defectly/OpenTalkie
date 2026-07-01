@@ -22,7 +22,8 @@ public readonly record struct UpdateStreamEndpointCommand(
 public sealed class UpdateStreamEndpointCommandHandler(
     IEndpointCatalogService endpointCatalogService,
     IEndpointAddressValidator endpointAddressValidator,
-    IEndpointRepository endpointRepository)
+    IEndpointRepository endpointRepository,
+    ILogger<UpdateStreamEndpointCommandHandler> logger)
     : ICommandHandler<UpdateStreamEndpointCommand, OperationResult>
 {
     public async ValueTask<OperationResult> Handle(
@@ -34,6 +35,9 @@ public sealed class UpdateStreamEndpointCommandHandler(
         var endpoint = endpoints.FirstOrDefault(e => e.Id == command.EndpointId);
         if (endpoint == null)
         {
+            if (logger.IsEnabled(LogLevel.Warning))
+                logger.LogWarning("Update {StreamType} endpoint {EndpointId} rejected because it was not found.", command.StreamType, command.EndpointId);
+
             return OperationResult.Fail("Stream endpoint was not found.");
         }
 
@@ -48,6 +52,9 @@ public sealed class UpdateStreamEndpointCommandHandler(
             string? nameError = StreamEndpointValidation.ValidateName(command.Name);
             if (nameError != null)
             {
+                if (logger.IsEnabled(LogLevel.Warning))
+                    logger.LogWarning("Update {StreamType} endpoint {EndpointId} rejected: {Error}.", command.StreamType, command.EndpointId, nameError);
+
                 return OperationResult.Fail(nameError);
             }
         }
@@ -57,6 +64,9 @@ public sealed class UpdateStreamEndpointCommandHandler(
             string? volumeError = StreamEndpointValidation.ValidateVolume(volumeToValidate);
             if (volumeError != null)
             {
+                if (logger.IsEnabled(LogLevel.Warning))
+                    logger.LogWarning("Update {StreamType} endpoint {EndpointId} rejected: {Error}.", command.StreamType, command.EndpointId, volumeError);
+
                 return OperationResult.Fail(volumeError);
             }
         }
@@ -66,17 +76,26 @@ public sealed class UpdateStreamEndpointCommandHandler(
             string? hostError = StreamEndpointValidation.ValidateHostname(proposedHostname);
             if (hostError != null)
             {
+                if (logger.IsEnabled(LogLevel.Warning))
+                    logger.LogWarning("Update {StreamType} endpoint {EndpointId} rejected: {Error}.", command.StreamType, command.EndpointId, hostError);
+
                 return OperationResult.Fail(hostError);
             }
 
             string? portError = StreamEndpointValidation.ValidatePort(proposedPort);
             if (portError != null)
             {
+                if (logger.IsEnabled(LogLevel.Warning))
+                    logger.LogWarning("Update {StreamType} endpoint {EndpointId} rejected: {Error}.", command.StreamType, command.EndpointId, portError);
+
                 return OperationResult.Fail(portError);
             }
 
             if (!endpointAddressValidator.CanResolveHost(proposedHostname))
             {
+                if (logger.IsEnabled(LogLevel.Warning))
+                    logger.LogWarning("Update {StreamType} endpoint {EndpointId} rejected because host {Host} could not be resolved.", command.StreamType, command.EndpointId, proposedHostname);
+
                 return OperationResult.Fail("Could not resolve hostname or create UDP endpoint.");
             }
         }
@@ -89,6 +108,9 @@ public sealed class UpdateStreamEndpointCommandHandler(
                 hostname: proposedHostname,
                 port: proposedPort))
         {
+            if (logger.IsEnabled(LogLevel.Warning))
+                logger.LogWarning("Update {StreamType} endpoint {EndpointId} rejected because identity already exists for {Host}:{Port}.", command.StreamType, command.EndpointId, proposedHostname, proposedPort);
+
             return OperationResult.Fail("A stream with the same identity already exists.");
         }
 
@@ -112,13 +134,22 @@ public sealed class UpdateStreamEndpointCommandHandler(
         }
         catch (Exception ex)
         {
+            if (logger.IsEnabled(LogLevel.Error))
+                logger.LogError(ex, "Failed to persist update for {StreamType} endpoint {EndpointId}.", command.StreamType, command.EndpointId);
+
             return OperationResult.Fail($"Failed to persist stream endpoint update: {ex.Message}");
         }
 
         if (!endpointCatalogService.UpdateEndpoint(updatedEndpoint))
         {
+            if (logger.IsEnabled(LogLevel.Error))
+                logger.LogError("Updated {StreamType} endpoint {EndpointId} could not be synchronized in memory.", command.StreamType, command.EndpointId);
+
             return OperationResult.Fail("Updated stream endpoint could not be synchronized in memory.");
         }
+
+        if (logger.IsEnabled(LogLevel.Information))
+            logger.LogInformation("Updated {StreamType} endpoint {EndpointId}.", command.StreamType, command.EndpointId);
 
         return OperationResult.Success();
     }

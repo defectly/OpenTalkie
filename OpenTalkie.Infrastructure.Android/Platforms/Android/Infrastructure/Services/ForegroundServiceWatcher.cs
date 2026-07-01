@@ -11,10 +11,12 @@ public static class ForegroundServiceWatcher
     private static bool mediaProjectionForegroundServiceState;
     private static bool receiverForegroundServiceState;
     private static IWakeLockService? wakeLockService;
+    private static ILogger? logger;
 
-    public static void Configure(IWakeLockService service)
+    public static void Configure(IWakeLockService service, ILogger log)
     {
         wakeLockService = service;
+        logger = log;
     }
 
     public static void NotifyServiceState(string serviceName, bool serviceState)
@@ -38,14 +40,21 @@ public static class ForegroundServiceWatcher
 
         if (!recognized)
         {
-            System.Diagnostics.Debug.WriteLine($"ForegroundServiceWatcher: unknown service name '{serviceName}'.");
+            if (logger?.IsEnabled(LogLevel.Warning) == true)
+                logger.LogWarning("ForegroundServiceWatcher received unknown service name '{ServiceName}'.", serviceName);
+
             return;
         }
 
         if (wakeLockService == null)
         {
-            System.Diagnostics.Debug.WriteLine("ForegroundServiceWatcher: IWakeLockService is unavailable.");
+            logger?.LogWarning("ForegroundServiceWatcher has no wake lock service.");
             return;
+        }
+
+        if (logger?.IsEnabled(LogLevel.Information) == true)
+        {
+            logger.LogInformation("Foreground service {ServiceName} state changed to {ServiceState}.", serviceName, serviceState);
         }
 
         if (microphoneForegroundServiceState || mediaProjectionForegroundServiceState || receiverForegroundServiceState)

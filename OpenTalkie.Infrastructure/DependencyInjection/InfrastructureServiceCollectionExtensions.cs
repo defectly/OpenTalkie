@@ -15,7 +15,6 @@ public static partial class InfrastructureServiceCollectionExtensions
         services.AddSingleton<IEndpointRepository, EndpointRepository>();
         services.AddSingleton<IEndpointCatalogService, EndpointCatalogService>();
         services.AddSingleton<IEndpointAddressValidator, EndpointAddressValidator>();
-
         services.AddSingleton<IMicrophoneBroadcastService, MicrophoneBroadcastService>();
         services.AddSingleton<IPlaybackBroadcastService, PlaybackBroadcastService>();
         services.AddSingleton<IReceiverService, ReceiverService>();

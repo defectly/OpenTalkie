@@ -19,7 +19,9 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     public partial ObservableCollection<SettingsItem> SettingsItems { get; set; }
 
-    public SettingsViewModel(INavigationService navigationService, IPlatformCapabilitiesService platformCapabilitiesService)
+    public SettingsViewModel(
+        INavigationService navigationService,
+        IPlatformCapabilitiesService platformCapabilitiesService)
     {
         _navigationService = navigationService;
 

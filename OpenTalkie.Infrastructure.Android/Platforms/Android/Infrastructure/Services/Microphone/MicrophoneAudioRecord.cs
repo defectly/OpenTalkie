@@ -1,5 +1,6 @@
 using Android.Content;
 using Android.Media;
+using Android.Util;
 using OpenTalkie.Application.Abstractions.Repositories;
 using OpenTalkie.Domain.Models;
 
@@ -7,7 +8,7 @@ namespace OpenTalkie.Infrastructure.Android.Platforms.Android.Infrastructure.Ser
 
 public static class MicrophoneAudioRecord
 {
-    private static readonly object _repoLock = new();
+    private static readonly Lock _repoLock = new();
     private static IMicrophoneRepository? _microphoneRepository;
     private static bool _volumeSubscriptionAttached;
     private static float _volume;
@@ -24,14 +25,10 @@ public static class MicrophoneAudioRecord
         lock (_repoLock)
         {
             if (ReferenceEquals(_microphoneRepository, microphoneRepository))
-            {
                 return;
-            }
 
             if (_microphoneRepository != null && _volumeSubscriptionAttached)
-            {
                 _microphoneRepository.VolumeChanged -= OnVolumeChange;
-            }
 
             _microphoneRepository = microphoneRepository;
             _microphoneRepository.VolumeChanged += OnVolumeChange;
@@ -47,6 +44,9 @@ public static class MicrophoneAudioRecord
         var microphoneRepository = GetMicrophoneRepository();
         LoadPreferences();
 
+        if (Log.IsLoggable("OpenTalkie", LogPriority.Info))
+            Log.Info("OpenTalkie", $"Starting microphone AudioRecord. Source={_microphoneSource}, SampleRate={_microphoneSampleRate}, Channel={_microphoneChannel}, Encoding={_microphoneEncoding}, BufferSize={BufferSize}.");
+
         CreateAudioRecord();
 
         if (_audioRecord == null || _audioRecord.State == State.Uninitialized)
@@ -61,6 +61,7 @@ public static class MicrophoneAudioRecord
             SetPreferredAudioDevice(preferredOutputAudioDevice);
 
         _audioRecord.StartRecording();
+        Log.Info("OpenTalkie", "Microphone AudioRecord started.");
     }
 
     public static WaveFormat GetWaveFormat()
@@ -83,13 +84,18 @@ public static class MicrophoneAudioRecord
             if (_audioRecord.RecordingState != RecordState.Stopped)
                 _audioRecord.Stop();
         }
-        catch { }
+        catch (Exception ex)
+        {
+            if (Log.IsLoggable("OpenTalkie", LogPriority.Warn))
+                Log.Warn("OpenTalkie", $"Microphone AudioRecord stop failed.{Environment.NewLine}{ex}");
+        }
         finally
         {
-            try { _audioRecord.Release(); } catch { }
+            try { _audioRecord.Release(); } catch (Exception ex) { if (Log.IsLoggable("OpenTalkie", LogPriority.Warn)) Log.Warn("OpenTalkie", $"Microphone AudioRecord release failed.{Environment.NewLine}{ex}"); }
             _audioRecord.Dispose();
             _audioRecord = null;
             _waveFormat = null;
+            Log.Info("OpenTalkie", "Microphone AudioRecord stopped.");
         }
     }
 
@@ -168,12 +174,18 @@ public static class MicrophoneAudioRecord
     public static void SetPreferredAudioDevice(string preferredDevice)
     {
         if (!OperatingSystem.IsAndroidVersionAtLeast(23))
+        {
+            Log.Warn("OpenTalkie", "Preferred microphone input device ignored because Android version is below 23.");
             return;
+        }
 
         var context = Platform.AppContext;
         var audioManager = (AudioManager?)context.GetSystemService(Context.AudioService);
         if (audioManager is null)
+        {
+            Log.Warn("OpenTalkie", "Preferred microphone input device ignored because AudioManager is unavailable.");
             return;
+        }
 
         if (preferredDevice.Equals("default", StringComparison.OrdinalIgnoreCase))
         {
@@ -190,11 +202,17 @@ public static class MicrophoneAudioRecord
             }
 
             audioManager.Mode = Mode.Normal;
+            Log.Info("OpenTalkie", "Microphone preferred input device reset to default.");
             return;
         }
 
         if (!Enum.TryParse<AudioDeviceType>(preferredDevice, ignoreCase: true, out var wantedType))
+        {
+            if (Log.IsLoggable("OpenTalkie", LogPriority.Warn))
+                Log.Warn("OpenTalkie", $"Preferred microphone input device '{preferredDevice}' is not recognized.");
+
             return;
+        }
 
         audioManager.Mode = Mode.InCommunication;
 
@@ -205,18 +223,33 @@ public static class MicrophoneAudioRecord
             var commDevices = audioManager.AvailableCommunicationDevices;
             target = commDevices?.FirstOrDefault(d => d.Type == wantedType);
             if (target is null)
+            {
+                if (Log.IsLoggable("OpenTalkie", LogPriority.Warn))
+                    Log.Warn("OpenTalkie", $"Preferred microphone communication input device '{preferredDevice}' was not found.");
+
                 return;
+            }
 
             var ok = audioManager.SetCommunicationDevice(target);
             if (!ok)
+            {
+                if (Log.IsLoggable("OpenTalkie", LogPriority.Warn))
+                    Log.Warn("OpenTalkie", $"Preferred microphone communication input device '{preferredDevice}' was rejected by Android.");
+
                 return;
+            }
         }
         else
         {
             var inputs = audioManager.GetDevices(GetDevicesTargets.Inputs);
             target = inputs?.FirstOrDefault(d => d.Type == wantedType);
             if (target is null)
+            {
+                if (Log.IsLoggable("OpenTalkie", LogPriority.Warn))
+                    Log.Warn("OpenTalkie", $"Preferred microphone input device '{preferredDevice}' was not found.");
+
                 return;
+            }
 
             if (wantedType == AudioDeviceType.BluetoothSco)
             {
@@ -231,6 +264,9 @@ public static class MicrophoneAudioRecord
         }
 
         _audioRecord?.SetPreferredDevice(target);
+
+        if (Log.IsLoggable("OpenTalkie", LogPriority.Info))
+            Log.Info("OpenTalkie", $"Microphone preferred input device set to {preferredDevice}.");
     }
 
     private static Encoding MapToAndroidEncoding(int encoding)

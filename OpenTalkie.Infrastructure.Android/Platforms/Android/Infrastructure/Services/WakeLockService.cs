@@ -8,21 +8,32 @@ public class WakeLockService : Java.Lang.Object, IWakeLockService
 {
     private PowerManager.WakeLock? _wakeLock;
     private const string Tag = "OpenTalkieWakeLock";
+    private readonly ILogger<WakeLockService> _logger;
 
-    public WakeLockService()
+    public WakeLockService(ILogger<WakeLockService> logger)
     {
-        ForegroundServiceWatcher.Configure(this);
+        _logger = logger;
+        ForegroundServiceWatcher.Configure(this, _logger);
     }
 
     public void Acquire()
     {
-        if (_wakeLock != null && _wakeLock.IsHeld) return;
+        if (_wakeLock != null && _wakeLock.IsHeld)
+        {
+            _logger.LogDebug("Wake lock acquire ignored because it is already held.");
+            return;
+        }
 
         var powerManager = Platform.CurrentActivity?.GetSystemService(Context.PowerService) as PowerManager;
-        if (powerManager == null) return;
+        if (powerManager == null)
+        {
+            _logger.LogWarning("PowerManager unavailable; wake lock was not acquired.");
+            return;
+        }
 
         _wakeLock = powerManager.NewWakeLock(WakeLockFlags.Partial, Tag);
         _wakeLock?.Acquire();
+        _logger.LogInformation("Wake lock acquired.");
     }
 
     public void Release()
@@ -33,12 +44,13 @@ public class WakeLockService : Java.Lang.Object, IWakeLockService
         }
         catch (Java.Lang.Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"WakeLock release error: {ex.Message}");
+            _logger.LogWarning(ex, "Wake lock release failed.");
         }
         finally
         {
             _wakeLock?.Dispose();
             _wakeLock = null;
+            _logger.LogInformation("Wake lock released.");
         }
     }
 }

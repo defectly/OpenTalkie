@@ -14,12 +14,12 @@
 		<!-- App Identifier -->
 		<ApplicationId>io.github.defectly.opentalkie</ApplicationId>
 		<!-- Versions -->
-		<ApplicationDisplayVersion>2.1.1</ApplicationDisplayVersion>
+		<ApplicationDisplayVersion>2.1.1-loggified</ApplicationDisplayVersion>
 		<ApplicationVersion>2</ApplicationVersion>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">26.0</SupportedOSPlatformVersion>
 		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
 		<PublishAot>False</PublishAot>
-		<Version>2.1.1</Version>
+		<Version>2.1.1-loggified</Version>
 		<PublishTrimmed>False</PublishTrimmed>
 		<MauiEnableXamlCBindingWithSourceCompilation>true</MauiEnableXamlCBindingWithSourceCompilation>
 		<!--<MauiXamlInflator>SourceGen</MauiXamlInflator>-->
@@ -32,14 +32,14 @@
 		<AndroidLinkTool>r8</AndroidLinkTool>
 		<AndroidLinkMode>None</AndroidLinkMode>
 		<AndroidPackageFormat>apk</AndroidPackageFormat>
-		<ApplicationDisplayVersion>2.1.1</ApplicationDisplayVersion>
+		<ApplicationDisplayVersion>2.1.1-loggified</ApplicationDisplayVersion>
 		<ApplicationVersion>2</ApplicationVersion>
 		<AndroidEnableMultiDex>True</AndroidEnableMultiDex>
 		<Debugger>Xamarin</Debugger>
 	</PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net10.0-android|AnyCPU'">
 		<EnableLLVM>False</EnableLLVM>
-		<ApplicationDisplayVersion>2.1.1</ApplicationDisplayVersion>
+		<ApplicationDisplayVersion>2.1.1-loggified</ApplicationDisplayVersion>
 		<ApplicationVersion>2</ApplicationVersion>
 		<AndroidEnableMultiDex>True</AndroidEnableMultiDex>
 		<EmbedAssembliesIntoApk>True</EmbedAssembliesIntoApk>

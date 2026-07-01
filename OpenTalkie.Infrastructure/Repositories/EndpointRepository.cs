@@ -10,9 +10,11 @@ public class EndpointRepository : IEndpointRepository
 {
     private readonly string endpointDirectory = Path.Combine(FileSystem.Current.AppDataDirectory, "Endpoints");
     private readonly List<PersistedEndpoint> persistedEndpoints = [];
+    private readonly ILogger<EndpointRepository> logger;
 
-    public EndpointRepository()
+    public EndpointRepository(ILogger<EndpointRepository> logger)
     {
+        this.logger = logger;
         Load();
     }
 
@@ -35,6 +37,10 @@ public class EndpointRepository : IEndpointRepository
         EnsureNoIdentityCollision(persisted, excludingEndpointId: null);
         persistedEndpoints.Add(persisted);
         await SaveAsync();
+
+        if (logger.IsEnabled(LogLevel.Information))
+            logger.LogInformation("Persisted endpoint {EndpointId} created. Total endpoints: {EndpointCount}.", endpoint.Id, persistedEndpoints.Count);
+
         return endpoint.Id;
     }
 
@@ -49,18 +55,21 @@ public class EndpointRepository : IEndpointRepository
         if (File.Exists(filePath))
         {
             File.Delete(filePath);
+
+            if (logger.IsEnabled(LogLevel.Debug))
+                logger.LogDebug("Deleted endpoint file {FilePath}.", filePath);
         }
 
         await SaveAsync();
+
+        if (logger.IsEnabled(LogLevel.Information))
+            logger.LogInformation("Persisted endpoint {EndpointId} removed. Total endpoints: {EndpointCount}.", id, persistedEndpoints.Count);
     }
 
     public async Task UpdateAsync(Endpoint endpoint)
     {
-        var existing = persistedEndpoints.FirstOrDefault(e => e.Id == endpoint.Id);
-        if (existing == null)
-        {
-            throw new Exception($"Endpoint with id {endpoint.Id} not found");
-        }
+        var existing = persistedEndpoints.FirstOrDefault(e => e.Id == endpoint.Id)
+            ?? throw new Exception($"Endpoint with id {endpoint.Id} not found");
 
         var candidate = ToPersisted(endpoint);
         EnsureNoIdentityCollision(candidate, excludingEndpointId: endpoint.Id);
@@ -76,6 +85,9 @@ public class EndpointRepository : IEndpointRepository
         existing.Volume = candidate.Volume;
 
         await SaveAsync();
+
+        if (logger.IsEnabled(LogLevel.Information))
+            logger.LogInformation("Persisted endpoint {EndpointId} updated.", endpoint.Id);
     }
 
     private void EnsureNoIdentityCollision(PersistedEndpoint candidate, Guid? excludingEndpointId)
@@ -83,10 +95,9 @@ public class EndpointRepository : IEndpointRepository
         for (var i = 0; i < persistedEndpoints.Count; i++)
         {
             var existing = persistedEndpoints[i];
+
             if (excludingEndpointId.HasValue && existing.Id == excludingEndpointId.Value)
-            {
                 continue;
-            }
 
             if (EndpointIdentityRules.Collides(
                 candidate.Type,
@@ -108,6 +119,9 @@ public class EndpointRepository : IEndpointRepository
         if (!Directory.Exists(endpointDirectory))
         {
             Directory.CreateDirectory(endpointDirectory);
+
+            if (logger.IsEnabled(LogLevel.Information))
+                logger.LogInformation("Created endpoint storage directory {Directory}.", endpointDirectory);
         }
 
         for (var i = 0; i < persistedEndpoints.Count; i++)
@@ -116,6 +130,9 @@ public class EndpointRepository : IEndpointRepository
             var json = JsonSerializer.Serialize(persisted, EndpointJsonSerializerContext.Default.PersistedEndpoint);
             var filePath = Path.Combine(endpointDirectory, $"{persisted.Id}.json");
             await File.WriteAllTextAsync(filePath, json);
+
+            if (logger.IsEnabled(LogLevel.Debug))
+                logger.LogDebug("Saved endpoint {EndpointId} to {FilePath}.", persisted.Id, filePath);
         }
     }
 
@@ -123,6 +140,9 @@ public class EndpointRepository : IEndpointRepository
     {
         if (!Directory.Exists(endpointDirectory))
         {
+            if (logger.IsEnabled(LogLevel.Information))
+                logger.LogInformation("Endpoint storage directory {Directory} does not exist yet.", endpointDirectory);
+
             return;
         }
 
@@ -131,11 +151,15 @@ public class EndpointRepository : IEndpointRepository
         {
             var file = File.ReadAllText(filePaths[i]);
             var persisted = JsonSerializer.Deserialize(file, EndpointJsonSerializerContext.Default.PersistedEndpoint);
+
             if (persisted != null)
-            {
                 persistedEndpoints.Add(persisted);
-            }
+            else
+                logger.LogWarning("Endpoint file {FilePath} did not contain a valid endpoint.", filePaths[i]);
         }
+
+        if (logger.IsEnabled(LogLevel.Information))
+            logger.LogInformation("Loaded {EndpointCount} persisted endpoint(s).", persistedEndpoints.Count);
     }
 
     private static PersistedEndpoint ToPersisted(Endpoint endpoint)

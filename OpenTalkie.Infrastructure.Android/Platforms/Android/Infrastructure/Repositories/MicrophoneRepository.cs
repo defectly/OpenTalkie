@@ -7,6 +7,13 @@ namespace OpenTalkie.Infrastructure.Android.Platforms.Android.Infrastructure.Rep
 
 public sealed class MicrophoneRepository : IMicrophoneRepository
 {
+    private readonly ILogger<MicrophoneRepository> _logger;
+
+    public MicrophoneRepository(ILogger<MicrophoneRepository> logger)
+    {
+        _logger = logger;
+    }
+
     public event Action<float>? VolumeChanged;
     public event Action<string>? PreferredAudioInputDeviceChanged;
 
@@ -46,6 +53,9 @@ public sealed class MicrophoneRepository : IMicrophoneRepository
     public void SetBufferSize(int bufferSize)
     {
         Preferences.Set("MicrophoneBufferSize", bufferSize);
+
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("Microphone buffer size set to {BufferSize}.", bufferSize);
     }
 
     public void SetOption(MicrophoneSettingOption option, string value)
@@ -71,12 +81,18 @@ public sealed class MicrophoneRepository : IMicrophoneRepository
             default:
                 throw new NotSupportedException($"Unsupported microphone setting option: {option}");
         }
+
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("Microphone setting {Option} set to {Value}.", option, value);
     }
 
     public void SetSelectedVolume(float gain)
     {
         Preferences.Set("MicrophoneVolume", gain);
         VolumeChanged?.Invoke(gain);
+
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("Microphone volume set to {Volume}.", gain);
     }
 
     private static IReadOnlyList<SettingOptionItem> GetEncodings()
@@ -89,22 +105,18 @@ public sealed class MicrophoneRepository : IMicrophoneRepository
     private static IReadOnlyList<SettingOptionItem> GetAvailableAudioInputDevices()
     {
         if (!OperatingSystem.IsAndroidVersionAtLeast(23))
-        {
             return [CreateOption("Default")];
-        }
 
         var context = Platform.AppContext;
         var audioManager = (AudioManager?)context.GetSystemService(Context.AudioService);
+
         if (audioManager == null)
-        {
             return [CreateOption("Default")];
-        }
 
         var devices = audioManager.GetDevices(GetDevicesTargets.Inputs);
+
         if (devices is null)
-        {
             return [CreateOption("Default")];
-        }
 
         return [.. Enumerable.Concat([CreateOption("Default")], devices.Select(device => CreateOption(device.Type.ToString())))];
     }

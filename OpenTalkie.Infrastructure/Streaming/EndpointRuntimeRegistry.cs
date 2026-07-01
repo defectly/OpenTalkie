@@ -2,6 +2,7 @@ using OpenTalkie.Domain.Rules;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Net.Sockets;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace OpenTalkie.Infrastructure.Streaming;
 
@@ -9,18 +10,23 @@ internal sealed class EndpointRuntimeRegistry : IDisposable
 {
     private readonly ObservableCollection<Endpoint> _endpoints;
     private readonly Dictionary<Guid, EndpointRuntime> _runtimes = new();
+    private readonly ILogger<EndpointRuntimeRegistry> _logger;
+    private readonly ILoggerFactory _loggerFactory;
 
-    public EndpointRuntimeRegistry(ObservableCollection<Endpoint> endpoints)
+    public EndpointRuntimeRegistry(ObservableCollection<Endpoint> endpoints, ILoggerFactory? loggerFactory = null)
     {
+        _loggerFactory = loggerFactory ?? NullLoggerFactory.Instance;
+        _logger = _loggerFactory.CreateLogger<EndpointRuntimeRegistry>();
         _endpoints = endpoints ?? throw new ArgumentNullException(nameof(endpoints));
 
         _endpoints.CollectionChanged += OnEndpointsCollectionChanged;
         Connectivity.ConnectivityChanged += OnConnectivityChanged;
 
         for (var i = 0; i < _endpoints.Count; i++)
-        {
             RegisterEndpoint(_endpoints[i]);
-        }
+
+        if (_logger.IsEnabled(LogLevel.Debug))
+            _logger.LogDebug("Endpoint runtime registry initialized with {EndpointCount} endpoint(s).", _endpoints.Count);
     }
 
     public EndpointRuntime GetRuntime(Endpoint endpoint)
@@ -42,12 +48,12 @@ internal sealed class EndpointRuntimeRegistry : IDisposable
         Connectivity.ConnectivityChanged -= OnConnectivityChanged;
 
         var runtimes = _runtimes.Values.ToArray();
+
         for (var i = 0; i < runtimes.Length; i++)
-        {
             runtimes[i].Dispose();
-        }
 
         _runtimes.Clear();
+        _logger.LogDebug("Endpoint runtime registry disposed.");
     }
 
     private void RegisterEndpoint(Endpoint endpoint)
@@ -60,7 +66,7 @@ internal sealed class EndpointRuntimeRegistry : IDisposable
             return;
         }
 
-        var runtime = new EndpointRuntime();
+        var runtime = new EndpointRuntime(_loggerFactory.CreateLogger<EndpointRuntime>());
         runtime.UpdateName(endpoint.Name);
         runtime.Reconnect(endpoint.Hostname, endpoint.Port);
         _runtimes[endpoint.Id] = runtime;
@@ -80,30 +86,22 @@ internal sealed class EndpointRuntimeRegistry : IDisposable
         if (e.Action == NotifyCollectionChangedAction.Add && e.NewItems != null)
         {
             for (var i = 0; i < e.NewItems.Count; i++)
-            {
                 RegisterEndpoint((Endpoint)e.NewItems[i]!);
-            }
         }
 
         if (e.Action == NotifyCollectionChangedAction.Remove && e.OldItems != null)
         {
             for (var i = 0; i < e.OldItems.Count; i++)
-            {
                 UnregisterEndpoint((Endpoint)e.OldItems[i]!);
-            }
         }
 
         if (e.Action == NotifyCollectionChangedAction.Replace && e.OldItems != null && e.NewItems != null)
         {
             for (var i = 0; i < e.OldItems.Count; i++)
-            {
                 UnregisterEndpoint((Endpoint)e.OldItems[i]!);
-            }
 
             for (var i = 0; i < e.NewItems.Count; i++)
-            {
                 RegisterEndpoint((Endpoint)e.NewItems[i]!);
-            }
         }
 
         if (e.Action == NotifyCollectionChangedAction.Reset)
@@ -121,9 +119,7 @@ internal sealed class EndpointRuntimeRegistry : IDisposable
             }
 
             for (var i = 0; i < _endpoints.Count; i++)
-            {
                 RegisterEndpoint(_endpoints[i]);
-            }
         }
     }
 
@@ -131,27 +127,36 @@ internal sealed class EndpointRuntimeRegistry : IDisposable
     {
         if (e.NetworkAccess == NetworkAccess.None)
         {
+            _logger.LogInformation("Network disconnected; sender runtimes will reconnect when network returns.");
             return;
         }
+
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("Network changed to {NetworkAccess}; reconnecting sender runtimes.", e.NetworkAccess);
 
         for (var i = 0; i < _endpoints.Count; i++)
         {
             var endpoint = _endpoints[i];
+
             if (_runtimes.TryGetValue(endpoint.Id, out var runtime))
-            {
                 runtime.Reconnect(endpoint.Hostname, endpoint.Port);
-            }
         }
     }
 }
 
 internal sealed class EndpointRuntime : IDisposable
 {
+    private readonly ILogger<EndpointRuntime> _logger;
     public UdpClient? Client { get; private set; }
     public uint FrameCount { get; set; }
     public byte[] NameBytes16 { get; } = new byte[VbanStreamName16.MaxBytes];
     private string? _hostname;
     private int _port;
+
+    public EndpointRuntime(ILogger<EndpointRuntime> logger)
+    {
+        _logger = logger;
+    }
 
     public void UpdateName(string? name)
     {
@@ -161,9 +166,7 @@ internal sealed class EndpointRuntime : IDisposable
     public void Reconnect(string? hostname, int port)
     {
         if (string.Equals(_hostname, hostname, StringComparison.OrdinalIgnoreCase) && _port == port && Client != null)
-        {
             return;
-        }
 
         Client?.Dispose();
         Client = null;
@@ -172,17 +175,23 @@ internal sealed class EndpointRuntime : IDisposable
 
         if (string.IsNullOrWhiteSpace(hostname) || port <= 0 || port > 65535)
         {
+            if (_logger.IsEnabled(LogLevel.Debug))
+                _logger.LogDebug("Endpoint runtime disconnected because target {Host}:{Port} is incomplete or invalid.", hostname, port);
+
             return;
         }
 
         try
         {
             Client = new UdpClient(hostname, port);
-            ConfigureUdpClient(Client);
+            ConfigureUdpClient(Client, _logger);
+
+            if (_logger.IsEnabled(LogLevel.Information))
+                _logger.LogInformation("Endpoint UDP client connected to {Host}:{Port}.", hostname, port);
         }
         catch (SocketException ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Failed to initialize endpoint UDP client for {hostname}:{port}: {ex.Message}");
+            _logger.LogError(ex, "Failed to initialize endpoint UDP client for {Host}:{Port}.", hostname, port);
             Client = null;
         }
     }
@@ -191,9 +200,10 @@ internal sealed class EndpointRuntime : IDisposable
     {
         Client?.Dispose();
         Client = null;
+        _logger.LogDebug("Endpoint runtime disposed.");
     }
 
-    private static void ConfigureUdpClient(UdpClient client)
+    private static void ConfigureUdpClient(UdpClient client, ILogger logger)
     {
         try
         {
@@ -201,11 +211,12 @@ internal sealed class EndpointRuntime : IDisposable
             sock.SendBufferSize = Math.Max(sock.SendBufferSize, 1 << 20);
             sock.ReceiveBufferSize = Math.Max(sock.ReceiveBufferSize, 1 << 20);
             sock.DontFragment = true;
-            try { sock.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.TypeOfService, 0xB8); } catch { }
-            try { sock.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true); } catch { }
+            try { sock.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.TypeOfService, 0xB8); } catch (Exception ex) { logger.LogDebug(ex, "Could not set UDP type-of-service option."); }
+            try { sock.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true); } catch (Exception ex) { logger.LogDebug(ex, "Could not set UDP reuse-address option."); }
         }
-        catch
+        catch (Exception ex)
         {
+            logger.LogWarning(ex, "Failed to configure endpoint UDP client socket.");
         }
     }
 }

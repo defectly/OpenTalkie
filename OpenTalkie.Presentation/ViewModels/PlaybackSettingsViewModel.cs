@@ -12,6 +12,7 @@ public partial class PlaybackSettingsViewModel : ObservableObject
 {
     private readonly IMediator _mediator;
     private readonly IUserDialogService _dialogService;
+    private readonly ILogger<PlaybackSettingsViewModel> _logger;
 
     [ObservableProperty]
     public partial string SelectedChannelOut { get; set; } = string.Empty;
@@ -28,10 +29,14 @@ public partial class PlaybackSettingsViewModel : ObservableObject
     [ObservableProperty]
     public partial float Volume { get; set; }
 
-    public PlaybackSettingsViewModel(IMediator mediator, IUserDialogService dialogService)
+    public PlaybackSettingsViewModel(
+        IMediator mediator,
+        IUserDialogService dialogService,
+        ILogger<PlaybackSettingsViewModel> logger)
     {
         _mediator = mediator;
         _dialogService = dialogService;
+        _logger = logger;
         _ = ReloadStateAsync();
     }
 
@@ -41,6 +46,10 @@ public partial class PlaybackSettingsViewModel : ObservableObject
         var result = await _mediator.Send(new SetPlaybackVolumeCommand(Volume / 100.0f));
         if (!result.IsSuccess)
         {
+            if (_logger.IsEnabled(LogLevel.Warning))
+            {
+                _logger.LogWarning("Failed to update playback volume: {ErrorMessage}.", result.ErrorMessage);
+            }
             await ShowErrorAsync(_dialogService, result.ErrorMessage);
             await ReloadStateAsync();
         }
@@ -50,10 +59,9 @@ public partial class PlaybackSettingsViewModel : ObservableObject
     private async Task EditField(string fieldName)
     {
         var option = MapOption(fieldName);
+
         if (option == null)
-        {
             return;
-        }
 
         var options = await _mediator.Send(new GetPlaybackSettingOptionsQuery(option.Value));
         var currentValue = GetCurrentValue(option.Value);
@@ -66,13 +74,14 @@ public partial class PlaybackSettingsViewModel : ObservableObject
             {
                 var selectedOption = options.FirstOrDefault(item => item.DisplayName == result);
                 if (string.IsNullOrWhiteSpace(selectedOption.Value) || selectedOption.DisplayName == currentValue)
-                {
                     return;
-                }
 
                 var updateResult = await _mediator.Send(new SetPlaybackSettingOptionCommand(option.Value, selectedOption.Value));
                 if (!updateResult.IsSuccess)
                 {
+                    if (_logger.IsEnabled(LogLevel.Warning))
+                        _logger.LogWarning("Failed to update playback setting {Option}: {ErrorMessage}.", option.Value, updateResult.ErrorMessage);
+
                     await ShowErrorAsync(_dialogService, updateResult.ErrorMessage);
                     await ReloadStateAsync();
                     return;
@@ -93,6 +102,7 @@ public partial class PlaybackSettingsViewModel : ObservableObject
             {
                 if (!int.TryParse(result, out int bufferSize) || bufferSize <= 0)
                 {
+                    _logger.LogWarning("Rejected playback buffer size value '{Value}'.", result);
                     await ShowErrorAsync(_dialogService, "Something's wrong with the number");
                     return;
                 }
@@ -100,6 +110,9 @@ public partial class PlaybackSettingsViewModel : ObservableObject
                 var updateResult = await _mediator.Send(new SetPlaybackBufferSizeCommand(bufferSize));
                 if (!updateResult.IsSuccess)
                 {
+                    if (_logger.IsEnabled(LogLevel.Warning))
+                        _logger.LogWarning("Failed to update playback buffer size: {ErrorMessage}.", updateResult.ErrorMessage);
+
                     await ShowErrorAsync(_dialogService, updateResult.ErrorMessage);
                     await ReloadStateAsync();
                     return;
@@ -116,6 +129,9 @@ public partial class PlaybackSettingsViewModel : ObservableObject
         var result = await _mediator.Send(new SetPlaybackVolumeCommand(1f));
         if (!result.IsSuccess)
         {
+            if (_logger.IsEnabled(LogLevel.Warning))
+                _logger.LogWarning("Failed to reset playback volume: {ErrorMessage}.", result.ErrorMessage);
+
             await ShowErrorAsync(_dialogService, result.ErrorMessage);
             await ReloadStateAsync();
         }
@@ -130,6 +146,7 @@ public partial class PlaybackSettingsViewModel : ObservableObject
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Failed to reload playback settings.");
             await ShowErrorAsync(_dialogService, ex.Message);
         }
     }

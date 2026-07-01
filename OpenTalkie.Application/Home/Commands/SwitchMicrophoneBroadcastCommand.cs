@@ -7,7 +7,8 @@ public readonly record struct SwitchMicrophoneBroadcastCommand : ICommand<Operat
 
 public sealed class SwitchMicrophoneBroadcastCommandHandler(
     IMicrophoneBroadcastService microphoneBroadcastService,
-    IMicrophonePermissionService microphonePermissionService)
+    IMicrophonePermissionService microphonePermissionService,
+    ILogger<SwitchMicrophoneBroadcastCommandHandler> logger)
     : ICommandHandler<SwitchMicrophoneBroadcastCommand, OperationResult>
 {
     public async ValueTask<OperationResult> Handle(
@@ -18,9 +19,13 @@ public sealed class SwitchMicrophoneBroadcastCommandHandler(
         {
             if (!await microphonePermissionService.RequestMicrophonePermissionAsync())
             {
+                logger.LogWarning("Microphone broadcast switch failed because microphone permission was denied.");
                 return OperationResult.Fail("Microphone permission denied");
             }
         }
+
+        if (logger.IsEnabled(LogLevel.Information))
+            logger.LogInformation("Switching microphone broadcast from phase {Phase}.", microphoneBroadcastService.Status.Phase);
 
         return await microphoneBroadcastService.SwitchAsync();
     }

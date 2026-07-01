@@ -1,5 +1,6 @@
 using Android.Content;
 using Android.OS;
+using Android.Util;
 using OpenTalkie.Application.Models;
 
 namespace OpenTalkie.Infrastructure.Android.Platforms.Android.Infrastructure.Services.Microphone;
@@ -30,8 +31,10 @@ internal static class MicrophoneForegroundServiceManager
             context.StartForegroundService(notificationSetup);
         else
             context.StartService(notificationSetup);
+        Log.Info("OpenTalkie", "Microphone foreground service notification setup requested.");
 
         await serviceStartAwaiter.Task;
+        Log.Debug("OpenTalkie", "Microphone foreground service reported started.");
 
         Intent beginRecording = new(context, typeof(MicrophoneForegroundService));
         beginRecording.PutExtra(MicrophoneForegroundService.ExtraCommandBeginRecording, true);
@@ -43,6 +46,7 @@ internal static class MicrophoneForegroundServiceManager
             context.StartService(beginRecording);
 
         ForegroundServiceWatcher.NotifyServiceState(nameof(MicrophoneForegroundService), true);
+        Log.Info("OpenTalkie", "Microphone foreground service recording command sent.");
     }
 
     internal static void StopForegroundService()
@@ -51,6 +55,7 @@ internal static class MicrophoneForegroundServiceManager
         context.StopService(new Intent(context, typeof(MicrophoneForegroundService)));
 
         ForegroundServiceWatcher.NotifyServiceState(nameof(MicrophoneForegroundService), false);
+        Log.Info("OpenTalkie", "Microphone foreground service stop requested.");
     }
 }
 

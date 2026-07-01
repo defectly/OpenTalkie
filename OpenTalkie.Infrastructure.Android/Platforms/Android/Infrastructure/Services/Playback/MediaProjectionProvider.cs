@@ -22,12 +22,17 @@ public sealed partial class MediaProjectionProvider : MediaProjection.Callback, 
 
     private MediaProjectionManager? ProjectionManager { get; set; }
     private MediaProjection? MediaProjection { get; set; }
+    private readonly ILogger<MediaProjectionProvider> logger;
 
     public bool IsSupported => ProjectionManager is not null;
 
-    public MediaProjectionProvider()
+    public MediaProjectionProvider(ILogger<MediaProjectionProvider> logger)
     {
+        this.logger = logger;
         ProjectionManager = (MediaProjectionManager?)Platform.AppContext.GetSystemService(Context.MediaProjectionService);
+
+        if (logger.IsEnabled(LogLevel.Information))
+            logger.LogInformation("MediaProjectionProvider initialized. Supported={IsSupported}.", ProjectionManager is not null);
     }
 
     public Task<bool> RequestCaptureAsync(ScreenAudioCapturingOptions? options = null)
@@ -35,6 +40,7 @@ public sealed partial class MediaProjectionProvider : MediaProjection.Callback, 
         if (!IsSupported)
             throw new NotSupportedException("Screen audio capturing not supported on this device.");
 
+        logger.LogInformation("Requesting screen capture permission.");
         if (!string.IsNullOrWhiteSpace(options?.NotificationContentTitle))
             NotificationContentTitle = options.NotificationContentTitle;
 
@@ -51,6 +57,7 @@ public sealed partial class MediaProjectionProvider : MediaProjection.Callback, 
     public void StopCapture()
     {
         MediaProjection?.Stop();
+        logger.LogInformation("Stopping screen capture.");
 
         var context = Platform.AppContext;
         context.StopService(new Intent(context, typeof(MediaProjectionForegroundService)));
@@ -61,11 +68,13 @@ public sealed partial class MediaProjectionProvider : MediaProjection.Callback, 
 
     public void OnScreenCapturePermissionDenied()
     {
+        logger.LogWarning("Screen capture permission denied.");
         recordingStartAwaiter?.TrySetResult(false);
     }
 
     public async void OnScreenCapturePermissionGranted(int resultCode, Intent? data)
     {
+        logger.LogInformation("Screen capture permission granted; starting foreground service.");
         serviceStartAwaiter = new TaskCompletionSource<bool>();
 
         var context = Platform.AppContext;
@@ -83,6 +92,7 @@ public sealed partial class MediaProjectionProvider : MediaProjection.Callback, 
             context.StartService(notificationSetup);
 
         await serviceStartAwaiter.Task;
+        logger.LogDebug("MediaProjection foreground service reported started.");
 
         MediaProjection = ProjectionManager?.GetMediaProjection(resultCode, data!);
         MediaProjection?.RegisterCallback(this, null);
@@ -98,6 +108,7 @@ public sealed partial class MediaProjectionProvider : MediaProjection.Callback, 
         ForegroundServiceWatcher.NotifyServiceState(nameof(MediaProjectionForegroundService), true);
 
         recordingStartAwaiter?.TrySetResult(true);
+        logger.LogInformation("Screen capture started.");
     }
 
     public void Setup()
@@ -106,7 +117,14 @@ public sealed partial class MediaProjectionProvider : MediaProjection.Callback, 
         {
             Intent captureIntent = ProjectionManager.CreateScreenCaptureIntent();
             Platform.CurrentActivity?.StartActivityForResult(captureIntent, RequestMediaProjectionCode);
+            logger.LogDebug("Screen capture permission activity launched.");
         }
+    }
+
+    public override void OnStop()
+    {
+        logger.LogInformation("MediaProjection callback reported stop.");
+        base.OnStop();
     }
 }
 

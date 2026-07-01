@@ -12,6 +12,7 @@ public partial class MicSettingsViewModel : ObservableObject
 {
     private readonly IMediator _mediator;
     private readonly IUserDialogService _dialogService;
+    private readonly ILogger<MicSettingsViewModel> _logger;
 
     [ObservableProperty]
     public partial string SelectedSource { get; set; } = string.Empty;
@@ -34,10 +35,14 @@ public partial class MicSettingsViewModel : ObservableObject
     [ObservableProperty]
     public partial string PrefferedAudioInputDevice { get; set; } = string.Empty;
 
-    public MicSettingsViewModel(IMediator mediator, IUserDialogService dialogService)
+    public MicSettingsViewModel(
+        IMediator mediator,
+        IUserDialogService dialogService,
+        ILogger<MicSettingsViewModel> logger)
     {
         _mediator = mediator;
         _dialogService = dialogService;
+        _logger = logger;
         _ = ReloadStateAsync();
     }
 
@@ -47,6 +52,10 @@ public partial class MicSettingsViewModel : ObservableObject
         var result = await _mediator.Send(new SetMicrophoneVolumeCommand(Volume / 100.0f));
         if (!result.IsSuccess)
         {
+            if (_logger.IsEnabled(LogLevel.Warning))
+            {
+                _logger.LogWarning("Failed to update microphone volume: {ErrorMessage}.", result.ErrorMessage);
+            }
             await ShowErrorAsync(_dialogService, result.ErrorMessage);
             await ReloadStateAsync();
         }
@@ -56,10 +65,9 @@ public partial class MicSettingsViewModel : ObservableObject
     private async Task EditField(string fieldName)
     {
         var option = MapOption(fieldName);
+
         if (option == null)
-        {
             return;
-        }
 
         var options = await _mediator.Send(new GetMicrophoneSettingOptionsQuery(option.Value));
         var currentValue = GetCurrentValue(option.Value);
@@ -79,6 +87,10 @@ public partial class MicSettingsViewModel : ObservableObject
                 var updateResult = await _mediator.Send(new SetMicrophoneSettingOptionCommand(option.Value, selectedOption.Value));
                 if (!updateResult.IsSuccess)
                 {
+                    if (_logger.IsEnabled(LogLevel.Warning))
+                    {
+                        _logger.LogWarning("Failed to update microphone setting {Option}: {ErrorMessage}.", option.Value, updateResult.ErrorMessage);
+                    }
                     await ShowErrorAsync(_dialogService, updateResult.ErrorMessage);
                     await ReloadStateAsync();
                     return;
@@ -99,6 +111,7 @@ public partial class MicSettingsViewModel : ObservableObject
             {
                 if (!int.TryParse(result, out int bufferSize) || bufferSize <= 0)
                 {
+                    _logger.LogWarning("Rejected microphone buffer size value '{Value}'.", result);
                     await ShowErrorAsync(_dialogService, "Something's wrong with the number");
                     return;
                 }
@@ -106,6 +119,10 @@ public partial class MicSettingsViewModel : ObservableObject
                 var updateResult = await _mediator.Send(new SetMicrophoneBufferSizeCommand(bufferSize));
                 if (!updateResult.IsSuccess)
                 {
+                    if (_logger.IsEnabled(LogLevel.Warning))
+                    {
+                        _logger.LogWarning("Failed to update microphone buffer size: {ErrorMessage}.", updateResult.ErrorMessage);
+                    }
                     await ShowErrorAsync(_dialogService, updateResult.ErrorMessage);
                     await ReloadStateAsync();
                     return;
@@ -122,6 +139,10 @@ public partial class MicSettingsViewModel : ObservableObject
         var result = await _mediator.Send(new SetMicrophoneVolumeCommand(1f));
         if (!result.IsSuccess)
         {
+            if (_logger.IsEnabled(LogLevel.Warning))
+            {
+                _logger.LogWarning("Failed to reset microphone volume: {ErrorMessage}.", result.ErrorMessage);
+            }
             await ShowErrorAsync(_dialogService, result.ErrorMessage);
             await ReloadStateAsync();
         }
@@ -136,6 +157,7 @@ public partial class MicSettingsViewModel : ObservableObject
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Failed to reload microphone settings.");
             await ShowErrorAsync(_dialogService, ex.Message);
         }
     }

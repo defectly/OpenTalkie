@@ -43,7 +43,10 @@ internal class ReceiverForegroundService : Service
             }
             catch (RemoteException ex)
             {
-                Log.Error(ChannelId, "Failed to send message to activity: " + ex);
+                if (Log.IsLoggable("OpenTalkie", LogPriority.Error))
+                {
+                    Log.Error("OpenTalkie", $"Receiver foreground service failed to send message to activity.{System.Environment.NewLine}{ex}");
+                }
             }
         }
     }
@@ -52,14 +55,17 @@ internal class ReceiverForegroundService : Service
     {
         if (string.IsNullOrEmpty(PackageName) || PackageManager == null)
         {
-            Log.Error(ChannelId, "PackageName or PackageManager is null, cannot create launch intent.");
+            Log.Error("OpenTalkie", "Receiver foreground service could not create launch intent because PackageName or PackageManager is null.");
             return;
         }
 
         var notificationIntent = PackageManager.GetLaunchIntentForPackage(PackageName);
         if (notificationIntent == null)
         {
-            Log.Error(ChannelId, "Failed to get launch intent for package: " + PackageName);
+            if (Log.IsLoggable("OpenTalkie", LogPriority.Error))
+            {
+                Log.Error("OpenTalkie", $"Receiver foreground service failed to get launch intent for package {PackageName}.");
+            }
             return;
         }
         notificationIntent.SetFlags(ActivityFlags.SingleTop | ActivityFlags.ClearTop);
@@ -71,7 +77,7 @@ internal class ReceiverForegroundService : Service
         var pendingIntent = PendingIntent.GetActivity(this, 0, notificationIntent, pendingIntentFlags);
         if (pendingIntent == null)
         {
-            Log.Error(ChannelId, "Failed to create activity pending intent.");
+            Log.Error("OpenTalkie", "Receiver foreground service failed to create activity pending intent.");
             return;
         }
 
@@ -99,8 +105,11 @@ internal class ReceiverForegroundService : Service
                 else
                     StartForeground(NotificationId, notification);
             }
-            catch
+            catch (Exception ex)
             {
+                if (Log.IsLoggable("OpenTalkie", LogPriority.Warn))
+                    Log.Warn("OpenTalkie", $"Receiver foreground service typed foreground start failed; retrying without explicit service type.{System.Environment.NewLine}{ex}");
+                
                 StartForeground(NotificationId, notification);
             }
         }

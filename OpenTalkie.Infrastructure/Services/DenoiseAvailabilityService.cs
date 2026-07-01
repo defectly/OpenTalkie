@@ -5,9 +5,15 @@ namespace OpenTalkie.Infrastructure.Services;
 
 public sealed class DenoiseAvailabilityService : IDenoiseAvailabilityService
 {
-    private readonly object _sync = new();
+    private readonly Lock _sync = new();
+    private readonly ILogger<DenoiseAvailabilityService> logger;
     private bool _initialized;
     private OperationResult _cachedResult;
+
+    public DenoiseAvailabilityService(ILogger<DenoiseAvailabilityService> logger)
+    {
+        this.logger = logger;
+    }
 
     public OperationResult CheckAvailability()
     {
@@ -21,6 +27,14 @@ public sealed class DenoiseAvailabilityService : IDenoiseAvailabilityService
 
             _cachedResult = Probe();
             _initialized = true;
+            var logLevel = _cachedResult.IsSuccess ? LogLevel.Information : LogLevel.Warning;
+            if (logger.IsEnabled(logLevel))
+            {
+                logger.Log(logLevel, "RNNoise availability probe result: {Result}.", _cachedResult.IsSuccess
+                    ? "available"
+                    : _cachedResult.ErrorMessage);
+            }
+
             return _cachedResult;
         }
     }

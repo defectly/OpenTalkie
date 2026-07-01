@@ -1,9 +1,7 @@
 using Android.App;
 using Android.Runtime;
+using Android.Util;
 using Java.Lang;
-using Microsoft.Maui;
-using Microsoft.Maui.Hosting;
-using System.Diagnostics;
 
 namespace OpenTalkie.Platforms.Android;
 
@@ -27,11 +25,16 @@ public class MainApplication(nint handle, JniHandleOwnership ownership) : MauiAp
         }
         catch (UnsatisfiedLinkError ex)
         {
-            Debug.WriteLine($"Failed to load RNNoise native library: {ex.Message}");
+            LogWarning("Failed to load RNNoise native library.", ex);
         }
         catch (System.Exception ex)
         {
-            Debug.WriteLine($"Unexpected RNNoise load failure: {ex.Message}");
+            LogWarning("Unexpected RNNoise load failure.", ex);
         }
+    }
+
+    private static void LogWarning(string message, System.Exception exception)
+    {
+        Log.Warn("OpenTalkie", $"{message}{Environment.NewLine}{exception}");
     }
 }

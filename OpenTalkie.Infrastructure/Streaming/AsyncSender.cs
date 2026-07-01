@@ -3,12 +3,12 @@ using OpenTalkie.Domain.VBAN;
 using OpenTalkie.Infrastructure.RNNoise;
 using System.Buffers;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace OpenTalkie.Infrastructure.Streaming;
 
@@ -17,6 +17,7 @@ public class AsyncSender : IDisposable
     private readonly IInputStream _source;
     private readonly ObservableCollection<Endpoint> _endpoints;
     private readonly EndpointRuntimeRegistry _runtimeRegistry;
+    private readonly ILogger<AsyncSender> _logger;
     private readonly WaveFormat _waveFormat;
     private readonly Denoiser? _denoiser;
     private readonly VBanBitResolution _bitResolution;
@@ -31,15 +32,18 @@ public class AsyncSender : IDisposable
     private byte[]? _packetScratch;
     private int _packetScratchCapacity;
     private bool onWifi;
+    private int _sendErrorCount;
     private readonly int _srIndex;
     private readonly int _srIndex48;
     private const int VBanMaxSamplesPerPacket = 256; // PCM max samples per packet per VBAN spec
 
-    public AsyncSender(IInputStream source, ObservableCollection<Endpoint> endpoints)
+    public AsyncSender(IInputStream source, ObservableCollection<Endpoint> endpoints, ILoggerFactory? loggerFactory = null)
     {
+        loggerFactory ??= NullLoggerFactory.Instance;
         _source = source;
         _endpoints = endpoints;
-        _runtimeRegistry = new EndpointRuntimeRegistry(endpoints);
+        _logger = loggerFactory.CreateLogger<AsyncSender>();
+        _runtimeRegistry = new EndpointRuntimeRegistry(endpoints, loggerFactory);
         _waveFormat = _source.GetWaveFormat();
         try
         {
@@ -48,7 +52,7 @@ public class AsyncSender : IDisposable
         catch (Exception ex)
         {
             _denoiser = null;
-            Debug.WriteLine($"RNNoise unavailable in sender pipeline: {ex.Message}");
+            _logger.LogWarning(ex, "RNNoise unavailable in sender pipeline.");
         }
 
         _bitResolution = _waveFormat.BitsPerSample switch
@@ -65,11 +69,24 @@ public class AsyncSender : IDisposable
         _srIndex48 = Array.IndexOf(VBANConsts.SAMPLERATES, 48000);
         onWifi = Connectivity.Current.ConnectionProfiles.Contains(ConnectionProfile.WiFi);
         Connectivity.ConnectivityChanged += OnConnectivityChanged;
+        if (_logger.IsEnabled(LogLevel.Debug))
+        {
+            _logger.LogDebug(
+                "AsyncSender initialized with {SampleRate} Hz, {BitsPerSample}-bit, {Channels} channel(s), Wi-Fi={OnWifi}.",
+                _waveFormat.SampleRate,
+                _waveFormat.BitsPerSample,
+                _waveFormat.Channels,
+                onWifi);
+        }
     }
 
     public void OnConnectivityChanged(object? sender, ConnectivityChangedEventArgs e)
     {
         onWifi = e.ConnectionProfiles.Contains(ConnectionProfile.WiFi);
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            _logger.LogInformation("Sender connectivity changed. NetworkAccess={NetworkAccess}, Wi-Fi={OnWifi}.", e.NetworkAccess, onWifi);
+        }
     }
 
     public void Dispose()
@@ -82,6 +99,7 @@ public class AsyncSender : IDisposable
         ReturnPooled(ref _replicateBuffer);
         ReturnPooled(ref _volumeBuffer);
         ReturnPooled(ref _packetScratch);
+        _logger.LogDebug("AsyncSender disposed.");
         GC.SuppressFinalize(this);
     }
 
@@ -297,8 +315,9 @@ public class AsyncSender : IDisposable
             if (udpClient != null)
                 await udpClient.SendAsync(sendBuffer, packetLength);
         }
-        catch
+        catch (Exception ex)
         {
+            LogSendFailure(ex, endpoint);
         }
 
         runtime.FrameCount++;
@@ -327,8 +346,9 @@ public class AsyncSender : IDisposable
             if (udpClient != null)
                 await udpClient.SendAsync(sendBuffer, packetLength);
         }
-        catch
+        catch (Exception ex)
         {
+            LogSendFailure(ex, endpoint);
         }
 
         runtime.FrameCount++;
@@ -590,6 +610,24 @@ public class AsyncSender : IDisposable
             _packetScratchCapacity = _packetScratch.Length;
         }
         return _packetScratch;
+    }
+
+    private void LogSendFailure(Exception exception, Endpoint endpoint)
+    {
+        var count = Interlocked.Increment(ref _sendErrorCount);
+        if (count <= 5 || count % 100 == 0)
+        {
+            if (_logger.IsEnabled(LogLevel.Warning))
+            {
+                _logger.LogWarning(
+                    exception,
+                    "Failed to send VBAN packet to {Host}:{Port} for stream '{StreamName}'. Failure count: {FailureCount}.",
+                    endpoint.Hostname,
+                    endpoint.Port,
+                    endpoint.Name,
+                    count);
+            }
+        }
     }
 
     private sealed class AdaptCtx

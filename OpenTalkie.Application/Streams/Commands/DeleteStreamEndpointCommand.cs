@@ -10,7 +10,8 @@ public readonly record struct DeleteStreamEndpointCommand(EndpointType StreamTyp
 
 public sealed class DeleteStreamEndpointCommandHandler(
     IEndpointCatalogService endpointCatalogService,
-    IEndpointRepository endpointRepository)
+    IEndpointRepository endpointRepository,
+    ILogger<DeleteStreamEndpointCommandHandler> logger)
     : ICommandHandler<DeleteStreamEndpointCommand, OperationResult>
 {
     public async ValueTask<OperationResult> Handle(
@@ -20,6 +21,9 @@ public sealed class DeleteStreamEndpointCommandHandler(
         var endpoint = endpointCatalogService.GetEndpoint(command.StreamType, command.EndpointId);
         if (endpoint == null)
         {
+            if (logger.IsEnabled(LogLevel.Warning))
+                logger.LogWarning("Delete {StreamType} endpoint {EndpointId} rejected because it was not found.", command.StreamType, command.EndpointId);
+
             return OperationResult.Fail("Stream endpoint was not found.");
         }
 
@@ -29,10 +33,17 @@ public sealed class DeleteStreamEndpointCommandHandler(
         }
         catch (Exception ex)
         {
+            if (logger.IsEnabled(LogLevel.Error))
+                logger.LogError(ex, "Failed to persist removal for {StreamType} endpoint {EndpointId}.", command.StreamType, command.EndpointId);
+
             return OperationResult.Fail($"Failed to persist stream endpoint removal: {ex.Message}");
         }
 
         endpointCatalogService.RemoveEndpoint(command.StreamType, endpoint.Id);
+
+        if (logger.IsEnabled(LogLevel.Information))
+            logger.LogInformation("Deleted {StreamType} endpoint {EndpointId}.", command.StreamType, endpoint.Id);
+
         return OperationResult.Success();
     }
 }

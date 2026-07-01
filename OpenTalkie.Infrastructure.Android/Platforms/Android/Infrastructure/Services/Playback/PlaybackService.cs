@@ -18,11 +18,16 @@ public class PlaybackService : IPlaybackService
     private WaveFormat? _waveFormat;
     private readonly IPlaybackRepository playbackRepository;
     private readonly MediaProjectionProvider mediaProjectionProvider;
+    private readonly ILogger<PlaybackService> logger;
 
-    public PlaybackService(IPlaybackRepository playbackRepository, MediaProjectionProvider mediaProjectionProvider)
+    public PlaybackService(
+        IPlaybackRepository playbackRepository,
+        MediaProjectionProvider mediaProjectionProvider,
+        ILogger<PlaybackService> logger)
     {
         this.playbackRepository = playbackRepository;
         this.mediaProjectionProvider = mediaProjectionProvider;
+        this.logger = logger;
 
         playbackRepository.VolumeChanged += OnVolumeChange;
     }
@@ -68,15 +73,22 @@ public class PlaybackService : IPlaybackService
         _sampleRate = int.Parse(settings.SelectedSampleRate.Value);
         _channelOut = Enum.Parse<ChannelOut>(settings.SelectedChannelOut.Value);
         _volume = settings.VolumeGain;
+
+        if (logger.IsEnabled(LogLevel.Debug))
+            logger.LogDebug("Playback preferences loaded. SampleRate={SampleRate}, ChannelOut={ChannelOut}, Encoding={Encoding}, Volume={Volume}.", _sampleRate, _channelOut, _encoding, _volume);
     }
 
     public void Start()
     {
         if (_audioRecord != null)
+        {
+            logger.LogDebug("Playback AudioRecord start ignored because it is already created.");
             return;
+        }
 
         try
         {
+            logger.LogInformation("Starting playback AudioRecord.");
             var mediaProjection = mediaProjectionProvider.GetActiveProjection();
 
             if (mediaProjection == null)
@@ -93,16 +105,22 @@ public class PlaybackService : IPlaybackService
             }
 
             _audioRecord.StartRecording();
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.LogInformation("Playback AudioRecord started. SampleRate={SampleRate}, Channels={Channels}, BufferFrames={BufferFrames}.", _audioRecord.SampleRate, _audioRecord.ChannelCount, _audioRecord.BufferSizeInFrames);
+            }
         }
-        catch
+        catch (Exception ex)
         {
-            try { mediaProjectionProvider.StopCapture(); } catch { }
+            logger.LogError(ex, "Playback AudioRecord failed to start.");
+            try { mediaProjectionProvider.StopCapture(); } catch (Exception stopEx) { logger.LogWarning(stopEx, "Playback capture cleanup after failed start failed."); }
             throw;
         }
     }
 
     public async Task<bool> RequestPermissionAsync()
     {
+        logger.LogInformation("Requesting screen audio capture permission.");
         return await mediaProjectionProvider.RequestCaptureAsync();
     }
 
@@ -135,16 +153,23 @@ public class PlaybackService : IPlaybackService
     public void Stop()
     {
         if (_audioRecord == null)
+        {
+            logger.LogDebug("Playback AudioRecord stop ignored because it is not created.");
             return;
+        }
 
         if (_audioRecord.RecordingState == RecordState.Stopped)
+        {
+            logger.LogDebug("Playback AudioRecord stop ignored because recording is already stopped.");
             return;
+        }
 
         _audioRecord.Stop();
         _audioRecord.Dispose();
         _audioRecord = null;
         mediaProjectionProvider.StopCapture();
         _waveFormat = null;
+        logger.LogInformation("Playback AudioRecord stopped.");
     }
 
     public int GetBufferSize()
