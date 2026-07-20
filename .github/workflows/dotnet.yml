@@ -1,9 +1,10 @@
-name: Build Android APKs (master)
+name: Build Android APKs (master/development)
 
 on:
   push:
     branches:
       - master
+      - development
   workflow_dispatch:
 
 jobs:
