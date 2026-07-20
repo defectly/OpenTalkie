@@ -4,12 +4,14 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:viewmodel="clr-namespace:OpenTalkie.Presentation.ViewModels"
+    xmlns:views="clr-namespace:OpenTalkie.Presentation.Views"
     xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+    x:Name="MicSettingsRoot"
     Title="Microphone settings"
     x:DataType="viewmodel:MicSettingsViewModel"
     Padding="16">
     <ScrollView VerticalScrollBarVisibility="Never" HorizontalScrollBarVisibility="Never">
-        <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="16">
+        <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="16">
 
             <!--  Audio Source  -->
             <Border
@@ -251,9 +253,43 @@
                 </Grid>
             </Border>
 
-            <!--  Volume Slider  -->
+            <!--  Screen-off pacing  -->
             <Border
                 Grid.Row="6"
+                Padding="16"
+                BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceContainerLowLight}, Dark={StaticResource SurfaceContainerLowDark}}"
+                Stroke="{AppThemeBinding Light={StaticResource OutlineLight}, Dark={StaticResource OutlineDark}}"
+                StrokeShape="RoundRectangle 8"
+                Shadow="{StaticResource MaterialShadowLevel1}">
+                <Grid Padding="5" ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" RowSpacing="4">
+                    <Label
+                        Grid.Row="0"
+                        FontAttributes="Bold"
+                        FontSize="16"
+                        Text="Smooth screen-off audio"
+                        TextColor="{AppThemeBinding Light={StaticResource OnSurfaceLight}, Dark={StaticResource OnSurfaceDark}}" />
+                    <Label
+                        Grid.Row="1"
+                        FontSize="14"
+                        Text="Buffers about 120 ms to prevent interruptions on affected devices. Takes effect next start."
+                        TextColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" />
+                    <Switch
+                        Grid.RowSpan="2"
+                        Grid.Column="1"
+                        IsToggled="{Binding IsPacingEnabled, Mode=TwoWay}"
+                        VerticalOptions="Center">
+                        <Switch.Behaviors>
+                            <toolkit:EventToCommandBehavior
+                                Command="{Binding Source={x:Reference MicSettingsRoot}, Path=PacingToggledCommand, x:DataType=views:MicSettingsPage}"
+                                EventName="Toggled" />
+                        </Switch.Behaviors>
+                    </Switch>
+                </Grid>
+            </Border>
+
+            <!--  Volume Slider  -->
+            <Border
+                Grid.Row="7"
                 Padding="16"
                 BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceContainerLowLight}, Dark={StaticResource SurfaceContainerLowDark}}"
                 Stroke="{AppThemeBinding Light={StaticResource OutlineLight}, Dark={StaticResource OutlineDark}}"

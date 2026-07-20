@@ -19,6 +19,7 @@ public sealed class MicrophoneRepository : IMicrophoneRepository
         var bufferSize = Preferences.Get("MicrophoneBufferSize", 960);
         var volume = Preferences.Get("MicrophoneVolume", 1f);
         var preferredDevice = Preferences.Get("MicrophonePrefferedAudioInputDevice", "Default");
+        var isPacingEnabled = Preferences.Get("MicrophonePacingEnabled", false);
 
         return new MicrophoneSettingsState(
             new SettingOptionItem(source.ToString(), source.ToString()),
@@ -27,7 +28,8 @@ public sealed class MicrophoneRepository : IMicrophoneRepository
             new SettingOptionItem(MapFromAndroidEncoding(encoding).ToString(), MapFromAndroidEncoding(encoding).ToString()),
             bufferSize,
             volume,
-            new SettingOptionItem(preferredDevice, preferredDevice));
+            new SettingOptionItem(preferredDevice, preferredDevice),
+            isPacingEnabled);
     }
 
     public IReadOnlyList<SettingOptionItem> GetOptions(MicrophoneSettingOption option)
@@ -77,6 +79,11 @@ public sealed class MicrophoneRepository : IMicrophoneRepository
     {
         Preferences.Set("MicrophoneVolume", gain);
         VolumeChanged?.Invoke(gain);
+    }
+
+    public void SetPacingEnabled(bool enabled)
+    {
+        Preferences.Set("MicrophonePacingEnabled", enabled);
     }
 
     private static IReadOnlyList<SettingOptionItem> GetEncodings()

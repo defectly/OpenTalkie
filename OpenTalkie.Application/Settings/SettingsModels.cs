@@ -33,7 +33,8 @@ public readonly record struct MicrophoneSettingsState(
     SettingOptionItem SelectedEncoding,
     int SelectedBufferSize,
     float VolumeGain,
-    SettingOptionItem PreferredAudioInputDevice);
+    SettingOptionItem PreferredAudioInputDevice,
+    bool IsPacingEnabled);
 
 public readonly record struct PlaybackSettingsState(
     SettingOptionItem SelectedChannelOut,

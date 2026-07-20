@@ -10,4 +10,5 @@ public interface IMicrophoneRepository
     void SetBufferSize(int bufferSize);
     void SetOption(MicrophoneSettingOption option, string value);
     void SetSelectedVolume(float gain);
+    void SetPacingEnabled(bool enabled);
 }

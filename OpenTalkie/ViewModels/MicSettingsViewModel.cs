@@ -11,6 +11,7 @@ public partial class MicSettingsViewModel : ObservableObject
 {
     private readonly IMediator _mediator;
     private readonly IUserDialogService _dialogService;
+    private bool _isApplyingState;
 
     [ObservableProperty]
     public partial string SelectedSource { get; set; } = string.Empty;
@@ -32,6 +33,9 @@ public partial class MicSettingsViewModel : ObservableObject
 
     [ObservableProperty]
     public partial string PrefferedAudioInputDevice { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial bool IsPacingEnabled { get; set; }
 
     public MicSettingsViewModel(IMediator mediator, IUserDialogService dialogService)
     {
@@ -124,6 +128,20 @@ public partial class MicSettingsViewModel : ObservableObject
         }
     }
 
+    [RelayCommand]
+    private async Task PacingToggled()
+    {
+        if (_isApplyingState)
+            return;
+
+        var result = await _mediator.Send(new SetMicrophonePacingCommand(IsPacingEnabled));
+        if (!result.IsSuccess)
+        {
+            await ShowErrorAsync(_dialogService, result.ErrorMessage);
+            await ReloadStateAsync();
+        }
+    }
+
     private async Task ReloadStateAsync()
     {
         try
@@ -139,13 +157,22 @@ public partial class MicSettingsViewModel : ObservableObject
 
     private void ApplyState(MicrophoneSettingsState state)
     {
-        SelectedSource = state.SelectedSource.DisplayName;
-        SelectedInputChannel = state.SelectedInputChannel.DisplayName;
-        SelectedSampleRate = state.SelectedSampleRate.DisplayName;
-        SelectedEncoding = state.SelectedEncoding.DisplayName;
-        SelectedBufferSize = state.SelectedBufferSize.ToString();
-        Volume = state.VolumeGain * 100;
-        PrefferedAudioInputDevice = state.PreferredAudioInputDevice.DisplayName;
+        _isApplyingState = true;
+        try
+        {
+            SelectedSource = state.SelectedSource.DisplayName;
+            SelectedInputChannel = state.SelectedInputChannel.DisplayName;
+            SelectedSampleRate = state.SelectedSampleRate.DisplayName;
+            SelectedEncoding = state.SelectedEncoding.DisplayName;
+            SelectedBufferSize = state.SelectedBufferSize.ToString();
+            Volume = state.VolumeGain * 100;
+            PrefferedAudioInputDevice = state.PreferredAudioInputDevice.DisplayName;
+            IsPacingEnabled = state.IsPacingEnabled;
+        }
+        finally
+        {
+            _isApplyingState = false;
+        }
     }
 
     private static MicrophoneSettingOption? MapOption(string fieldName)

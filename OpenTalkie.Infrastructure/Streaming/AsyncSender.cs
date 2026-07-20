@@ -90,6 +90,12 @@ public class AsyncSender : IDisposable
     {
         int bytesRead = await _source.ReadAsync(buffer, offset, count);
 
+        return await ProcessAsync(buffer, offset, bytesRead);
+    }
+
+    public async Task<int> ProcessAsync(byte[] buffer, int offset, int bytesRead)
+    {
+
         if (bytesRead <= 0)
             return bytesRead;
 
