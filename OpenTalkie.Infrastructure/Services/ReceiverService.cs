@@ -94,6 +94,7 @@ public sealed class ReceiverService : IReceiverService
         catch (Exception ex)
         {
             try { _receiver?.Stop(); } catch { }
+            try { _receiverForegroundServiceController.Stop(); } catch { }
             SetStatus(StreamSessionStatus.Faulted(ex.Message));
         }
     }

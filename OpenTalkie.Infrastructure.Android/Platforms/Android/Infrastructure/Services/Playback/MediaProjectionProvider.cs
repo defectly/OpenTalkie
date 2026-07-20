@@ -13,6 +13,7 @@ public sealed partial class MediaProjectionProvider : MediaProjection.Callback, 
 
     private TaskCompletionSource<bool>? serviceStartAwaiter;
     private TaskCompletionSource<bool>? recordingStartAwaiter;
+    private readonly ForegroundServicePowerCoordinator powerCoordinator;
 
     private string NotificationContentTitle { get; set; } =
         ScreenAudioCapturingOptions.defaultAndroidNotificationTitle;
@@ -25,8 +26,9 @@ public sealed partial class MediaProjectionProvider : MediaProjection.Callback, 
 
     public bool IsSupported => ProjectionManager is not null;
 
-    public MediaProjectionProvider()
+    public MediaProjectionProvider(ForegroundServicePowerCoordinator powerCoordinator)
     {
+        this.powerCoordinator = powerCoordinator;
         ProjectionManager = (MediaProjectionManager?)Platform.AppContext.GetSystemService(Context.MediaProjectionService);
     }
 
@@ -54,7 +56,7 @@ public sealed partial class MediaProjectionProvider : MediaProjection.Callback, 
 
         var context = Platform.AppContext;
         context.StopService(new Intent(context, typeof(MediaProjectionForegroundService)));
-        ForegroundServiceWatcher.NotifyServiceState(nameof(MediaProjectionForegroundService), false);
+        powerCoordinator.SetMediaProjectionActive(false);
     }
 
     internal MediaProjection? GetActiveProjection() => MediaProjection;
@@ -95,7 +97,7 @@ public sealed partial class MediaProjectionProvider : MediaProjection.Callback, 
         else
             context.StartService(beginRecording);
 
-        ForegroundServiceWatcher.NotifyServiceState(nameof(MediaProjectionForegroundService), true);
+        powerCoordinator.SetMediaProjectionActive(true);
 
         recordingStartAwaiter?.TrySetResult(true);
     }

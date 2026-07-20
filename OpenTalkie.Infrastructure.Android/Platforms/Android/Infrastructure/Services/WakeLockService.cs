@@ -6,39 +6,48 @@ namespace OpenTalkie.Infrastructure.Android.Platforms.Android.Infrastructure.Ser
 
 public class WakeLockService : Java.Lang.Object, IWakeLockService
 {
+    private readonly Lock _lock = new();
     private PowerManager.WakeLock? _wakeLock;
     private const string Tag = "OpenTalkieWakeLock";
 
-    public WakeLockService()
-    {
-        ForegroundServiceWatcher.Configure(this);
-    }
-
     public void Acquire()
     {
-        if (_wakeLock != null && _wakeLock.IsHeld) return;
+        lock (_lock)
+        {
+            if (_wakeLock?.IsHeld == true)
+                return;
 
-        if (Platform.CurrentActivity?.GetSystemService(Context.PowerService) is not PowerManager powerManager) 
-            return;
+            if (Platform.AppContext.GetSystemService(Context.PowerService) is not PowerManager powerManager)
+                return;
 
-        _wakeLock = powerManager.NewWakeLock(WakeLockFlags.Partial, Tag);
-        _wakeLock?.Acquire();
+            _wakeLock?.Dispose();
+            var wakeLock = powerManager.NewWakeLock(WakeLockFlags.Partial, Tag);
+            if (wakeLock is null)
+                return;
+
+            _wakeLock = wakeLock;
+            wakeLock.Acquire();
+        }
     }
 
     public void Release()
     {
-        try
+        lock (_lock)
         {
-            _wakeLock?.Release();
-        }
-        catch (Java.Lang.Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"WakeLock release error: {ex.Message}");
-        }
-        finally
-        {
-            _wakeLock?.Dispose();
-            _wakeLock = null;
+            try
+            {
+                if (_wakeLock?.IsHeld == true)
+                    _wakeLock.Release();
+            }
+            catch (Java.Lang.Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"WakeLock release error: {ex.Message}");
+            }
+            finally
+            {
+                _wakeLock?.Dispose();
+                _wakeLock = null;
+            }
         }
     }
 }

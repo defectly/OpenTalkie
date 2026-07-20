@@ -5,12 +5,16 @@ namespace OpenTalkie.Infrastructure.Android.Platforms.Android.Infrastructure.Ser
 
 public class MicrophoneCapturingService : IMicrophoneCapturingService
 {
+    private readonly ForegroundServicePowerCoordinator _powerCoordinator;
+
     public Action<bool>? OnServiceStateChange { get; set; }
 
     public MicrophoneCapturingService(
         IMicrophoneRepository microphoneRepository,
-        IAudioManagerSettingsRepository audioManagerSettingsRepository)
+        IAudioManagerSettingsRepository audioManagerSettingsRepository,
+        ForegroundServicePowerCoordinator powerCoordinator)
     {
+        _powerCoordinator = powerCoordinator;
         MicrophoneAudioRecord.Configure(microphoneRepository, audioManagerSettingsRepository);
         microphoneRepository.PreferredAudioInputDeviceChanged += MicrophoneAudioRecord.SetPreferredAudioDevice;
     }
@@ -22,10 +26,12 @@ public class MicrophoneCapturingService : IMicrophoneCapturingService
         try
         {
             MicrophoneAudioRecord.Start();
+            _powerCoordinator.SetMicrophoneActive(true);
         }
         catch
         {
             MicrophoneForegroundServiceManager.StopForegroundService();
+            _powerCoordinator.SetMicrophoneActive(false);
             OnServiceStateChange?.Invoke(false);
             throw;
         }
@@ -37,6 +43,7 @@ public class MicrophoneCapturingService : IMicrophoneCapturingService
     {
         MicrophoneAudioRecord.Stop();
         MicrophoneForegroundServiceManager.StopForegroundService();
+        _powerCoordinator.SetMicrophoneActive(false);
         OnServiceStateChange?.Invoke(false);
     }
 

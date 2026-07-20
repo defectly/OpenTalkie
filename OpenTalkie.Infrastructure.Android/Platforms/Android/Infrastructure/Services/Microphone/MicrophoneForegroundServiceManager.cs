@@ -41,16 +41,12 @@ internal static class MicrophoneForegroundServiceManager
             context.StartForegroundService(beginRecording);
         else
             context.StartService(beginRecording);
-
-        ForegroundServiceWatcher.NotifyServiceState(nameof(MicrophoneForegroundService), true);
     }
 
     internal static void StopForegroundService()
     {
         var context = Platform.AppContext;
         context.StopService(new Intent(context, typeof(MicrophoneForegroundService)));
-
-        ForegroundServiceWatcher.NotifyServiceState(nameof(MicrophoneForegroundService), false);
     }
 }
 
