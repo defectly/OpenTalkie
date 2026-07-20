@@ -275,7 +275,7 @@ public class AsyncSender : IDisposable
         }
     }
 
-    private async Task SendAsync(ReadOnlyMemory<byte> samples, Endpoint endpoint)
+    private Task SendAsync(ReadOnlyMemory<byte> samples, Endpoint endpoint)
     {
         var runtime = _runtimeRegistry.GetRuntime(endpoint);
 
@@ -295,16 +295,17 @@ public class AsyncSender : IDisposable
         {
             var udpClient = runtime.Client;
             if (udpClient != null)
-                await udpClient.SendAsync(sendBuffer, packetLength);
+                udpClient.Send(sendBuffer, packetLength);
         }
         catch
         {
         }
 
         runtime.FrameCount++;
+        return Task.CompletedTask;
     }
 
-    private async Task SendAsync(ReadOnlyMemory<byte> samples, Endpoint endpoint, int channels, int bytesPerSample, int sampleRate, VBanBitResolution bitRes)
+    private Task SendAsync(ReadOnlyMemory<byte> samples, Endpoint endpoint, int channels, int bytesPerSample, int sampleRate, VBanBitResolution bitRes)
     {
         var runtime = _runtimeRegistry.GetRuntime(endpoint);
 
@@ -325,13 +326,14 @@ public class AsyncSender : IDisposable
         {
             var udpClient = runtime.Client;
             if (udpClient != null)
-                await udpClient.SendAsync(sendBuffer, packetLength);
+                udpClient.Send(sendBuffer, packetLength);
         }
         catch
         {
         }
 
         runtime.FrameCount++;
+        return Task.CompletedTask;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

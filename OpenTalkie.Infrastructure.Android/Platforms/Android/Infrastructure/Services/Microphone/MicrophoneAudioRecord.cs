@@ -17,6 +17,9 @@ public static class MicrophoneAudioRecord
     private static int _microphoneSampleRate;
     private static int _microphoneEncoding;
     private static WaveFormat? _waveFormat;
+    [ThreadStatic]
+    private static bool _realtimePriorityConfigured;
+
     public static int BufferSize { get; set; }
 
     public static void Configure(
@@ -95,17 +98,18 @@ public static class MicrophoneAudioRecord
         }
     }
 
-    public static async Task<int> ReadAsync(byte[] buffer, int offset, int count)
+    public static Task<int> ReadAsync(byte[] buffer, int offset, int count)
     {
         if (_audioRecord == null)
             throw new NullReferenceException("Audio record is null");
 
-        int read = await _audioRecord.ReadAsync(buffer, offset, count);
+        ConfigureCurrentThreadPriority();
+        int read = _audioRecord.Read(buffer, offset, count);
 
         if (read > 0)
             ChangeVolume(buffer, offset, read, _volume);
 
-        return read;
+        return Task.FromResult(read);
     }
 
     public static unsafe void ChangeVolume(byte[] audioBytes, int offset, int length, float gain)
@@ -254,5 +258,21 @@ public static class MicrophoneAudioRecord
             ?? throw new InvalidOperationException("Audio manager settings repository service is unavailable.");
 
         return Enum.Parse<Mode>(settings.SelectedMode.Value);
+    }
+
+    public static void ConfigureCurrentThreadPriority()
+    {
+        if (_realtimePriorityConfigured)
+            return;
+
+        try
+        {
+            global::Android.OS.Process.SetThreadPriority(global::Android.OS.ThreadPriority.UrgentAudio);
+            _realtimePriorityConfigured = true;
+        }
+        catch (Java.Lang.Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Unable to set urgent audio thread priority: {ex.Message}");
+        }
     }
 }

@@ -50,7 +50,11 @@ public sealed class MicrophoneBroadcastService : IMicrophoneBroadcastService
 
             _cancellationTokenSource = new CancellationTokenSource();
             _asyncSender = new AsyncSender(_microphoneService, _endpoints);
-            _sendLoopTask = Task.Run(() => StartSendingLoopAsync(_cancellationTokenSource.Token));
+            _sendLoopTask = Task.Factory.StartNew(
+                () => StartSendingLoop(_cancellationTokenSource.Token),
+                CancellationToken.None,
+                TaskCreationOptions.LongRunning | TaskCreationOptions.DenyChildAttach,
+                TaskScheduler.Default);
 
             SetStatus(StreamSessionStatus.Running());
             return OperationResult.Success();
@@ -102,7 +106,7 @@ public sealed class MicrophoneBroadcastService : IMicrophoneBroadcastService
         return OperationResult.Success();
     }
 
-    private async Task StartSendingLoopAsync(CancellationToken cancellationToken)
+    private void StartSendingLoop(CancellationToken cancellationToken)
     {
         if (_asyncSender == null)
             return;
@@ -116,7 +120,7 @@ public sealed class MicrophoneBroadcastService : IMicrophoneBroadcastService
             byte[] vbanBuffer = new byte[bufferSize];
 
             while (!cancellationToken.IsCancellationRequested)
-                await _asyncSender.ReadAsync(vbanBuffer, 0, vbanBuffer.Length);
+                _asyncSender.ReadAsync(vbanBuffer, 0, vbanBuffer.Length).GetAwaiter().GetResult();
         }
         catch (OperationCanceledException)
         {

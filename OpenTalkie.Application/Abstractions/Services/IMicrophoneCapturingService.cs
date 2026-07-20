@@ -6,4 +6,5 @@ public interface IMicrophoneCapturingService : IInputStream
     Task StartAsync();
     void Stop();
     int GetBufferSize();
+    void ConfigureCurrentThreadPriority();
 }

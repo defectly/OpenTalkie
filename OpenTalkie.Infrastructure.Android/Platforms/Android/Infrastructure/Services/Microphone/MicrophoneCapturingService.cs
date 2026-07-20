@@ -53,4 +53,7 @@ public class MicrophoneCapturingService : IMicrophoneCapturingService
     public int GetBufferSize() => MicrophoneAudioRecord.BufferSize;
 
     public WaveFormat GetWaveFormat() => MicrophoneAudioRecord.GetWaveFormat();
+
+    public void ConfigureCurrentThreadPriority() =>
+        MicrophoneAudioRecord.ConfigureCurrentThreadPriority();
 }
