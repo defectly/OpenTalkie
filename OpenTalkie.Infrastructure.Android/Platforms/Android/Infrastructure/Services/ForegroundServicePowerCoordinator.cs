@@ -2,7 +2,9 @@ using OpenTalkie.Application.Abstractions.Services;
 
 namespace OpenTalkie.Infrastructure.Android.Platforms.Android.Infrastructure.Services;
 
-public sealed class ForegroundServicePowerCoordinator(IWakeLockService wakeLockService)
+public sealed class ForegroundServicePowerCoordinator(
+    IWakeLockService wakeLockService,
+    IWifiLockService wifiLockService)
 {
     private readonly Lock _lock = new();
     private readonly HashSet<ServiceKind> _activeServices = [];
@@ -32,9 +34,15 @@ public sealed class ForegroundServicePowerCoordinator(IWakeLockService wakeLockS
                 return;
 
             if (hasActiveServices)
+            {
                 wakeLockService.Acquire();
+                wifiLockService.Acquire();
+            }
             else
+            {
+                wifiLockService.Release();
                 wakeLockService.Release();
+            }
         }
     }
 

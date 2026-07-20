@@ -21,6 +21,7 @@ public static class AndroidInfrastructureServiceCollectionExtensions
         services.AddSingleton<IMicrophoneCapturingService, MicrophoneCapturingService>();
         services.AddSingleton<IPlaybackService, PlaybackService>();
         services.AddSingleton<IWakeLockService, WakeLockService>();
+        services.AddSingleton<IWifiLockService, WifiLockService>();
         services.AddSingleton<ForegroundServicePowerCoordinator>();
         services.AddSingleton<IMicrophonePermissionService, MicrophonePermissionService>();
         services.AddSingleton<IPlatformCapabilitiesService, AndroidPlatformCapabilitiesService>();
