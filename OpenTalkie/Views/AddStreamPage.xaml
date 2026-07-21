@@ -81,7 +81,7 @@
 
             <Border Style="{StaticResource StreamCardStyle}">
                 <Grid ColumnDefinitions="*,Auto">
-                    <Label Grid.Column="0" Text="Enable Denoise" Style="{StaticResource SectionLabelStyle}"/>
+                    <Label Grid.Column="0" Text="Enable RNNoise" Style="{StaticResource SectionLabelStyle}"/>
                     <Switch Grid.Column="1" IsToggled="{Binding IsDenoiseEnabled}"/>
                 </Grid>
             </Border>

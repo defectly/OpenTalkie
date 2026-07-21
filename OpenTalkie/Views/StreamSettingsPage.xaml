@@ -146,7 +146,7 @@
                             Grid.Column="0"
                             FontAttributes="Bold"
                             FontSize="16"
-                            Text="Denoise"
+                            Text="RNNoise"
                             TextColor="{AppThemeBinding Light={StaticResource OnSurfaceLight}, Dark={StaticResource OnSurfaceDark}}"
                             VerticalOptions="Center" />
                         <Switch
