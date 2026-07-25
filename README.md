@@ -11,7 +11,7 @@
 ## Note
 - I always set "Net Quality" to "Optimal" for outgoing streams
 - For some devices, “Optimal” works well for incoming streams; for others, you can test all variants
-
+- Mic audio starts crackling on some devices with screen off, so in [v2.3.0](https://github.com/defectly/OpenTalkie/releases/tag/v2.3.0) semi-fix "Smooth screen-off audio" was added as solution at the moment 
 ## Thanks
 
 - **VB-Audio** — for the open VBAN Protocol specification.  
