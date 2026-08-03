@@ -87,6 +87,9 @@
 		<PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="10.0.50" />
 	</ItemGroup>
 	<ItemGroup>
+		<Compile Update="Views\GeneralSettingsPage.xaml.cs">
+		  <DependentUpon>GeneralSettingsPage.xaml</DependentUpon>
+		</Compile>
 		<Compile Update="Views\HomePage.xaml.cs">
 			<DependentUpon>HomePage.xaml</DependentUpon>
 		</Compile>
@@ -96,5 +99,10 @@
 		<ProjectReference Include="..\OpenTalkie.Domain\OpenTalkie.Domain.csproj" />
 		<ProjectReference Include="..\OpenTalkie.Infrastructure\OpenTalkie.Infrastructure.csproj" />
 		<ProjectReference Include="..\OpenTalkie.Infrastructure.Android\OpenTalkie.Infrastructure.Android.csproj" />
+	</ItemGroup>
+	<ItemGroup>
+	  <MauiXaml Update="Views\GeneralSettingsPage.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
 	</ItemGroup>
 </Project>

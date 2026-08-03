@@ -17,6 +17,7 @@ public static class PresentationCoreServiceCollectionExtensions
         services.AddTransient<SettingsViewModel>();
         services.AddTransient<AddStreamViewModel>();
         services.AddTransient<AudioManagerSettingsViewModel>();
+        services.AddTransient<GeneralSettingsViewModel>();
 
         return services;
     }
