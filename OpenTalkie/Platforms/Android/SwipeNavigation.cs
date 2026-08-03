@@ -1,4 +1,6 @@
 using Android.Views;
+using Microsoft.Maui.Storage;
+using OpenTalkie.Presentation.ViewModels;
 
 namespace OpenTalkie.Platforms.Android;
 
@@ -11,6 +13,17 @@ public class SwipeNavigationDetector
     // Processes incoming window touches to check for swipe gestures.
     public bool HandleTouchEvent(MotionEvent? ev)
     {
+        // Check enabled state by referencing GeneralSettingsViewModel directly
+        bool isEnabled = Preferences.Default.Get(
+            GeneralSettingsViewModel.SwipeNavPreferenceKey,
+            GeneralSettingsViewModel.DefaultSwipeNavEnabled
+        );
+
+        if (!isEnabled)
+        {
+            return false;
+        }
+
         if (ev is null) return false;
 
         switch (ev.Action)
