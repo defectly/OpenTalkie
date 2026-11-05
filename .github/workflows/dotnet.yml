@@ -1,11 +1,24 @@
-name: Build Android APKs (master/development)
+name: Build Android APKs
 
 on:
   push:
     branches:
-      - master
       - development
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      version:
+        type: string
+        required: true
+      version_code:
+        type: string
+        required: true
+      require_signing:
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
 
 jobs:
   aot:
@@ -22,6 +35,9 @@ jobs:
             abi: x86_64
             artifact_suffix: x64
     env:
+      RELEASE_VERSION: ${{ inputs.version }}
+      RELEASE_VERSION_CODE: ${{ inputs.version_code }}
+      REQUIRE_SIGNING: ${{ inputs.require_signing }}
       DOTNET_VERSION: 10.0.x
       JAVA_VERSION: "21"
       TARGET_FRAMEWORK: net10.0-android
@@ -43,8 +59,9 @@ jobs:
           import xml.etree.ElementTree as ET
 
           root = ET.parse("OpenTalkie/OpenTalkie.csproj").getroot()
-          version = None
-          for tag in ("ApplicationDisplayVersion", "Version"):
+          version = os.environ.get("RELEASE_VERSION")
+          version_code = os.environ.get("RELEASE_VERSION_CODE") or root.findtext(".//ApplicationVersion")
+          for tag in (() if version else ("ApplicationDisplayVersion", "Version")):
               element = root.find(f".//{tag}")
               if element is not None and element.text and element.text.strip():
                   version = element.text.strip()
@@ -54,7 +71,7 @@ jobs:
               raise SystemExit("Could not determine application version from OpenTalkie.csproj")
 
           with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as handle:
-              handle.write(f"version={version}\n")
+              handle.write(f"version={version}\nversion_code={version_code}\n")
           PY
 
       - name: Setup Java
@@ -79,8 +96,10 @@ jobs:
             SUDO=
           fi
 
-          $SUDO apt-get update
-          $SUDO apt-get install -y --no-install-recommends unzip wget
+          if ! command -v unzip >/dev/null || ! command -v wget >/dev/null; then
+            $SUDO apt-get update
+            $SUDO apt-get install -y --no-install-recommends unzip wget
+          fi
 
           ANDROID_SDK_ROOT="${RUNNER_TEMP}/android-sdk"
           mkdir -p "${ANDROID_SDK_ROOT}/cmdline-tools"
@@ -134,9 +153,15 @@ jobs:
         shell: bash
         env:
           ANDROID_SIGNING_KEYSTORE: ${{ secrets.AndroidSigningKeyStore }}
+          KEYSTORE_ALIAS: ${{ secrets.AndroidSigningKeyAlias }}
+          KEYSTORE_PASS: ${{ secrets.AndroidSigningKeyPassword }}
         run: |
           set -euo pipefail
 
+          if [[ "${REQUIRE_SIGNING}" == true ]] && [[ -z "${ANDROID_SIGNING_KEYSTORE:-}" || -z "${KEYSTORE_ALIAS:-}" || -z "${KEYSTORE_PASS:-}" ]]; then
+            echo 'Release requires AndroidSigningKeyStore, AndroidSigningKeyAlias and AndroidSigningKeyPassword secrets.' >&2
+            exit 1
+          fi
           if [[ -n "${ANDROID_SIGNING_KEYSTORE:-}" ]]; then
             KEYSTORE_PATH="${RUNNER_TEMP}/OpenTalkie.keystore"
             echo "${ANDROID_SIGNING_KEYSTORE}" | base64 --decode > "${KEYSTORE_PATH}"
@@ -160,6 +185,9 @@ jobs:
           cmd=(
             dotnet publish "${PROJECT_PATH}"
             -c Release
+            -p:ApplicationDisplayVersion="${{ steps.app_version.outputs.version }}"
+            -p:Version="${{ steps.app_version.outputs.version }}"
+            -p:ApplicationVersion="${{ steps.app_version.outputs.version_code }}"
             -f "${TARGET_FRAMEWORK}"
             -r "${{ matrix.runtime }}"
             -p:WorkflowRuntimeIdentifiers=${{ matrix.runtime }}
@@ -176,9 +204,9 @@ jobs:
             cmd+=(
               -p:AndroidKeyStore=true
               -p:AndroidSigningKeyAlias="${KEYSTORE_ALIAS}"
-              -p:AndroidSigningKeyPass="${KEYSTORE_PASS}"
+              -p:AndroidSigningKeyPass=env:KEYSTORE_PASS
               -p:AndroidSigningKeyStore="${{ steps.signing.outputs.path }}"
-              -p:AndroidSigningStorePass="${KEYSTORE_PASS}"
+              -p:AndroidSigningStorePass=env:KEYSTORE_PASS
             )
           fi
 
@@ -208,16 +236,21 @@ jobs:
           FINAL_APK="${GITHUB_WORKSPACE}/artifacts/${{ matrix.runtime }}/OpenTalkie-${{ steps.app_version.outputs.version }}-${{ matrix.artifact_suffix }}.apk"
           cp "${APK_PATH}" "${FINAL_APK}"
 
+          "${ANDROID_SDK_ROOT}/build-tools/${ANDROID_BUILD_TOOLS}/apksigner" verify "${FINAL_APK}"
+          APK_INFO="$("${ANDROID_SDK_ROOT}/build-tools/${ANDROID_BUILD_TOOLS}/aapt2" dump badging "${FINAL_APK}" | sed -n '1p')"
+          [[ "${APK_INFO}" == *"versionName='${{ steps.app_version.outputs.version }}'"* ]]
+          [[ "${APK_INFO}" == *"versionCode='${{ steps.app_version.outputs.version_code }}'"* ]]
+
           APK_SIZE="$(stat -c '%s' "${FINAL_APK}")"
           echo "APK verified: ${FINAL_APK} (${APK_SIZE} bytes)"
 
       - name: Upload Native AOT APK artifact for ${{ matrix.runtime }}
-        if: ${{ env.ACT != 'true' }}
         uses: actions/upload-artifact@v4
         with:
           name: OpenTalkie-${{ steps.app_version.outputs.version }}-${{ matrix.artifact_suffix }}
           path: artifacts/${{ matrix.runtime }}/OpenTalkie-${{ steps.app_version.outputs.version }}-${{ matrix.artifact_suffix }}.apk
           if-no-files-found: error
+          retention-days: 1
 
   compat:
     name: Build Compatibility APKs
@@ -233,6 +266,9 @@ jobs:
             abi: x86
             artifact_suffix: x86
     env:
+      RELEASE_VERSION: ${{ inputs.version }}
+      RELEASE_VERSION_CODE: ${{ inputs.version_code }}
+      REQUIRE_SIGNING: ${{ inputs.require_signing }}
       DOTNET_VERSION: 10.0.x
       JAVA_VERSION: "21"
       TARGET_FRAMEWORK: net10.0-android
@@ -254,8 +290,9 @@ jobs:
           import xml.etree.ElementTree as ET
 
           root = ET.parse("OpenTalkie/OpenTalkie.csproj").getroot()
-          version = None
-          for tag in ("ApplicationDisplayVersion", "Version"):
+          version = os.environ.get("RELEASE_VERSION")
+          version_code = os.environ.get("RELEASE_VERSION_CODE") or root.findtext(".//ApplicationVersion")
+          for tag in (() if version else ("ApplicationDisplayVersion", "Version")):
               element = root.find(f".//{tag}")
               if element is not None and element.text and element.text.strip():
                   version = element.text.strip()
@@ -265,7 +302,7 @@ jobs:
               raise SystemExit("Could not determine application version from OpenTalkie.csproj")
 
           with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as handle:
-              handle.write(f"version={version}\n")
+              handle.write(f"version={version}\nversion_code={version_code}\n")
           PY
 
       - name: Setup Java
@@ -290,8 +327,10 @@ jobs:
             SUDO=
           fi
 
-          $SUDO apt-get update
-          $SUDO apt-get install -y --no-install-recommends unzip wget
+          if ! command -v unzip >/dev/null || ! command -v wget >/dev/null; then
+            $SUDO apt-get update
+            $SUDO apt-get install -y --no-install-recommends unzip wget
+          fi
 
           ANDROID_SDK_ROOT="${RUNNER_TEMP}/android-sdk"
           mkdir -p "${ANDROID_SDK_ROOT}/cmdline-tools"
@@ -341,9 +380,15 @@ jobs:
         shell: bash
         env:
           ANDROID_SIGNING_KEYSTORE: ${{ secrets.AndroidSigningKeyStore }}
+          KEYSTORE_ALIAS: ${{ secrets.AndroidSigningKeyAlias }}
+          KEYSTORE_PASS: ${{ secrets.AndroidSigningKeyPassword }}
         run: |
           set -euo pipefail
 
+          if [[ "${REQUIRE_SIGNING}" == true ]] && [[ -z "${ANDROID_SIGNING_KEYSTORE:-}" || -z "${KEYSTORE_ALIAS:-}" || -z "${KEYSTORE_PASS:-}" ]]; then
+            echo 'Release requires AndroidSigningKeyStore, AndroidSigningKeyAlias and AndroidSigningKeyPassword secrets.' >&2
+            exit 1
+          fi
           if [[ -n "${ANDROID_SIGNING_KEYSTORE:-}" ]]; then
             KEYSTORE_PATH="${RUNNER_TEMP}/OpenTalkie.keystore"
             echo "${ANDROID_SIGNING_KEYSTORE}" | base64 --decode > "${KEYSTORE_PATH}"
@@ -371,6 +416,9 @@ jobs:
             --no-restore
             -t:SignAndroidPackage
             -c Release
+            -p:ApplicationDisplayVersion="${{ steps.app_version.outputs.version }}"
+            -p:Version="${{ steps.app_version.outputs.version }}"
+            -p:ApplicationVersion="${{ steps.app_version.outputs.version_code }}"
             -f "${TARGET_FRAMEWORK}"
             -r "${{ matrix.runtime }}"
             -p:WorkflowRuntimeIdentifiers=${{ matrix.runtime }}
@@ -382,9 +430,9 @@ jobs:
             cmd+=(
               -p:AndroidKeyStore=true
               -p:AndroidSigningKeyAlias="${KEYSTORE_ALIAS}"
-              -p:AndroidSigningKeyPass="${KEYSTORE_PASS}"
+              -p:AndroidSigningKeyPass=env:KEYSTORE_PASS
               -p:AndroidSigningKeyStore="${{ steps.signing.outputs.path }}"
-              -p:AndroidSigningStorePass="${KEYSTORE_PASS}"
+              -p:AndroidSigningStorePass=env:KEYSTORE_PASS
             )
           fi
 
@@ -414,13 +462,18 @@ jobs:
           FINAL_APK="${GITHUB_WORKSPACE}/artifacts/${{ matrix.runtime }}/OpenTalkie-${{ steps.app_version.outputs.version }}-${{ matrix.artifact_suffix }}.apk"
           cp "${APK_PATH}" "${FINAL_APK}"
 
+          "${ANDROID_SDK_ROOT}/build-tools/${ANDROID_BUILD_TOOLS}/apksigner" verify "${FINAL_APK}"
+          APK_INFO="$("${ANDROID_SDK_ROOT}/build-tools/${ANDROID_BUILD_TOOLS}/aapt2" dump badging "${FINAL_APK}" | sed -n '1p')"
+          [[ "${APK_INFO}" == *"versionName='${{ steps.app_version.outputs.version }}'"* ]]
+          [[ "${APK_INFO}" == *"versionCode='${{ steps.app_version.outputs.version_code }}'"* ]]
+
           APK_SIZE="$(stat -c '%s' "${FINAL_APK}")"
           echo "APK verified: ${FINAL_APK} (${APK_SIZE} bytes)"
 
       - name: Upload compatibility APK artifact for ${{ matrix.runtime }}
-        if: ${{ env.ACT != 'true' }}
         uses: actions/upload-artifact@v4
         with:
           name: OpenTalkie-${{ steps.app_version.outputs.version }}-${{ matrix.artifact_suffix }}
           path: artifacts/${{ matrix.runtime }}/OpenTalkie-${{ steps.app_version.outputs.version }}-${{ matrix.artifact_suffix }}.apk
           if-no-files-found: error
+          retention-days: 1

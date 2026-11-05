@@ -1,0 +1,140 @@
+name: Release
+run-name: Release ${{ inputs.version }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Stable release version, for example 2.4.0
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-release
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: Validate release
+    runs-on: ubuntu-22.04
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      version_code: ${{ steps.version.outputs.version_code }}
+      tag: ${{ steps.version.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate version
+        id: version
+        shell: bash
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          version="${RELEASE_VERSION#v}"
+          if [[ ! "${version}" =~ ^(0|[1-9][0-9]{0,3})\.(0|[1-9][0-9]{0,2})\.(0|[1-9][0-9]{0,2})$ ]]; then
+            echo 'Use a stable version such as 2.4.0 or v2.4.0.' >&2
+            exit 1
+          fi
+          code=$((BASH_REMATCH[1] * 1000000 + BASH_REMATCH[2] * 1000 + BASH_REMATCH[3]))
+          if ((code < 1 || code > 2099999999)); then
+            echo 'Version must be greater than 0.0.0 and at most 2099.999.999.' >&2
+            exit 1
+          fi
+          printf 'version=%s\nversion_code=%s\ntag=v%s\n' "${version}" "${code}" "${version}" >> "${GITHUB_OUTPUT}"
+
+      - name: Check release target
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          set -euo pipefail
+          if [[ "${GITHUB_REF}" != refs/heads/master ]]; then
+            echo 'Run releases from the master branch.' >&2
+            exit 1
+          fi
+          if git show-ref --verify --quiet "refs/tags/${RELEASE_TAG}"; then
+            if [[ "$(git rev-list -n 1 "${RELEASE_TAG}")" != "${GITHUB_SHA}" ]]; then
+              echo 'Release tag already points to another commit.' >&2
+              exit 1
+            fi
+          fi
+          if [[ "${ACT:-}" == true ]]; then
+            exit 0
+          fi
+          if release="$(gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${RELEASE_TAG}" --jq '[.draft, .target_commitish] | @tsv' 2> "${RUNNER_TEMP}/release-error")"; then
+            IFS=$'\t' read -r draft target <<< "${release}"
+            if [[ "${draft}" != true ]]; then
+              echo 'This version is already published. Choose a new version.' >&2
+              exit 1
+            fi
+            if [[ "${target}" != "${GITHUB_SHA}" ]]; then
+              echo 'Draft release targets another commit. Retry from its original commit.' >&2
+              exit 1
+            fi
+          elif ! grep -q 'HTTP 404' "${RUNNER_TEMP}/release-error"; then
+            cat "${RUNNER_TEMP}/release-error" >&2
+            exit 1
+          fi
+
+  build:
+    name: Build signed APKs
+    needs: prepare
+    uses: ./.github/workflows/dotnet.yml
+    with:
+      version: ${{ needs.prepare.outputs.version }}
+      version_code: ${{ needs.prepare.outputs.version_code }}
+      require_signing: true
+    secrets: inherit
+
+  release:
+    name: Publish release
+    needs: [prepare, build]
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - name: Download APKs
+        uses: actions/download-artifact@v4
+        with:
+          pattern: OpenTalkie-${{ needs.prepare.outputs.version }}-*
+          path: release-assets
+          merge-multiple: true
+
+      - name: Verify release assets and generate checksums
+        shell: bash
+        env:
+          RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          set -euo pipefail
+          cd release-assets
+          for architecture in arm arm64 x86 x64; do
+            test -s "OpenTalkie-${RELEASE_VERSION}-${architecture}.apk"
+          done
+          sha256sum ./*.apk > SHA256SUMS.txt
+
+      - name: Publish GitHub release with generated notes
+        if: ${{ env.ACT != 'true' }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+        run: |
+          set -euo pipefail
+          if gh release view "${RELEASE_TAG}" > /dev/null 2>&1; then
+            test "$(gh release view "${RELEASE_TAG}" --json isDraft --jq .isDraft)" = true
+            test "$(gh release view "${RELEASE_TAG}" --json targetCommitish --jq .targetCommitish)" = "${GITHUB_SHA}"
+            gh release upload "${RELEASE_TAG}" release-assets/*.apk release-assets/SHA256SUMS.txt --clobber
+          else
+            gh release create "${RELEASE_TAG}" release-assets/*.apk release-assets/SHA256SUMS.txt \
+              --target "${GITHUB_SHA}" --title "OpenTalkie ${RELEASE_VERSION}" --generate-notes --draft
+          fi
+          gh release edit "${RELEASE_TAG}" --draft=false
