@@ -24,6 +24,7 @@ public static class PresentationServiceCollectionExtensions
         services.AddTransient<AudioManagerSettingsPage>();
         services.AddTransient<SettingsPage>();
         services.AddTransient<AddStreamPage>();
+        services.AddTransient<GeneralSettingsPage>();
 
         return services;
     }

@@ -33,6 +33,7 @@ public partial class SettingsViewModel : ObservableObject
             SettingsItems.Add(new SettingsItem { Name = "Cast Settings", Route = "PlaybackSettingsPage" });
 
         SettingsItems.Add(new SettingsItem { Name = "Audio Manager Settings", Route = "AudioManagerSettingsPage" });
+        SettingsItems.Add(new SettingsItem { Name = "General Settings", Route = "GeneralSettingsPage" });
     }
 
     [RelayCommand]
