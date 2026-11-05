@@ -1,3 +1,4 @@
+using OpenTalkie.Infrastructure.Audio;
 using OpenTalkie.Application.Abstractions.Repositories;
 using OpenTalkie.Application.Abstractions.Services;
 using OpenTalkie.Domain.Enums;
@@ -5,11 +6,8 @@ using OpenTalkie.Domain.VBAN;
 using OpenTalkie.Infrastructure.RNNoise;
 using OpenTalkie.Infrastructure.Streaming;
 using System.Collections.ObjectModel;
-using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.Intrinsics.Arm;
-using System.Runtime.Intrinsics.X86;
 
 namespace OpenTalkie.Infrastructure.Services;
 
@@ -501,7 +499,7 @@ public sealed class ReceiverService : IReceiverService
     {
         int currChunkBytes = BytesPerChunk;
         byte[] mixBytes = new byte[currChunkBytes];
-        short[] mixShorts = new short[currChunkBytes / 2];
+        double[] mixSamples = new double[currChunkBytes / 2];
         byte[] temp = new byte[currChunkBytes];
 
         while (!ct.IsCancellationRequested)
@@ -514,11 +512,11 @@ public sealed class ReceiverService : IReceiverService
             {
                 currChunkBytes = chosen;
                 mixBytes = new byte[currChunkBytes];
-                mixShorts = new short[currChunkBytes / 2];
+                mixSamples = new double[currChunkBytes / 2];
                 temp = new byte[currChunkBytes];
             }
 
-            Array.Clear(mixShorts, 0, mixShorts.Length);
+            Array.Clear(mixSamples, 0, mixSamples.Length);
             int activeSources = 0;
             for (int i = 0; i < buffers.Length; i++)
             {
@@ -551,78 +549,7 @@ public sealed class ReceiverService : IReceiverService
                         Array.Clear(temp, read, currChunkBytes - read);
                     }
                 }
-                // Apply per-stream volume at mix time, then sum with saturation
-                {
-                    var dst = mixShorts.AsSpan();
-                    var tmpSpan = temp.AsSpan(0, currChunkBytes);
-                    if (Math.Abs(buf.Volume - 1f) > 0.0001f)
-                    {
-                        ApplyVolume16(tmpSpan, buf.Volume);
-                    }
-                    var src = MemoryMarshal.Cast<byte, short>(tmpSpan);
-
-                    if (Sse2.IsSupported)
-                    {
-                        unsafe
-                        {
-                            fixed (short* dstPtr = dst)
-                            fixed (short* srcPtr = src)
-                            {
-                                int samples = dst.Length;
-                                int v = (samples / 8) * 8; // 8 x int16 per 128-bit vector
-                                for (int s = 0; s < v; s += 8)
-                                {
-                                    var a = Sse2.LoadVector128(dstPtr + s);
-                                    var b = Sse2.LoadVector128(srcPtr + s);
-                                    var sum = Sse2.AddSaturate(a, b);
-                                    Sse2.Store(dstPtr + s, sum);
-                                }
-                                for (int s = v; s < samples; s++)
-                                {
-                                    int sum = dstPtr[s] + srcPtr[s];
-                                    if (sum > short.MaxValue) sum = short.MaxValue; else if (sum < short.MinValue) sum = short.MinValue;
-                                    dstPtr[s] = (short)sum;
-                                }
-                            }
-                        }
-                    }
-                    else if (AdvSimd.IsSupported || Vector.IsHardwareAccelerated)
-                    {
-                        int samples = dst.Length;
-                        int vsz = Vector<short>.Count;
-                        var minI = new Vector<int>(short.MinValue);
-                        var maxI = new Vector<int>(short.MaxValue);
-                        int v = (samples / vsz) * vsz;
-                        for (int s = 0; s < v; s += vsz)
-                        {
-                            var vd = new Vector<short>(dst.Slice(s));
-                            var vs = new Vector<short>(src.Slice(s));
-                            Vector.Widen(vd, out Vector<int> dLo, out Vector<int> dHi);
-                            Vector.Widen(vs, out Vector<int> sLo, out Vector<int> sHi);
-                            var lo = dLo + sLo;
-                            var hi = dHi + sHi;
-                            lo = Vector.Min(Vector.Max(lo, minI), maxI);
-                            hi = Vector.Min(Vector.Max(hi, minI), maxI);
-                            var packed = Vector.Narrow(lo, hi);
-                            packed.CopyTo(dst.Slice(s));
-                        }
-                        for (int s = v; s < samples; s++)
-                        {
-                            int sum = dst[s] + src[s];
-                            if (sum > short.MaxValue) sum = short.MaxValue; else if (sum < short.MinValue) sum = short.MinValue;
-                            dst[s] = (short)sum;
-                        }
-                    }
-                    else
-                    {
-                        for (int s = 0; s < dst.Length; s++)
-                        {
-                            int sum = dst[s] + src[s];
-                            if (sum > short.MaxValue) sum = short.MaxValue; else if (sum < short.MinValue) sum = short.MinValue;
-                            dst[s] = (short)sum;
-                        }
-                    }
-                }
+                PcmMixer.Add16(temp.AsSpan(0, currChunkBytes), mixSamples, buf.Volume);
                 activeSources++;
             }
 
@@ -640,12 +567,8 @@ public sealed class ReceiverService : IReceiverService
                 continue;
             }
 
-            // serialize mixShorts to bytes and apply global volume
-            Buffer.BlockCopy(mixShorts, 0, mixBytes, 0, currChunkBytes);
-            if (Math.Abs(_globalVolume - 1f) > 0.0001f)
-            {
-                ApplyVolume16(mixBytes.AsSpan(0, currChunkBytes), _globalVolume);
-            }
+            // Quantize and clip only after all streams and global volume are applied.
+            PcmMixer.Write16(mixSamples, mixBytes.AsSpan(0, currChunkBytes), _globalVolume);
             _audioOutput.Write(mixBytes, 0, currChunkBytes);
         }
     }
@@ -872,52 +795,6 @@ public sealed class ReceiverService : IReceiverService
             32 => BitConverter.ToInt32(buffer, offset),
             _ => 0
         };
-    }
-
-    private static void ApplyVolume16(Span<byte> buffer, float gain)
-    {
-        if (Math.Abs(gain - 1f) < 0.0001f) return;
-        int q15 = (int)Math.Round(gain * 32768.0f);
-        int bias = (q15 >= 0 ? 16384 : -16384);
-        var s16 = MemoryMarshal.Cast<byte, short>(buffer);
-
-        if (Vector.IsHardwareAccelerated && s16.Length >= Vector<short>.Count)
-        {
-            int vszShort = Vector<short>.Count;
-            int vszInt = Vector<int>.Count;
-            var qVec = new Vector<int>(q15);
-            var biasVec = new Vector<int>(bias);
-            var minI = new Vector<int>(short.MinValue);
-            var maxI = new Vector<int>(short.MaxValue);
-            int v = (s16.Length / vszShort) * vszShort;
-            for (int i = 0; i < v; i += vszShort)
-            {
-                var vS = new Vector<short>(s16.Slice(i));
-                Vector.Widen(vS, out Vector<int> lo, out Vector<int> hi);
-                lo = ((lo * qVec) + biasVec) >> 15;
-                hi = ((hi * qVec) + biasVec) >> 15;
-                lo = Vector.Min(Vector.Max(lo, minI), maxI);
-                hi = Vector.Min(Vector.Max(hi, minI), maxI);
-                var packed = Vector.Narrow(lo, hi);
-                packed.CopyTo(s16.Slice(i));
-            }
-            // tail
-            for (int i = v; i < s16.Length; i++)
-            {
-                int scaled = (s16[i] * q15 + bias) >> 15;
-                if (scaled > short.MaxValue) scaled = short.MaxValue; else if (scaled < short.MinValue) scaled = short.MinValue;
-                s16[i] = (short)scaled;
-            }
-        }
-        else
-        {
-            for (int i = 0; i < s16.Length; i++)
-            {
-                int scaled = (s16[i] * q15 + bias) >> 15;
-                if (scaled > short.MaxValue) scaled = short.MaxValue; else if (scaled < short.MinValue) scaled = short.MinValue;
-                s16[i] = (short)scaled;
-            }
-        }
     }
 
     private static short ToInt16(int sample, int inBits)

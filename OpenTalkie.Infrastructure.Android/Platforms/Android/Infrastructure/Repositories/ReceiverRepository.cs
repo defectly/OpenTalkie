@@ -1,19 +1,22 @@
 using Android.Content;
 using Android.Media;
+using OpenTalkie.Domain.Enums;
 using OpenTalkie.Application.Abstractions.Repositories;
 
 namespace OpenTalkie.Infrastructure.Android.Platforms.Android.Infrastructure.Repositories;
 
-public sealed class ReceiverRepository : IReceiverRepository
+public sealed class ReceiverRepository(IVolumeLimitRepository volumeLimits) : IReceiverRepository
 {
     public event Action<float>? VolumeChanged;
     public event Action<string>? PreferredAudioOutputDeviceChanged;
 
     public ReceiverSettingsState GetSettings()
     {
+        var volume = Math.Clamp(Preferences.Get("ReceiverVolume", 1f), 0f, volumeLimits.GetMaximum(EndpointType.Receiver));
+        Preferences.Set("ReceiverVolume", volume);
         var preferredDevice = Preferences.Get("ReceiverPrefferedAudioOutputDevice", "Default");
         return new ReceiverSettingsState(
-            Preferences.Get("ReceiverVolume", 1f),
+            volume,
             new SettingOptionItem(preferredDevice, preferredDevice));
     }
 

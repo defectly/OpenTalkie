@@ -9,6 +9,7 @@ public partial class MicrophoneStreamsPage : ContentPage
 
     public ICommand StreamEnabledChangedCommand => _viewModel.StreamEnabledChangedCommand;
     public ICommand StreamVolumeChangedCommand => _viewModel.StreamVolumeChangedCommand;
+    public ICommand EditMaximumVolumeCommand => _viewModel.EditMaximumVolumeCommand;
     public ICommand ResetVolumeCommand => _viewModel.ResetVolumeCommand;
     public ICommand OpenSettingsCommand => _viewModel.OpenSettingsCommand;
     public ICommand DeleteStreamCommand => _viewModel.DeleteStreamCommand;

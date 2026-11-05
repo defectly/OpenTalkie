@@ -27,6 +27,8 @@ public partial class StreamEndpointItemViewModel : ObservableObject
     [ObservableProperty]
     public partial bool AllowMobileData { get; set; }
 
+    public float MaximumVolume { get; private set; } = 1f;
+
     [ObservableProperty]
     public partial float Volume { get; set; }
 
@@ -50,6 +52,7 @@ public partial class StreamEndpointItemViewModel : ObservableObject
         IsEnabled = endpoint.IsEnabled;
         IsDenoiseEnabled = endpoint.IsDenoiseEnabled;
         AllowMobileData = endpoint.AllowMobileData;
+        MaximumVolume = endpoint.MaximumVolume;
         Volume = endpoint.Volume;
         Quality = endpoint.Quality;
     }

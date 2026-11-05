@@ -1,6 +1,8 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Mediator;
+using System.Globalization;
+using OpenTalkie.Application.Abstractions.Repositories;
 using OpenTalkie.Abstractions.Services;
 using OpenTalkie.Application.Abstractions.Services;
 using OpenTalkie.Application.Streams.Commands;
@@ -131,6 +133,28 @@ public abstract partial class StreamEndpointsViewModelBase : ObservableObject
             _lastKnownVolume[endpoint.EndpointId] = 1f;
 
         await ShowUpdateErrorIfFailedAsync(result, _dialogService);
+    }
+
+    [RelayCommand]
+    private async Task EditMaximumVolume(StreamEndpointItemViewModel endpoint)
+    {
+        if (endpoint == null) return;
+        await _dialogService.ShowEditFieldAsync(
+            "Maximum volume multiplier (at least 1)",
+            endpoint.MaximumVolume.ToString(CultureInfo.CurrentCulture),
+            Keyboard.Numeric,
+            async value =>
+            {
+                if (!float.TryParse(value, NumberStyles.Float, CultureInfo.CurrentCulture, out float maximum)
+                    && !float.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out maximum))
+                {
+                    await _dialogService.ShowErrorAsync("Enter a finite multiplier of 1 or greater.");
+                    return;
+                }
+                var result = await _mediator.Send(new UpdateStreamEndpointCommand(
+                    endpoint.Type, endpoint.EndpointId, MaximumVolume: maximum));
+                await ShowUpdateErrorIfFailedAsync(result, _dialogService);
+            });
     }
 
     private void OnEndpointsChanged(EndpointType endpointType)

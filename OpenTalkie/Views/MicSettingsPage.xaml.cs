@@ -16,6 +16,12 @@ public partial class MicSettingsPage : ContentPage
         InitializeComponent();
     }
 
+    protected override void OnAppearing()
+    {
+        base.OnAppearing();
+        _ = _viewModel.ReloadStateAsync();
+    }
+
     private void OnVolumeDragCompleted(object? sender, EventArgs e)
     {
         if (_viewModel.VolumeChangedCommand.CanExecute(null))

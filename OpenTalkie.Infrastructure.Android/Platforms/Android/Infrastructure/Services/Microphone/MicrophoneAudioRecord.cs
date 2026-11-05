@@ -10,7 +10,7 @@ public static class MicrophoneAudioRecord
     private static IMicrophoneRepository? _microphoneRepository;
     private static IAudioManagerSettingsRepository? _audioManagerSettingsRepository;
     private static bool _volumeSubscriptionAttached;
-    private static float _volume;
+    private static volatile float _volume = 1f;
     private static AudioRecord? _audioRecord;
     private static int _microphoneSource;
     private static int _microphoneChannel;
@@ -106,34 +106,10 @@ public static class MicrophoneAudioRecord
         ConfigureCurrentThreadPriority();
         int read = _audioRecord.Read(buffer, offset, count);
 
-        if (read > 0)
-            ChangeVolume(buffer, offset, read, _volume);
-
         return Task.FromResult(read);
     }
 
-    public static unsafe void ChangeVolume(byte[] audioBytes, int offset, int length, float gain)
-    {
-        if (audioBytes == null || length % 2 != 0)
-            throw new ArgumentException("Incorrect audio data format");
-
-        if (Math.Abs(gain - 1f) < 0.0001f) return;
-
-        fixed (byte* basePtr = audioBytes)
-        {
-            byte* ptr = basePtr + offset;
-            short* samples = (short*)ptr;
-            int sampleCount = length / 2;
-
-            for (int i = 0; i < sampleCount; i++)
-            {
-                float amplified = samples[i] * gain;
-                samples[i] = amplified > short.MaxValue ? short.MaxValue :
-                             amplified < short.MinValue ? short.MinValue :
-                             (short)amplified;
-            }
-        }
-    }
+    public static float VolumeGain => _volume;
 
     private static void LoadPreferences()
     {

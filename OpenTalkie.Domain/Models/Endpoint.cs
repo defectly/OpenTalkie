@@ -14,6 +14,7 @@ public sealed class Endpoint
     public bool IsDenoiseEnabled { get; set; }
     public bool AllowMobileData { get; set; }
     public float Volume { get; set; } = 1f;
+    public float MaximumVolume { get; set; } = 1f;
     public VBanQuality Quality { get; set; } = VBanQuality.VBAN_QUALITY_FAST;
 
     public Endpoint()

@@ -9,7 +9,7 @@ namespace OpenTalkie.Infrastructure.Android.Platforms.Android.Infrastructure.Ser
 public class PlaybackService : IPlaybackService
 {
     private Encoding _encoding;
-    private static float _volume;
+    private static volatile float _volume = 1f;
     private int _sampleRate;
     private ChannelOut _channelOut;
 
@@ -33,32 +33,10 @@ public class PlaybackService : IPlaybackService
 
         int read = await _audioRecord.ReadAsync(buffer, offset, count);
 
-        if (read > 0)
-            ChangeVolume(buffer, offset, read, _volume);
-
         return read;
     }
 
-    public static unsafe void ChangeVolume(byte[] audioBytes, int offset, int length, float gain)
-    {
-        if (audioBytes == null || length % 2 != 0)
-            throw new ArgumentException("Incorrect audio data format");
-
-        fixed (byte* basePtr = audioBytes)
-        {
-            byte* ptr = basePtr + offset;
-            short* samples = (short*)ptr;
-            int sampleCount = length / 2;
-
-            for (int i = 0; i < sampleCount; i++)
-            {
-                float amplified = samples[i] * gain;
-                samples[i] = amplified > short.MaxValue ? short.MaxValue :
-                             amplified < short.MinValue ? short.MinValue :
-                             (short)amplified;
-            }
-        }
-    }
+    public float VolumeGain => _volume;
 
     private void LoadPreferences()
     {

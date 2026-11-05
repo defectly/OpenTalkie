@@ -70,6 +70,7 @@ public class EndpointRepository : IEndpointRepository
         existing.AllowMobileData = candidate.AllowMobileData;
         existing.Quality = candidate.Quality;
         existing.Volume = candidate.Volume;
+        existing.MaximumVolume = candidate.MaximumVolume;
 
         await SaveAsync();
     }
@@ -123,7 +124,19 @@ public class EndpointRepository : IEndpointRepository
             var persisted = JsonSerializer.Deserialize(file, EndpointJsonSerializerContext.Default.PersistedEndpoint);
 
             if (persisted != null)
+            {
+                if (!float.IsFinite(persisted.MaximumVolume) || persisted.MaximumVolume < 1f)
+                    persisted.MaximumVolume = 1f;
+                float volume = float.IsFinite(persisted.Volume)
+                    ? Math.Clamp(persisted.Volume, 0f, persisted.MaximumVolume)
+                    : 1f;
+                if (persisted.Volume != volume)
+                {
+                    persisted.Volume = volume;
+                    File.WriteAllText(filePaths[i], JsonSerializer.Serialize(persisted, EndpointJsonSerializerContext.Default.PersistedEndpoint));
+                }
                 persistedEndpoints.Add(persisted);
+            }
         }
     }
 
@@ -140,6 +153,7 @@ public class EndpointRepository : IEndpointRepository
             IsDenoiseEnabled = endpoint.IsDenoiseEnabled,
             AllowMobileData = endpoint.AllowMobileData,
             Volume = endpoint.Volume,
+            MaximumVolume = endpoint.MaximumVolume,
             Quality = endpoint.Quality
         };
     }
@@ -157,6 +171,7 @@ public class EndpointRepository : IEndpointRepository
             IsDenoiseEnabled = persisted.IsDenoiseEnabled,
             AllowMobileData = persisted.AllowMobileData,
             Volume = persisted.Volume,
+            MaximumVolume = persisted.MaximumVolume,
             Quality = persisted.Quality
         };
     }
@@ -174,5 +189,6 @@ internal sealed class PersistedEndpoint
     public bool IsDenoiseEnabled { get; set; }
     public bool AllowMobileData { get; set; }
     public float Volume { get; set; } = 1f;
+    public float MaximumVolume { get; set; } = 1f;
     public VBanQuality Quality { get; set; } = VBanQuality.VBAN_QUALITY_FAST;
 }

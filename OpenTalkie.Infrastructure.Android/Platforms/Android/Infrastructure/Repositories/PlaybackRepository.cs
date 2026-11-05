@@ -1,10 +1,11 @@
+using OpenTalkie.Domain.Enums;
 using Android.Media;
 using OpenTalkie.Application.Abstractions.Repositories;
 using OpenTalkie.Domain.VBAN;
 
 namespace OpenTalkie.Infrastructure.Android.Platforms.Android.Infrastructure.Repositories;
 
-public sealed class PlaybackRepository : IPlaybackRepository
+public sealed class PlaybackRepository(IVolumeLimitRepository volumeLimits) : IPlaybackRepository
 {
     public event Action<float>? VolumeChanged;
 
@@ -14,7 +15,8 @@ public sealed class PlaybackRepository : IPlaybackRepository
         var sampleRate = Preferences.Get("PlaybackSampleRate", 48000);
         var encoding = (Encoding)Preferences.Get("PlaybackEncoding", (int)Encoding.Default);
         var bufferSize = Preferences.Get("PlaybackBufferSize", 1920);
-        var volume = Preferences.Get("PlaybackVolume", 1f);
+        var volume = Math.Clamp(Preferences.Get("PlaybackVolume", 1f), 0f, volumeLimits.GetMaximum(EndpointType.Playback));
+        Preferences.Set("PlaybackVolume", volume);
 
         var encodingBits = MapFromAndroidEncoding(encoding).ToString();
 

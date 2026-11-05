@@ -4,7 +4,7 @@ using OpenTalkie.Infrastructure.RNNoise;
 using System.Buffers;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Numerics;
+using OpenTalkie.Infrastructure.Audio;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
@@ -99,6 +99,8 @@ public class AsyncSender : IDisposable
         if (bytesRead <= 0)
             return bytesRead;
 
+        double globalGain = _source.VolumeGain;
+
         // Optional denoise (streaming, only if source is RNNoise-compatible)
         byte[] processedBuffer = buffer;
         ReadOnlyMemory<byte> denoisedOut = ReadOnlyMemory<byte>.Empty;
@@ -174,6 +176,7 @@ public class AsyncSender : IDisposable
             if (!onWifi && !endpoint.AllowMobileData)
                 continue;
 
+            double gain = globalGain * endpoint.Volume;
             ReadOnlyMemory<byte> sendMemory;
             if (endpoint.IsDenoiseEnabled && denoisedOut.Length > 0)
             {
@@ -190,11 +193,11 @@ public class AsyncSender : IDisposable
                 {
                     sendMemory = denoisedOut;
                 }
-                if (endpoint.Volume != 1f)
+                if (gain != 1d)
                 {
                     int length = sendMemory.Length;
                     EnsurePooledCapacity(ref _volumeBuffer, length);
-                    ApplyVolume16_Fixed(sendMemory.Span, _volumeBuffer!.AsSpan(0, length), endpoint.Volume);
+                    PcmVolume.Apply(sendMemory.Span, _volumeBuffer!.AsSpan(0, length), 2, gain);
                     sendMemory = _volumeBuffer.AsMemory(0, length);
                 }
                 int denoisedSamplesPerChunk = ComputeSamplesPerChunk(endpoint.Quality, 2, outChannels);
@@ -209,11 +212,11 @@ public class AsyncSender : IDisposable
                     : endpointBuffer.AsMemory(0, bytesRead);
             }
 
-            if (endpoint.Volume != 1f)
+            if (gain != 1d)
             {
                 int length = sendMemory.Length;
                 EnsurePooledCapacity(ref _volumeBuffer, length);
-                ApplyVolume(sendMemory.Span, _volumeBuffer!.AsSpan(0, length), endpoint.Volume);
+                PcmVolume.Apply(sendMemory.Span, _volumeBuffer!.AsSpan(0, length), _bytesPerSample, gain);
                 sendMemory = _volumeBuffer.AsMemory(0, length);
             }
 
@@ -341,205 +344,6 @@ public class AsyncSender : IDisposable
         runtime.FrameCount++;
         return Task.CompletedTask;
     }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void ApplyVolume(ReadOnlySpan<byte> src, Span<byte> dst, float gain)
-    {
-        int bps = _bytesPerSample;
-        if (bps == 2)
-        {
-            // 16-bit LE
-            var s16 = MemoryMarshal.Cast<byte, short>(src);
-            var d16 = MemoryMarshal.Cast<byte, short>(dst);
-            int q15 = (int)Math.Round(gain * 32768.0f);
-            int bias = (q15 >= 0 ? 16384 : -16384);
-            if (Vector.IsHardwareAccelerated && s16.Length >= Vector<short>.Count)
-            {
-                int vszShort = Vector<short>.Count;
-                var qVec = new Vector<int>(q15);
-                var biasVec = new Vector<int>(bias);
-                var minI = new Vector<int>(short.MinValue);
-                var maxI = new Vector<int>(short.MaxValue);
-                int v = (s16.Length / vszShort) * vszShort;
-                for (int i = 0; i < v; i += vszShort)
-                {
-                    var vS = new Vector<short>(s16.Slice(i));
-                    Vector.Widen(vS, out Vector<int> lo, out Vector<int> hi);
-                    lo = ((lo * qVec) + biasVec) >> 15;
-                    hi = ((hi * qVec) + biasVec) >> 15;
-                    lo = Vector.Min(Vector.Max(lo, minI), maxI);
-                    hi = Vector.Min(Vector.Max(hi, minI), maxI);
-                    var packed = Vector.Narrow(lo, hi);
-                    packed.CopyTo(d16.Slice(i));
-                }
-                for (int i = v; i < s16.Length; i++)
-                {
-                    int scaled = (s16[i] * q15 + bias) >> 15;
-                    if (scaled > short.MaxValue) scaled = short.MaxValue; else if (scaled < short.MinValue) scaled = short.MinValue;
-                    d16[i] = (short)scaled;
-                }
-            }
-            else
-            {
-                int samples = s16.Length;
-                for (int i = 0; i < samples; i++)
-                {
-                    int scaled = (s16[i] * q15 + bias) >> 15;
-                    if (scaled > short.MaxValue) scaled = short.MaxValue; else if (scaled < short.MinValue) scaled = short.MinValue;
-                    d16[i] = (short)scaled;
-                }
-            }
-            return;
-        }
-        if (bps == 1)
-        {
-            int samples = src.Length;
-            for (int i = 0; i < samples; i++)
-            {
-                sbyte s = unchecked((sbyte)src[i]);
-                float amplified = s * gain;
-                sbyte clamped = amplified > sbyte.MaxValue ? sbyte.MaxValue : amplified < sbyte.MinValue ? sbyte.MinValue : (sbyte)amplified;
-                dst[i] = unchecked((byte)clamped);
-            }
-            return;
-        }
-        if (bps == 3)
-        {
-            int q15 = (int)Math.Round(gain * 32768.0f);
-            int bias = (q15 >= 0 ? 16384 : -16384);
-            int samples = src.Length / 3;
-            for (int i = 0; i < samples; i++)
-            {
-                int off = i * 3;
-                int val = src[off] | (src[off + 1] << 8) | (src[off + 2] << 16);
-                if ((src[off + 2] & 0x80) != 0) val |= unchecked((int)0xFF000000);
-                int scaled = (val * q15 + bias) >> 15;
-                if (scaled > 0x7FFFFF) scaled = 0x7FFFFF; else if (scaled < unchecked((int)0xFF800000)) scaled = unchecked((int)0xFF800000);
-                dst[off] = (byte)(scaled & 0xFF);
-                dst[off + 1] = (byte)((scaled >> 8) & 0xFF);
-                dst[off + 2] = (byte)((scaled >> 16) & 0xFF);
-            }
-            return;
-        }
-        if (bps == 4)
-        {
-            int samples = src.Length / 4;
-            if (Sse2.IsSupported && samples >= 4)
-            {
-                var gainVec = Vector128.Create(gain);
-                int v = (samples / 4) * 4;
-                for (int i = 0; i < v; i += 4)
-                {
-                    int off = i * 4;
-                    int a0 = src[off] | (src[off + 1] << 8) | (src[off + 2] << 16) | (src[off + 3] << 24);
-                    int a1 = src[off + 4] | (src[off + 5] << 8) | (src[off + 6] << 16) | (src[off + 7] << 24);
-                    int a2 = src[off + 8] | (src[off + 9] << 8) | (src[off + 10] << 16) | (src[off + 11] << 24);
-                    int a3 = src[off + 12] | (src[off + 13] << 8) | (src[off + 14] << 16) | (src[off + 15] << 24);
-                    var vi = Vector128.Create(a0, a1, a2, a3);
-                    var vf = Sse2.ConvertToVector128Single(vi);
-                    vf = Sse.Multiply(vf, gainVec);
-                    var vout = Sse2.ConvertToVector128Int32(vf); // truncates toward zero
-                    int r0 = vout.GetElement(0);
-                    int r1 = vout.GetElement(1);
-                    int r2 = vout.GetElement(2);
-                    int r3 = vout.GetElement(3);
-                    dst[off] = (byte)(r0 & 0xFF);
-                    dst[off + 1] = (byte)((r0 >> 8) & 0xFF);
-                    dst[off + 2] = (byte)((r0 >> 16) & 0xFF);
-                    dst[off + 3] = (byte)((r0 >> 24) & 0xFF);
-                    dst[off + 4] = (byte)(r1 & 0xFF);
-                    dst[off + 5] = (byte)((r1 >> 8) & 0xFF);
-                    dst[off + 6] = (byte)((r1 >> 16) & 0xFF);
-                    dst[off + 7] = (byte)((r1 >> 24) & 0xFF);
-                    dst[off + 8] = (byte)(r2 & 0xFF);
-                    dst[off + 9] = (byte)((r2 >> 8) & 0xFF);
-                    dst[off + 10] = (byte)((r2 >> 16) & 0xFF);
-                    dst[off + 11] = (byte)((r2 >> 24) & 0xFF);
-                    dst[off + 12] = (byte)(r3 & 0xFF);
-                    dst[off + 13] = (byte)((r3 >> 8) & 0xFF);
-                    dst[off + 14] = (byte)((r3 >> 16) & 0xFF);
-                    dst[off + 15] = (byte)((r3 >> 24) & 0xFF);
-                }
-                for (int i = v; i < samples; i++)
-                {
-                    int off = i * 4;
-                    int val = src[off] | (src[off + 1] << 8) | (src[off + 2] << 16) | (src[off + 3] << 24);
-                    float amplified = val * gain;
-                    int clamped = amplified > int.MaxValue ? int.MaxValue : amplified < int.MinValue ? int.MinValue : (int)amplified;
-                    dst[off] = (byte)(clamped & 0xFF);
-                    dst[off + 1] = (byte)((clamped >> 8) & 0xFF);
-                    dst[off + 2] = (byte)((clamped >> 16) & 0xFF);
-                    dst[off + 3] = (byte)((clamped >> 24) & 0xFF);
-                }
-                return;
-            }
-            else
-            {
-                for (int i = 0; i < samples; i++)
-                {
-                    int off = i * 4;
-                    int val = src[off] | (src[off + 1] << 8) | (src[off + 2] << 16) | (src[off + 3] << 24);
-                    float amplified = val * gain;
-                    int clamped = amplified > int.MaxValue ? int.MaxValue : amplified < int.MinValue ? int.MinValue : (int)amplified;
-                    dst[off] = (byte)(clamped & 0xFF);
-                    dst[off + 1] = (byte)((clamped >> 8) & 0xFF);
-                    dst[off + 2] = (byte)((clamped >> 16) & 0xFF);
-                    dst[off + 3] = (byte)((clamped >> 24) & 0xFF);
-                }
-                return;
-            }
-        }
-        // Fallback copy
-        src.CopyTo(dst);
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void ApplyVolume16(ReadOnlySpan<byte> src, Span<byte> dst, float gain)
-    {
-        int q15 = (int)Math.Round(gain * 32768.0f);
-        int bias = (q15 >= 0 ? 16384 : -16384);
-        var s16 = MemoryMarshal.Cast<byte, short>(src);
-        var d16 = MemoryMarshal.Cast<byte, short>(dst);
-        if (Vector.IsHardwareAccelerated && s16.Length >= Vector<short>.Count)
-        {
-            int vszShort = Vector<short>.Count;
-            var qVec = new Vector<int>(q15);
-            var biasVec = new Vector<int>(bias);
-            var minI = new Vector<int>(short.MinValue);
-            var maxI = new Vector<int>(short.MaxValue);
-            int v = (s16.Length / vszShort) * vszShort;
-            for (int i = 0; i < v; i += vszShort)
-            {
-                var vS = new Vector<short>(s16.Slice(i));
-                Vector.Widen(vS, out Vector<int> lo, out Vector<int> hi);
-                lo = ((lo * qVec) + biasVec) >> 15;
-                hi = ((hi * qVec) + biasVec) >> 15;
-                lo = Vector.Min(Vector.Max(lo, minI), maxI);
-                hi = Vector.Min(Vector.Max(hi, minI), maxI);
-                var packed = Vector.Narrow(lo, hi);
-                packed.CopyTo(d16.Slice(i));
-            }
-            for (int i = v; i < s16.Length; i++)
-            {
-                int scaled = (s16[i] * q15 + bias) >> 15;
-                if (scaled > short.MaxValue) scaled = short.MaxValue; else if (scaled < short.MinValue) scaled = short.MinValue;
-                d16[i] = (short)scaled;
-            }
-        }
-        else
-        {
-            for (int i = 0; i < s16.Length; i++)
-            {
-                int scaled = (s16[i] * q15 + bias) >> 15;
-                if (scaled > short.MaxValue) scaled = short.MaxValue; else if (scaled < short.MinValue) scaled = short.MinValue;
-                d16[i] = (short)scaled;
-            }
-        }
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void ApplyVolume16_Fixed(ReadOnlySpan<byte> src, Span<byte> dst, float gain)
-        => ApplyVolume16(src, dst, gain);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void FillPacketData(ReadOnlyMemory<byte> samples, int sampleCount, byte[] packetBuffer)

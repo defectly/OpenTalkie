@@ -16,7 +16,8 @@ public readonly record struct UpdateStreamEndpointCommand(
     bool? IsDenoiseEnabled = null,
     bool? AllowMobileData = null,
     bool? IsEnabled = null,
-    float? Volume = null)
+    float? Volume = null,
+    float? MaximumVolume = null)
     : ICommand<OperationResult>;
 
 public sealed class UpdateStreamEndpointCommandHandler(
@@ -50,9 +51,13 @@ public sealed class UpdateStreamEndpointCommandHandler(
                 return OperationResult.Fail(nameError);
         }
 
+        float maximum = command.MaximumVolume ?? endpoint.MaximumVolume;
+        if (!float.IsFinite(maximum) || maximum < 1f)
+            return OperationResult.Fail("Maximum volume multiplier must be a finite number of 1 or greater.");
+
         if (command.Volume is float volumeToValidate)
         {
-            string? volumeError = StreamEndpointValidation.ValidateVolume(volumeToValidate);
+            string? volumeError = StreamEndpointValidation.ValidateVolume(volumeToValidate, maximum);
 
             if (volumeError != null)
                 return OperationResult.Fail(volumeError);
@@ -96,7 +101,8 @@ public sealed class UpdateStreamEndpointCommandHandler(
             IsDenoiseEnabled = command.IsDenoiseEnabled ?? endpoint.IsDenoiseEnabled,
             AllowMobileData = command.AllowMobileData ?? endpoint.AllowMobileData,
             IsEnabled = command.IsEnabled ?? endpoint.IsEnabled,
-            Volume = command.Volume ?? endpoint.Volume
+            Volume = Math.Min(command.Volume ?? endpoint.Volume, maximum),
+            MaximumVolume = maximum
         };
 
         try

@@ -1,11 +1,12 @@
 using Android.Content;
 using Android.Media;
+using OpenTalkie.Domain.Enums;
 using OpenTalkie.Application.Abstractions.Repositories;
 using OpenTalkie.Domain.VBAN;
 
 namespace OpenTalkie.Infrastructure.Android.Platforms.Android.Infrastructure.Repositories;
 
-public sealed class MicrophoneRepository : IMicrophoneRepository
+public sealed class MicrophoneRepository(IVolumeLimitRepository volumeLimits) : IMicrophoneRepository
 {
     public event Action<float>? VolumeChanged;
     public event Action<string>? PreferredAudioInputDeviceChanged;
@@ -17,7 +18,8 @@ public sealed class MicrophoneRepository : IMicrophoneRepository
         var sampleRate = Preferences.Get("MicrophoneSampleRate", 48000);
         var encoding = (Encoding)Preferences.Get("MicrophoneEncoding", (int)Encoding.Default);
         var bufferSize = Preferences.Get("MicrophoneBufferSize", 960);
-        var volume = Preferences.Get("MicrophoneVolume", 1f);
+        var volume = Math.Clamp(Preferences.Get("MicrophoneVolume", 1f), 0f, volumeLimits.GetMaximum(EndpointType.Microphone));
+        Preferences.Set("MicrophoneVolume", volume);
         var preferredDevice = Preferences.Get("MicrophonePrefferedAudioInputDevice", "Default");
         var isPacingEnabled = Preferences.Get("MicrophonePacingEnabled", false);
 

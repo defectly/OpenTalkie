@@ -50,6 +50,8 @@ public class MicrophoneCapturingService : IMicrophoneCapturingService
     public async Task<int> ReadAsync(byte[] buffer, int offset, int count) =>
         await MicrophoneAudioRecord.ReadAsync(buffer, offset, count);
 
+    public float VolumeGain => MicrophoneAudioRecord.VolumeGain;
+
     public int GetBufferSize() => MicrophoneAudioRecord.BufferSize;
 
     public WaveFormat GetWaveFormat() => MicrophoneAudioRecord.GetWaveFormat();
