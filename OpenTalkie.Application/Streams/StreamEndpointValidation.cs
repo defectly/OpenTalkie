@@ -36,10 +36,10 @@ internal static class StreamEndpointValidation
             : null;
     }
 
-    public static string? ValidateVolume(float volume)
+    public static string? ValidateVolume(float volume, float maximum)
     {
-        return volume < 0f || volume > 4f
-            ? "Volume must be in range 0.0 - 4.0."
+        return !float.IsFinite(volume) || volume < 0f || volume > maximum
+            ? $"Volume must be in range 0.0 - {maximum}."
             : null;
     }
 

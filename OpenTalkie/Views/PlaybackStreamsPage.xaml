@@ -62,19 +62,25 @@
                             <!-- Volume slider -->
                             <Grid Grid.Row="1" Grid.Column="0" ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10">
                                 <Label Text="Vol" TextColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" VerticalOptions="Center"/>
-                                <Slider Grid.Column="1" Minimum="0" Maximum="4" Value="{Binding Volume, Mode=TwoWay}" DragCompleted="OnStreamVolumeDragCompleted" />
-                                <Label Grid.Column="2" Text="{Binding Volume, StringFormat='x{0:F2}'}" TextColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" VerticalOptions="Center"/>
+                                <Slider Grid.Column="1" Minimum="0" Maximum="{Binding MaximumVolume}" Value="{Binding Volume, Mode=TwoWay}" DragCompleted="OnStreamVolumeDragCompleted" />
+                                <Label Grid.Column="2" Text="{Binding Volume, StringFormat='x{0:G4}'}" TextColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" VerticalOptions="Center"/>
                             </Grid>
-                            <Grid Grid.Row="1" Grid.Column="1" ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10">
+                            <HorizontalStackLayout Grid.Row="1" Grid.Column="1" Spacing="6">
                                 <Button
-                                    Grid.Column="3"
                                     Style="{StaticResource TonalButton}"
                                     Command="{Binding Source={x:Reference PlaybackStreamsRoot}, Path=ResetVolumeCommand, x:DataType=views:PlaybackStreamsPage}"
                                     CommandParameter="{Binding}"
                                     FontSize="12"
-                                    Padding="12,8"
+                                    Padding="8,8"
                                     Text="Reset" />
-                            </Grid>
+                                <Button
+                                    Style="{StaticResource TonalButton}"
+                                    Command="{Binding Source={x:Reference PlaybackStreamsRoot}, Path=EditMaximumVolumeCommand, x:DataType=views:PlaybackStreamsPage}"
+                                    CommandParameter="{Binding}"
+                                    FontSize="12"
+                                    Padding="8,8"
+                                    Text="Max" />
+                            </HorizontalStackLayout>
 
                             <HorizontalStackLayout
                                 Grid.Row="2"

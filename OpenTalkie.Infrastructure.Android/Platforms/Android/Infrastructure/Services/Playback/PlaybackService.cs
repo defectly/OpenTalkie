@@ -1,3 +1,4 @@
+using OpenTalkie.Infrastructure.Audio;
 using Android.Media;
 using Android.Media.Projection;
 using OpenTalkie.Application.Abstractions.Repositories;
@@ -39,25 +40,13 @@ public class PlaybackService : IPlaybackService
         return read;
     }
 
-    public static unsafe void ChangeVolume(byte[] audioBytes, int offset, int length, float gain)
+    public static void ChangeVolume(byte[] audioBytes, int offset, int length, float gain)
     {
         if (audioBytes == null || length % 2 != 0)
             throw new ArgumentException("Incorrect audio data format");
 
-        fixed (byte* basePtr = audioBytes)
-        {
-            byte* ptr = basePtr + offset;
-            short* samples = (short*)ptr;
-            int sampleCount = length / 2;
-
-            for (int i = 0; i < sampleCount; i++)
-            {
-                float amplified = samples[i] * gain;
-                samples[i] = amplified > short.MaxValue ? short.MaxValue :
-                             amplified < short.MinValue ? short.MinValue :
-                             (short)amplified;
-            }
-        }
+        var samples = audioBytes.AsSpan(offset, length);
+        PcmVolume.Apply(samples, samples, 2, gain);
     }
 
     private void LoadPreferences()

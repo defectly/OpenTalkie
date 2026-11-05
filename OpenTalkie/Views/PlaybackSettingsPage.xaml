@@ -187,7 +187,7 @@
                             Source="volume_icon.png"
                             VerticalOptions="Center"
                             WidthRequest="24" />
-                        <Grid ColumnDefinitions="*,Auto">
+                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
                             <Grid
                                 Grid.Column="0"
                                 ColumnDefinitions="*,Auto"
@@ -207,23 +207,31 @@
                                     Text="{Binding Volume, StringFormat='{0:F0}%'}"
                                     TextColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" />
                             </Grid>
-                            <Button Style="{StaticResource OutlinedButton}"
+                            <Button Style="{StaticResource TonalButton}"
                                 Grid.Column="1"
                                 Padding="8"
                                 Command="{Binding ResetVolumeCommand}"
                                 FontSize="14"
                                 Text="Reset"
                                  />
+                            <Button
+                                Grid.Column="2"
+                                Style="{StaticResource TonalButton}"
+                                Padding="8"
+                                Command="{Binding EditMaximumVolumeCommand}"
+                                FontSize="14"
+                                Text="Max" />
                         </Grid>
                     </Grid>
                     <Slider
                         DragCompleted="OnVolumeDragCompleted"
-                        Maximum="400"
+                        Maximum="{Binding MaximumVolumePercent}"
                         MaximumTrackColor="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}"
                         Minimum="0"
                         MinimumTrackColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
                         ThumbColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
                         Value="{Binding Volume}" />
+
                 </VerticalStackLayout>
             </Border>
         </Grid>

@@ -2,10 +2,10 @@ namespace OpenTalkie.Application.Settings;
 
 internal static class SettingsValidation
 {
-    public static OperationResult ValidateVolume(float volumeGain)
+    public static OperationResult ValidateVolume(float volumeGain, float maximum)
     {
-        return volumeGain is < 0f or > 4f
-            ? OperationResult.Fail("Volume must be in range 0.0 - 4.0.")
+        return !float.IsFinite(volumeGain) || volumeGain < 0f || volumeGain > maximum
+            ? OperationResult.Fail($"Volume must be in range 0.0 - {maximum}.")
             : OperationResult.Success();
     }
 

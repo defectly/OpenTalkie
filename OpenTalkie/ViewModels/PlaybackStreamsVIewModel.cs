@@ -1,4 +1,5 @@
 using Mediator;
+using OpenTalkie.Application.Abstractions.Repositories;
 using OpenTalkie.Abstractions.Services;
 using OpenTalkie.Application.Abstractions.Services;
 using OpenTalkie.Domain.Enums;

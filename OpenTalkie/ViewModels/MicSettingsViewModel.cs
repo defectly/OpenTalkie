@@ -1,6 +1,9 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Mediator;
+using System.Globalization;
+using OpenTalkie.Application.Abstractions.Repositories;
+using OpenTalkie.Domain.Enums;
 using OpenTalkie.Abstractions.Services;
 using OpenTalkie.Application.Settings.Commands;
 using OpenTalkie.Application.Settings.Queries;
@@ -10,6 +13,7 @@ namespace OpenTalkie.Presentation.ViewModels;
 public partial class MicSettingsViewModel : ObservableObject
 {
     private readonly IMediator _mediator;
+    private readonly IVolumeLimitRepository _volumeLimits;
     private readonly IUserDialogService _dialogService;
     private bool _isApplyingState;
 
@@ -29,7 +33,13 @@ public partial class MicSettingsViewModel : ObservableObject
     public partial string SelectedBufferSize { get; set; } = string.Empty;
 
     [ObservableProperty]
-    public partial float Volume { get; set; }
+    public partial double Volume { get; set; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(MaximumVolumePercent))]
+    public partial float MaximumVolumeGain { get; set; } = 1f;
+
+    public double MaximumVolumePercent => MaximumVolumeGain * 100d;
 
     [ObservableProperty]
     public partial string PrefferedAudioInputDevice { get; set; } = string.Empty;
@@ -37,9 +47,10 @@ public partial class MicSettingsViewModel : ObservableObject
     [ObservableProperty]
     public partial bool IsPacingEnabled { get; set; }
 
-    public MicSettingsViewModel(IMediator mediator, IUserDialogService dialogService)
+    public MicSettingsViewModel(IMediator mediator, IUserDialogService dialogService, IVolumeLimitRepository volumeLimits)
     {
         _mediator = mediator;
+        _volumeLimits = volumeLimits;
         _dialogService = dialogService;
         _ = ReloadStateAsync();
     }
@@ -47,7 +58,7 @@ public partial class MicSettingsViewModel : ObservableObject
     [RelayCommand]
     public async Task VolumeChanged()
     {
-        var result = await _mediator.Send(new SetMicrophoneVolumeCommand(Volume / 100.0f));
+        var result = await _mediator.Send(new SetMicrophoneVolumeCommand((float)(Volume / 100d)));
         if (!result.IsSuccess)
         {
             await ShowErrorAsync(_dialogService, result.ErrorMessage);
@@ -142,10 +153,34 @@ public partial class MicSettingsViewModel : ObservableObject
         }
     }
 
-    private async Task ReloadStateAsync()
+    [RelayCommand]
+    private async Task EditMaximumVolume()
+    {
+        await _dialogService.ShowEditFieldAsync(
+            "Maximum volume multiplier (at least 1)",
+            MaximumVolumeGain.ToString(CultureInfo.CurrentCulture),
+            Keyboard.Numeric,
+            async value =>
+            {
+                if (!float.TryParse(value, NumberStyles.Float, CultureInfo.CurrentCulture, out float maximum)
+                    && !float.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out maximum))
+                {
+                    await _dialogService.ShowErrorAsync("Enter a finite multiplier of 1 or greater.");
+                    return;
+                }
+
+                var result = await _mediator.Send(new SetVolumeMaximumCommand(EndpointType.Microphone, maximum));
+                if (!result.IsSuccess)
+                    await ShowErrorAsync(_dialogService, result.ErrorMessage);
+                await ReloadStateAsync();
+            });
+    }
+
+    public async Task ReloadStateAsync()
     {
         try
         {
+            MaximumVolumeGain = _volumeLimits.GetMaximum(EndpointType.Microphone);
             var state = await _mediator.Send(new GetMicrophoneSettingsQuery());
             ApplyState(state);
         }
@@ -165,7 +200,7 @@ public partial class MicSettingsViewModel : ObservableObject
             SelectedSampleRate = state.SelectedSampleRate.DisplayName;
             SelectedEncoding = state.SelectedEncoding.DisplayName;
             SelectedBufferSize = state.SelectedBufferSize.ToString();
-            Volume = state.VolumeGain * 100;
+            Volume = state.VolumeGain * 100d;
             PrefferedAudioInputDevice = state.PreferredAudioInputDevice.DisplayName;
             IsPacingEnabled = state.IsPacingEnabled;
         }

@@ -12,6 +12,7 @@ public static partial class InfrastructureServiceCollectionExtensions
     {
         AddPlatformInfrastructure(services);
 
+        services.AddSingleton<IVolumeLimitRepository, VolumeLimitRepository>();
         services.AddSingleton<IEndpointRepository, EndpointRepository>();
         services.AddSingleton<IEndpointCatalogService, EndpointCatalogService>();
         services.AddSingleton<IEndpointAddressValidator, EndpointAddressValidator>();
