@@ -1,4 +1,3 @@
-using OpenTalkie.Infrastructure.Audio;
 using Android.Content;
 using Android.Media;
 using OpenTalkie.Application.Abstractions.Repositories;
@@ -11,7 +10,7 @@ public static class MicrophoneAudioRecord
     private static IMicrophoneRepository? _microphoneRepository;
     private static IAudioManagerSettingsRepository? _audioManagerSettingsRepository;
     private static bool _volumeSubscriptionAttached;
-    private static float _volume;
+    private static volatile float _volume = 1f;
     private static AudioRecord? _audioRecord;
     private static int _microphoneSource;
     private static int _microphoneChannel;
@@ -107,20 +106,10 @@ public static class MicrophoneAudioRecord
         ConfigureCurrentThreadPriority();
         int read = _audioRecord.Read(buffer, offset, count);
 
-        if (read > 0)
-            ChangeVolume(buffer, offset, read, _volume);
-
         return Task.FromResult(read);
     }
 
-    public static void ChangeVolume(byte[] audioBytes, int offset, int length, float gain)
-    {
-        if (audioBytes == null || length % 2 != 0)
-            throw new ArgumentException("Incorrect audio data format");
-
-        var samples = audioBytes.AsSpan(offset, length);
-        PcmVolume.Apply(samples, samples, 2, gain);
-    }
+    public static float VolumeGain => _volume;
 
     private static void LoadPreferences()
     {

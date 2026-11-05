@@ -99,6 +99,8 @@ public class AsyncSender : IDisposable
         if (bytesRead <= 0)
             return bytesRead;
 
+        double globalGain = _source.VolumeGain;
+
         // Optional denoise (streaming, only if source is RNNoise-compatible)
         byte[] processedBuffer = buffer;
         ReadOnlyMemory<byte> denoisedOut = ReadOnlyMemory<byte>.Empty;
@@ -174,6 +176,7 @@ public class AsyncSender : IDisposable
             if (!onWifi && !endpoint.AllowMobileData)
                 continue;
 
+            double gain = globalGain * endpoint.Volume;
             ReadOnlyMemory<byte> sendMemory;
             if (endpoint.IsDenoiseEnabled && denoisedOut.Length > 0)
             {
@@ -190,11 +193,11 @@ public class AsyncSender : IDisposable
                 {
                     sendMemory = denoisedOut;
                 }
-                if (endpoint.Volume != 1f)
+                if (gain != 1d)
                 {
                     int length = sendMemory.Length;
                     EnsurePooledCapacity(ref _volumeBuffer, length);
-                    PcmVolume.Apply(sendMemory.Span, _volumeBuffer!.AsSpan(0, length), 2, endpoint.Volume);
+                    PcmVolume.Apply(sendMemory.Span, _volumeBuffer!.AsSpan(0, length), 2, gain);
                     sendMemory = _volumeBuffer.AsMemory(0, length);
                 }
                 int denoisedSamplesPerChunk = ComputeSamplesPerChunk(endpoint.Quality, 2, outChannels);
@@ -209,11 +212,11 @@ public class AsyncSender : IDisposable
                     : endpointBuffer.AsMemory(0, bytesRead);
             }
 
-            if (endpoint.Volume != 1f)
+            if (gain != 1d)
             {
                 int length = sendMemory.Length;
                 EnsurePooledCapacity(ref _volumeBuffer, length);
-                PcmVolume.Apply(sendMemory.Span, _volumeBuffer!.AsSpan(0, length), _bytesPerSample, endpoint.Volume);
+                PcmVolume.Apply(sendMemory.Span, _volumeBuffer!.AsSpan(0, length), _bytesPerSample, gain);
                 sendMemory = _volumeBuffer.AsMemory(0, length);
             }
 

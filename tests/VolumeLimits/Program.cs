@@ -85,6 +85,7 @@ foreach (var type in Enum.GetValues<EndpointType>())
     Check(catalog.GetEndpoint(type, first.Id)!.MaximumVolume == float.MaxValue, "Reset preserves stream maximum");
 }
 PcmVolumeChecks.Run();
+AudioPipelineChecks.Run();
 Console.WriteLine("Volume checks passed: independent global and per-stream maxima, isolation, clamping, persistence failure and large gains.");
 
 ValueTask<OperationResult> SetGlobal(EndpointType type, float gain) => type switch

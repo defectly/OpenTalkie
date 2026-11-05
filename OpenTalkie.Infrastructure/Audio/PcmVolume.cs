@@ -6,9 +6,9 @@ namespace OpenTalkie.Infrastructure.Audio;
 
 public static class PcmVolume
 {
-    public static void Apply(ReadOnlySpan<byte> source, Span<byte> destination, int bytesPerSample, float gain)
+    public static void Apply(ReadOnlySpan<byte> source, Span<byte> destination, int bytesPerSample, double gain)
     {
-        if (!float.IsFinite(gain) || gain < 0f)
+        if (!double.IsFinite(gain) || gain < 0f)
             throw new ArgumentOutOfRangeException(nameof(gain));
         if (bytesPerSample is < 1 or > 4 || source.Length % bytesPerSample != 0)
             throw new ArgumentException("Incorrect PCM sample format.", nameof(source));
@@ -54,12 +54,12 @@ public static class PcmVolume
         }
     }
 
-    private static void Apply16(ReadOnlySpan<short> source, Span<short> destination, float gain)
+    private static void Apply16(ReadOnlySpan<short> source, Span<short> destination, double gain)
     {
         int i = 0;
-        if (Vector.IsHardwareAccelerated)
+        if (Vector.IsHardwareAccelerated && gain <= float.MaxValue)
         {
-            var gainVector = new Vector<float>(gain);
+            var gainVector = new Vector<float>((float)gain);
             var half = new Vector<float>(0.5f);
             var minimum = new Vector<float>(short.MinValue);
             var maximum = new Vector<float>(short.MaxValue);
@@ -74,6 +74,6 @@ public static class PcmVolume
             }
         }
         for (; i < source.Length; i++)
-            destination[i] = (short)MathF.Floor(Math.Clamp(source[i] * gain + 0.5f, short.MinValue, short.MaxValue));
+            destination[i] = (short)Math.Floor(Math.Clamp(source[i] * gain + 0.5d, short.MinValue, short.MaxValue));
     }
 }

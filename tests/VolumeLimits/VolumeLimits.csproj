@@ -10,6 +10,7 @@
     <ProjectReference Include="../../OpenTalkie.Application/OpenTalkie.Application.csproj" />
     <Compile Include="../../OpenTalkie.Infrastructure/Services/EndpointCatalogService.cs" Link="EndpointCatalogService.cs" />
     <Compile Include="../../OpenTalkie.Infrastructure/Audio/PcmVolume.cs" Link="PcmVolume.cs" />
+    <Compile Include="../../OpenTalkie.Infrastructure/Audio/PcmMixer.cs" Link="PcmMixer.cs" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.5" />
   </ItemGroup>
 </Project>
